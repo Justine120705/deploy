@@ -321,238 +321,31 @@ The system is a cloud-native web application using Next.js for the frontend and 
 
 This schema integrates the `ENROLLMENTS` and `ENROLLED_SUBJECTS` tables to support online enrollment workflows, maintaining strict 3NF compliance and providing clear Foreign Key relationships for backend RLS implementation.
 
-```mermaid
-erDiagram
-    USERS ||--o| STUDENTS : "1:1"
-    USERS {
-        uuid id PK
-        string email
-        string role
-    }
-    
-    STUDENTS ||--o{ ENROLLMENTS : "1:M"
-    STUDENTS ||--o{ STUDENT_GRADES : "1:M"
-    STUDENTS ||--o{ CLEARANCES : "1:M"
-    STUDENTS ||--o{ PAYMENTS : "1:M"
-    STUDENTS ||--o{ DOCUMENT_REQUESTS : "1:M"
-    STUDENTS {
-        string student_id PK
-        uuid user_id FK
-        string first_name
-        string last_name
-        string program
-        int year_level
-    }
-    
-    ENROLLMENTS ||--o{ ENROLLED_SUBJECTS : "1:M"
-    ENROLLMENTS {
-        uuid enrollment_id PK
-        string student_id FK
-        string academic_year
-        string semester
-        string status
-        timestamp submitted_date
-        uuid reviewed_by FK
-    }
+This schema integrates the `ENROLLMENTS` and `ENROLLED_SUBJECTS` tables to support online enrollment workflows, along with `DEPARTMENT_CLEARANCES`, `CHARGES`, `PAYMENT_TRANSACTIONS` and `AUDIT_LOG`. It maintains strict 3NF compliance and provides clear Foreign Key relationships for backend RLS implementation.
 
-    SUBJECTS ||--o{ ENROLLED_SUBJECTS : "1:M"
-    SUBJECTS ||--o{ STUDENT_GRADES : "1:M"
-    SUBJECTS {
-        uuid subject_id PK
-        string course_code
-        string description
-        int units
-    }
+![Entity Relationship Diagram (3NF)](docs/diagrams/erd.svg)
 
-    ENROLLED_SUBJECTS {
-        uuid record_id PK
-        uuid enrollment_id FK
-        uuid subject_id FK
-        string section
-    }
-    
-    STUDENT_GRADES {
-        uuid grade_id PK
-        string student_id FK
-        uuid subject_id FK
-        string academic_year
-        string semester
-        decimal grade_value
-    }
-    
-    CLEARANCES ||--o{ CLEARANCE_HOLDS : "1:M"
-    CLEARANCES {
-        uuid clearance_id PK
-        string student_id FK
-        string academic_year
-        string semester
-        string overall_status
-    }
-    
-    DEPARTMENTS ||--o{ CLEARANCE_HOLDS : "1:M"
-    DEPARTMENTS {
-        int dept_id PK
-        string dept_name
-    }
-    
-    CLEARANCE_HOLDS {
-        uuid hold_id PK
-        uuid clearance_id FK
-        int dept_id FK
-        string remarks
-        string status
-        uuid resolved_by FK
-    }
-    
-    PAYMENTS {
-        uuid payment_id PK
-        string student_id FK
-        decimal amount_due
-        decimal amount_paid
-        string status
-        uuid processed_by FK
-    }
-    
-    DOCUMENT_REQUESTS {
-        uuid request_id PK
-        string student_id FK
-        string document_type
-        string status
-        timestamp requested_date
-        uuid processed_by FK
-    }
-
-```
+*Figure 1. Entity Relationship Diagram (3NF). [Open full size](docs/diagrams/erd.svg)*
 
 ### 2. Data Flow Diagram (Level 1)
 
 Illustrates how data moves between the students, university staff, system internal logic, and the Supabase data stores during both the enrollment and clearance processes.
 
-```mermaid
-flowchart TD
-    %% External Entities
-    Student[Student]
-    DeptHead[Department Head]
-    Cashier[Cashier]
-    Registrar[Registrar]
+Illustrates how data moves between the students, university staff, system internal logic, and the Supabase data stores for enrollment, authentication, clearance, grades, document requests and administration.
 
-    %% Processes
-    P0((0.0 Submit<br>Enrollment))
-    P1((1.0 Initiate<br>Clearance))
-    P2((2.0 Evaluate<br>Academic Holds))
-    P3((3.0 Process<br>Financials))
-    P4((4.0 Finalize<br>Clearance))
+![Level 1 Data Flow Diagram](docs/diagrams/dfd.svg)
 
-    %% Data Stores 
-    D1[(D1: users / students)]
-    D2[(D2: clearance_holds)]
-    D3[(D3: payments)]
-    D4[(D4: clearances)]
-    D5[(D5: enrollments)]
-
-    %% Enrollment Data Flows
-    Student -- "1. Selects Subjects/Sections" --> P0
-    P0 -- "2. Creates Pending Record" --> D5
-    Registrar -- "3. Reviews Submission" --> P0
-    D5 -. "4. Returns Pending Lists" .-> P0
-    P0 -- "5. Updates Status (Approved/Rejected)" --> D5
-    P0 -- "6. Notifies Status" --> Student
-
-    %% Clearance Data Flows
-    Student -- "7. Logs into Portal" --> P1
-    P1 -- "8. Queries Profile" --> D1
-    D1 -. "9. Returns Auth Data" .-> P1
-    P1 -- "10. Generates Pending Status" --> D4
-    
-    DeptHead -- "11. Submits/Lifts Hold" --> P2
-    P2 -- "12. Updates Record" --> D2
-    
-    Student -- "13. Pays Balance" --> P3
-    Cashier -- "14. Verifies Receipt" --> P3
-    P3 -- "15. Tags as Cleared" --> D3
-    
-    D4 -. "16. Pulls Base Record" .-> P4
-    D2 -. "17. Checks Dept Status" .-> P4
-    D3 -. "18. Checks Finance Status" .-> P4
-    
-    Registrar -- "19. Triggers Final Review" --> P4
-    P4 -- "20. Updates Final Status" --> D4
-    P4 -- "21. Issues Clearance Indicator" --> Student
-
-```
+*Figure 2. Level 1 Data Flow Diagram. [Open full size](docs/diagrams/dfd.svg)*
 
 ### 3. Use Case Diagram
 
 Maps out the functional interactions and strict system boundaries for the Student, Registrar, Cashier, Department Head, and Admin roles.
 
-```mermaid
-flowchart LR
-    %% Actors
-    Student(("🎓 Student"))
-    Registrar(("📋 Registrar"))
-    Cashier(("💰 Cashier"))
-    Admin(("🛡️ Admin"))
-    DeptHead(("🏛️ Dept Head"))
+Maps out the functional interactions and strict system boundaries for the Student, Registrar, Cashier, Department Head, and Admin roles.
 
-    %% System Boundary
-    subgraph System ["PnC Centralized Student Portal & Clearance System"]
-        direction TB
-        
-        Auth(["Authenticate (Supabase Auth)"])
-        
-        %% Student specific
-        SubmitEnroll(["Submit Online Enrollment"])
-        ViewGrades(["View Academic Grades"])
-        ViewClearance(["Check Clearance Status"])
-        ReqDocs(["Submit Document Request"])
-        
-        %% Registrar specific
-        ApproveEnroll(["Review/Approve Enrollment"])
-        EncodeGrades(["Encode Student Grades"])
-        ProcessDocs(["Process Document Requests"])
-        FinalClearance(["Issue Final Clearance"])
+![Use Case Diagram](docs/diagrams/ucd.svg)
 
-        %% Cashier specific
-        ViewFin(["View Financial Balances"])
-        LogPay(["Log Tuition/Misc Payments"])
-        LiftHold(["Lift Financial Hold"])
-
-        %% Dept specific
-        ManageAcademicHolds(["Place/Lift Academic Holds"])
-        
-        %% Admin specific
-        ManageUsers(["Create/Deactivate Accounts"])
-        ManageRoles(["Configure RBAC"])
-        AuditLogs(["View System Audit Logs"])
-    end
-
-    %% Connections
-    Student --- Auth
-    Student --- SubmitEnroll
-    Student --- ViewGrades
-    Student --- ViewClearance
-    Student --- ReqDocs
-
-    Registrar --- Auth
-    Registrar --- ApproveEnroll
-    Registrar --- EncodeGrades
-    Registrar --- ProcessDocs
-    Registrar --- FinalClearance
-
-    Cashier --- Auth
-    Cashier --- ViewFin
-    Cashier --- LogPay
-    Cashier --- LiftHold
-
-    DeptHead --- Auth
-    DeptHead --- ManageAcademicHolds
-
-    Admin --- Auth
-    Admin --- ManageUsers
-    Admin --- ManageRoles
-    Admin --- AuditLogs
-
-```
+*Figure 3. Use Case Diagram. [Open full size](docs/diagrams/ucd.svg)*
 
 ## Part 4: Developer Onboarding & Workflow Guide
 
