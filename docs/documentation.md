@@ -187,25 +187,25 @@ The system is a cloud-native web application using Next.js for the frontend and 
 
 This schema integrates the `ENROLLMENTS` and `ENROLLED_SUBJECTS` tables to support online enrollment workflows, along with `DEPARTMENT_CLEARANCES`, `CHARGES`, `PAYMENT_TRANSACTIONS` and `AUDIT_LOG`. It maintains strict 3NF compliance and provides clear Foreign Key relationships for backend RLS implementation.
 
-![Entity Relationship Diagram (3NF)](docs/diagrams/erd.svg)
+![Entity Relationship Diagram (3NF)](diagrams/erd.svg)
 
-*Figure 1. Entity Relationship Diagram (3NF). [Open full size](docs/diagrams/erd.svg)*
+*Figure 1. Entity Relationship Diagram (3NF). [Open full size](diagrams/erd.svg)*
 
 ### 2. Data Flow Diagram (Level 1)
 
 Illustrates how data moves between the students, university staff, system internal logic, and the Supabase data stores for enrollment, authentication, clearance, grades, document requests and administration.
 
-![Level 1 Data Flow Diagram](docs/diagrams/dfd.svg)
+![Level 1 Data Flow Diagram](diagrams/dfd.svg)
 
-*Figure 2. Level 1 Data Flow Diagram. [Open full size](docs/diagrams/dfd.svg)*
+*Figure 2. Level 1 Data Flow Diagram. [Open full size](diagrams/dfd.svg)*
 
 ### 3. Use Case Diagram
 
 Maps out the functional interactions and strict system boundaries for the Student, Registrar, Cashier, Department Head, and Admin roles.
 
-![Use Case Diagram](docs/diagrams/ucd.svg)
+![Use Case Diagram](diagrams/ucd.svg)
 
-*Figure 3. Use Case Diagram. [Open full size](docs/diagrams/ucd.svg)*
+*Figure 3. Use Case Diagram. [Open full size](diagrams/ucd.svg)*
 
 ## Part 4: Developer Onboarding & Workflow Guide
 
