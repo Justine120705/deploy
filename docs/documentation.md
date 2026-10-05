@@ -109,11 +109,11 @@ This project delivers a comprehensive, web-based university portal designed to e
 
 | Phase | Description | Target Date |
 | --- | --- | --- |
-| **Phase 1** | System modeling (DFD, Use Case, Activity, Class), ERD/3NF design, UI/UX wireframes, database initialization. | Oct 2 <!-- TODO: update Phase 1 date --> |
-| **Phase 2** | ERD v3 finalized and migrated (see Revision Log), Auth setup, Role-Based Access Control (RLS), Admin/Student UI layouts, SDLC plan draft. | Oct 5 |
-| **Phase 3** | Registrar (Grades/Docs/Enrollment), Cashier, and Department (Clearance) modules connected; Admin audit log implemented. Clearance logic (holds, department approval, final clearance) is started first because the modules depend on it. | Oct 8 |
-| **Phase 4** | Integration, QA testing, security hardening (SQL injection checks, login lockout, rate limiting, vulnerability patching), software testing plan and ethical analysis finalized. | Oct 10 |
-| **Phase 5** | Live deployment to Vercel (dev merged into main by the PM), IEEE final paper compilation, plagiarism check, AI/anti-AI detector report, Team Monitoring Sheet (peer evaluation), final review. | Oct 12 |
+| **Sprint 1** | System modeling (DFD, Use Case, Activity, Class), ERD/3NF design, UI/UX wireframes, database initialization. | Oct 2 <!-- TODO: update Phase 1 date --> |
+| **Sprint 2** | ERD v3 finalized and migrated (see Revision Log), Auth setup, Role-Based Access Control (RLS), Admin/Student UI layouts, SDLC plan draft. | Oct 5 |
+| **Sprint 3** | Registrar (Grades/Docs/Enrollment), Cashier, and Department (Clearance) modules connected; Admin audit log implemented. Clearance logic (holds, department approval, final clearance) is started first because the modules depend on it. | Oct 8 |
+| **Sprint 4 ** | Integration, QA testing, security hardening (SQL injection checks, login lockout, rate limiting, vulnerability patching), software testing plan and ethical analysis finalized. | Oct 10 |
+| **Sprint 5** | Live deployment to Vercel (dev merged into main by the PM), IEEE final paper compilation, plagiarism check, AI/anti-AI detector report, Team Monitoring Sheet (peer evaluation), final review. | Oct 12 |
 
 ### 7. Development Methodology (Agile)
 
