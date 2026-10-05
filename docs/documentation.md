@@ -5,7 +5,7 @@
 **Project Manager:** Abarquez, Justinbril
 **Back-End Developer:** Cruzante, Aaron; Canayong, Ron
 **Front-End Developer:** Esgana, Justine; Espedilon, Arvien; Dominado, Byrone
-**Project Duration:** 12 Days (Rapid Application Development)
+**Project Duration:** 12 Days (Agile, five iterative sprints)
 **Tech Stack:** Next.js, Tailwind CSS, Supabase (PostgreSQL), Vercel
 
 ---
@@ -23,6 +23,7 @@ This revision aligns the document with the database design files (`schema.sql`, 
 | 5 | Wording and table names aligned with `schema.sql` in: definitions (Hold, Clearance Item), user classes (Cashier, Admin), assumption on Finance, REQ-REG-03, REQ-CSH-02, REQ-CSH-03, REQ-DPT-03, REQ-ADM-01, REQ-ADM-03. | SRS 1.2, 2.1, 2.2, 3.2 to 3.5 |
 | 6 | Edits outside the requested sections, listed in full below the table. | Charter, SRS, Part 4 |
 | 7 | Review fixes: SEC-02 `users` replaced by `profiles`; "ERD v2" changed to "ERD v3" (Phase 2 row, `types/` note); Financial Tracking objective reworded; Phase 1 date marked with a TODO comment (date unchanged). | Charter, SRS 4.1, Part 4 |
+| 8 | Development methodology changed from Rapid Application Development (RAD) to Agile. RAD wording replaced in the header, team roles and SRS 2.2; new Charter section 7 describes the Agile process. | Header, Charter 4 and 7, SRS 2.2 |
 
 
 **Row 6 details (edits outside the sections I was asked to edit):**
@@ -83,7 +84,7 @@ This project delivers a comprehensive, web-based university portal designed to e
 
 ### 4. Team Structure and Roles
 
-* **Project Manager / Systems Analyst (1):** Oversees the RAD timeline, designs the system models (DFD, Use Case, Activity, and Class Diagrams), writes the SDLC plan, test plan, and ethical analysis, compiles the final IEEE documentation in parallel with development, and is the only person who merges dev into main for deployment.
+* **Project Manager / Systems Analyst (1):** Acts as Product Owner and Scrum Master (manages the backlog, sprint plan and timeline), designs the system models (DFD, Use Case, Activity, and Class Diagrams), writes the SDLC plan, test plan, and ethical analysis, compiles the final IEEE documentation in parallel with development, and is the only person who merges dev into main for deployment.
 
 * **Frontend Developers (3):** Develop UI/UX wireframes and storyboards and build responsive Next.js/Tailwind CSS components using mock data (stored in lib/mock-data.ts) for rapid prototyping.
 
@@ -113,6 +114,21 @@ This project delivers a comprehensive, web-based university portal designed to e
 | **Phase 3** | Registrar (Grades/Docs/Enrollment), Cashier, and Department (Clearance) modules connected; Admin audit log implemented. Clearance logic (holds, department approval, final clearance) is started first because the modules depend on it. | Oct 8 |
 | **Phase 4** | Integration, QA testing, security hardening (SQL injection checks, login lockout, rate limiting, vulnerability patching), software testing plan and ethical analysis finalized. | Oct 10 |
 | **Phase 5** | Live deployment to Vercel (dev merged into main by the PM), IEEE final paper compilation, plagiarism check, AI/anti-AI detector report, Team Monitoring Sheet (peer evaluation), final review. | Oct 12 |
+
+### 7. Development Methodology (Agile)
+
+The project follows an Agile (Scrum-style) approach: the work is delivered in five short sprints, and each milestone phase in the schedule above is one sprint.
+
+| Agile practice | How it is applied in this project |
+| --- | --- |
+| Product backlog | The SRS requirements (REQ-xxx) are the backlog items. They are ordered by dependency: authentication and roles first, then clearance, then the individual modules. |
+| Sprint | Each phase of the milestone schedule (Phase 1 to Phase 5) is a sprint with its own goal and end date. |
+| Sprint planning | At the start of each sprint, the team picks the backlog items for that phase and puts them on the Kanban board. |
+| Daily stand-up | A short daily check-in: what was done, what is next, and what is blocking. |
+| Sprint review | At the end of each sprint, the team shows working software from the `dev` branch. After the team confirms `dev` is tested, the Project Manager merges `dev` into `main` for deployment. |
+| Retrospective | After each sprint, the team notes what to keep and what to change in the next one. |
+| Roles | The Project Manager acts as Product Owner and Scrum Master. The Frontend and Backend developers form the development team. |
+| Handling change | Requirements can be re-prioritized between sprints, and every change is recorded in the Revision Log. The database design (ERD v3, `schema.sql`) is the blueprint and is changed only when the Backend team and the Project Manager both agree. |
 
 ## Part 2: Software Requirements Specification (SRS)
 
@@ -150,7 +166,7 @@ The system is a cloud-native web application using Next.js for the frontend and 
 
 **2.2 Assumptions and Constraints**
 
-* The project must be delivered within a 12-day RAD schedule.
+* The project must be delivered within a 12-day schedule, using Agile development in five short sprints.
 
 * The system is built on Next.js, Tailwind CSS, Supabase (PostgreSQL), and Vercel.
 
