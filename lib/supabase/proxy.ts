@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import { isRoleName, ROLE_HOME, roleForPath } from '@/lib/auth/roles'
+import type { Database } from '@/types/database.types'
 
 // Runs on every page request (see proxy.ts):
 //  1. refreshes the Supabase session cookie,
@@ -10,7 +11,7 @@ import { isRoleName, ROLE_HOME, roleForPath } from '@/lib/auth/roles'
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request })
 
-  const supabase = createServerClient(
+  const supabase = createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {

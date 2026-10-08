@@ -1,8 +1,11 @@
 import { createClient } from '@/lib/supabase/server'
+import type { Database } from '@/types/database.types'
+
+type TableName = keyof Database['public']['Tables']
 
 // Temporary proof that Row Level Security works: shows how many rows of a table
 // the signed-in user is allowed to see. Remove once real module screens exist.
-export default async function RlsCheck({ table, expected }: { table: string; expected: string }) {
+export default async function RlsCheck({ table, expected }: { table: TableName; expected: string }) {
   const supabase = await createClient()
   const { count, error } = await supabase.from(table).select('*', { count: 'exact', head: true })
 
