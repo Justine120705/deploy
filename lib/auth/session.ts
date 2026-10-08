@@ -18,11 +18,12 @@ export async function getCurrentProfile(): Promise<CurrentProfile | null> {
   const user = userData.user
   if (!user) return null
 
-  const { data: profile } = await supabase
+  const { data: profile, error } = await supabase
     .from('profiles')
     .select('profile_id, first_name, last_name, email, is_active, roles(role_name)')
     .eq('profile_id', user.id)
     .single()
+  console.log('PROFILE DEBUG', { userId: user.id, profile, error })
 
   // roles is a many-to-one join; supabase-js may type it as object or array
   const roleRow = Array.isArray(profile?.roles) ? profile?.roles[0] : profile?.roles
