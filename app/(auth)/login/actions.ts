@@ -1,39 +1,62 @@
-'use server'
+'use client'
 
-import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
-import { getCurrentProfile } from '@/lib/auth/session'
-import { ROLE_HOME } from '@/lib/auth/roles'
+import { useActionState, useState } from 'react'
+import { Button } from '@/components/ui/Button'
+import { Card } from '@/components/ui/Card'
+import { Input } from '@/components/ui/Input'
+import { login, type LoginState } from './actions'
 
-export type LoginState = { error: string | null }
+const INITIAL_STATE: LoginState = { error: null }
 
-export async function login(_prev: LoginState, formData: FormData): Promise<LoginState> {
-  const email = String(formData.get('email') ?? '').trim()
-  const password = String(formData.get('password') ?? '')
+export default function LoginPage() {
+  const [state, formAction, isPending] = useActionState(login, INITIAL_STATE)
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false)
 
-  if (!email || !password) return { error: 'Enter your email and password.' }
+  return (
+    <main className="flex min-h-screen items-center justify-center p-4 sm:p-6">
+      <Card className="w-full max-w-sm p-6 sm:max-w-md sm:p-8">
+        <h1 className="mb-6 text-center text-2xl font-semibold">
+          Student Portal Login
+        </h1>
 
-  // TODO (SEC-03, Backend team): before this call, check public.login_attempts for
-  // lockout / backoff, and record the attempt afterwards (needs the service_role
-  // key, server-side only).
+        <form action={formAction} className="flex flex-col gap-4">
+          <Input
+            name="email"
+            type="email"
+            placeholder="Email"
+            autoComplete="email"
+            required
+          />
 
-  const supabase = await createClient()
-  const { error } = await supabase.auth.signInWithPassword({ email, password })
+          <div className="relative">
+            <Input
+              name="password"
+              type={isPasswordVisible ? 'text' : 'password'}
+              placeholder="Password"
+              autoComplete="current-password"
+              required
+            />
+            <button
+              type="button"
+              onClick={() => setIsPasswordVisible((isVisible) => !isVisible)}
+              aria-label={isPasswordVisible ? 'Hide password' : 'Show password'}
+              className="absolute inset-y-0 right-3 text-sm text-gray-500 hover:text-gray-700"
+            >
+              {isPasswordVisible ? 'Hide' : 'Show'}
+            </button>
+          </div>
 
-  // Same message for every failure, so it does not reveal which emails exist.
-  if (error) return { error: 'Invalid email or password.' }
+          {state.error && (
+            <p role="alert" className="text-sm text-red-600">
+              {state.error}
+            </p>
+          )}
 
-  const profile = await getCurrentProfile()
-  if (!profile) {
-    await supabase.auth.signOut()
-    return { error: 'This account is not active in the portal. Contact the Admin.' }
-  }
-
-  redirect(ROLE_HOME[profile.role])
-}
-
-export async function logout() {
-  const supabase = await createClient()
-  await supabase.auth.signOut()
-  redirect('/login')
+          <Button type="submit" disabled={isPending} className="w-full">
+            {isPending ? 'Signing in...' : 'Sign in'}
+          </Button>
+        </form>
+      </Card>
+    </main>
+  )
 }
