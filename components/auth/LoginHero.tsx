@@ -1,4 +1,3 @@
-import { CabuyaoLogo } from '@/components/auth/CabuyaoLogo'
 import { CheckIcon, ShieldIcon } from './AuthIcons'
 
 
