@@ -166,10 +166,10 @@ Fill in this table (copy into `docs/testing-plan.md` for Sprint 4). Actual = wha
 | TC-09 | Department, open `/cashier/clearance` and `/registrar/clearance` | Redirect to `/department` | `/cashier/clearance`, `/registrar/clearance`, `/student`, `/admin` all end at /department (2026-10-10, Claude, localhost, signed in as the Department account) | Pass |
 | TC-10 | Admin, open `/student/grades` and `/department` | Redirect to `/admin` | `/student/grades`, `/registrar`, `/cashier`, `/department` all end at /admin (2026-10-10, Claude, localhost, signed in as the Admin account) | Pass |
 | TC-11 | Deactivated user with a valid session opens their module | Signed out, sent to `/login` | student3 set to is_active=false, reload signed the user out and went to /login; after restoring is_active=true the user could sign in again (2026-10-10, run by the PM, reported in chat) | Pass |
-| TC-12 | Student 1 reads Student 2's grades (Part C) | 0 rows | | |
-| TC-13 | Student 1 reads Student 2's charges and payments | 0 rows | | |
-| TC-14 | Student 1 reads Student 2's clearances, holds, enrollments, document requests | 0 rows | | |
-| TC-15 | Student 1 reads the 4 views (Part B and C) | Only Student 1's rows | | |
+| TC-12 | Student 1 reads Student 2's grades (Part C) | 0 rows | 0 rows (2026-10-10, run by the PM in the Supabase SQL editor as student1 via request.jwt.claims) | Pass |
+| TC-13 | Student 1 reads Student 2's charges and payments | 0 rows | charges: 0 rows. payments: not tested (2026-10-10, run by the PM in the Supabase SQL editor as student1 via request.jwt.claims) | Partial |
+| TC-14 | Student 1 reads Student 2's clearances, holds, enrollments, document requests | 0 rows | clearances: 0, holds: 0. enrollments and document_requests: not tested (2026-10-10, run by the PM in the Supabase SQL editor as student1 via request.jwt.claims) | Partial |
+| TC-15 | Student 1 reads the 4 views (Part B and C) | Only Student 1's rows | v_grades 3 rows = grades table 3; v_clearance_items 4 rows = clearance_items table 4, so no extra rows. v_clearances and v_active_holds not tested; security_invoker setting not checked. The live v_grades has no student_id column although types/database.types.ts lists one (2026-10-10, run by the PM in the Supabase SQL editor as student1 via request.jwt.claims) | Partial |
 | TC-16 | Anonymous role reads `grades` and `v_grades` | 0 rows or denied | | |
 | TC-17 | Student 1 updates own `role_id` | `UPDATE 0` | | |
 
