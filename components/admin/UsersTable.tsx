@@ -42,6 +42,7 @@ export default function UsersTable({ initialUsers, roleNames }: { initialUsers: 
   const [email, setEmail] = useState('')
   const [role, setRole] = useState(roleNames[0] ?? 'Student')
   const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
   const [query, setQuery] = useState('')
   const [roleFilter, setRoleFilter] = useState('')
 
@@ -79,6 +80,13 @@ export default function UsersTable({ initialUsers, roleNames }: { initialUsers: 
   }
 
   function toggleActive(id: string) {
+    const target = users.find((u) => u.id === id)
+    // Never lock everyone out: the last active Admin cannot be deactivated.
+    if (target?.active && target.role === 'Admin' && users.filter((u) => u.role === 'Admin' && u.active).length === 1) {
+      setNotice(`${target.name} is the only active Admin, so this account cannot be deactivated. Add or activate another Admin first.`)
+      return
+    }
+    setNotice('')
     setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, active: !u.active } : u)))
   }
 
@@ -133,6 +141,10 @@ export default function UsersTable({ initialUsers, roleNames }: { initialUsers: 
         />
         <StatCard label="Inactive" value={inactive} hint="deactivated" />
       </div>
+
+      <p role="status" className={notice ? 'rounded-xl border border-edge bg-warning-soft px-4 py-3 text-sm font-medium text-warning' : 'sr-only'}>
+        {notice}
+      </p>
 
       {editing && (
         <Card className="p-5">
