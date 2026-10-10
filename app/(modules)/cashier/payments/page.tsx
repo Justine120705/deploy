@@ -1,15 +1,23 @@
-import ModulePage from '@/components/layout/ModulePage'
+import DashboardShell from '@/components/layout/DashboardShell'
+import PaymentsView from '@/components/cashier/PaymentsView'
+import { LinkButton } from '@/components/cashier/LinkButton'
+import { requireRole } from '@/lib/auth/session'
+import { CASHIER_TERM } from '@/lib/mock/cashier-data'
 
-export default function CashierPaymentsPage() {
+export default async function CashierPaymentsPage() {
+  const profile = await requireRole('Cashier')
   return (
-    <ModulePage
-      role="Cashier"
+    <DashboardShell
+      profile={profile}
       title="Payments"
-      subtitle="Record payments against charges."
-      planned={[
-      "Payment entry form",
-      "Payment history",
-      ]}
-    />
+      subtitle={`Cashier's Office · ${CASHIER_TERM} · payments are logged by the Cashier (no online gateway)`}
+      actions={
+        <LinkButton href="#record" icon="check">
+          Log payment
+        </LinkButton>
+      }
+    >
+      <PaymentsView />
+    </DashboardShell>
   )
 }

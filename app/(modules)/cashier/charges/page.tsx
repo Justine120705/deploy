@@ -1,16 +1,23 @@
-import ModulePage from '@/components/layout/ModulePage'
+import DashboardShell from '@/components/layout/DashboardShell'
+import ChargesView from '@/components/cashier/ChargesView'
+import { LinkButton } from '@/components/cashier/LinkButton'
+import { requireRole } from '@/lib/auth/session'
+import { CASHIER_TERM } from '@/lib/mock/cashier-data'
 
-export default function CashierChargesPage() {
+export default async function CashierChargesPage() {
+  const profile = await requireRole('Cashier')
   return (
-    <ModulePage
-      role="Cashier"
+    <DashboardShell
+      profile={profile}
       title="Charges"
-      subtitle="Post and manage student charges."
-      planned={[
-      "Charges list per student",
-      "Add a charge from the fee types",
-      "Waive a charge",
-      ]}
-    />
+      subtitle={`Cashier's Office · ${CASHIER_TERM} · balance = charges minus payments`}
+      actions={
+        <LinkButton href="/cashier/payments#record" icon="check">
+          Record payment
+        </LinkButton>
+      }
+    >
+      <ChargesView />
+    </DashboardShell>
   )
 }
