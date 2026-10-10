@@ -12,6 +12,8 @@ team** (see Project Charter, section 5: "ERD and 3NF Tables").
 | `private_functions.sql`| The 6 functions in schema `private`, exported from live                  |
 | `rls.sql`              | `ENABLE ROW LEVEL SECURITY` on all 23 tables and all 49 live policies    |
 | `hardening.sql`        | Issue #50 fixes: 3 policies, `my_department_id()`, immutable-column triggers; rollback and grant/trigger diagnostics as comments |
+| `hardening2.sql`       | Issue #50, part 2, three sections run separately: A `holds_dept_place` checks the student's program department; B audit-log triggers (REQ-ADM-03) and append-only `audit_logs`; C grants cleanup. A rollback block per section |
+| `triggers.sql`         | Record (not a script) of the app's table triggers after `hardening.sql` and `hardening2.sql` |
 
 `views.sql`, `private_functions.sql` and the policies in `rls.sql` were exported from the
 live Supabase project on 2026-10-10 (`pg_views`, `pg_get_functiondef`, `pg_policies`);
@@ -29,6 +31,15 @@ Run in the Supabase **SQL Editor** (or `psql`), in exactly this order:
 6. **`rls.sql`**
 7. **`hardening.sql`** (issue #50; run as a whole, then the tests in
    `docs/issue-12-testing-guide.md` Part C and Part F. Undo with its ROLLBACK section.)
+8. **`hardening2.sql`**, one section at a time, in this order: **section A**, then
+   **section B**, then **section C** (C needs B; save diagnostic (a) before C). Then the
+   tests in Part G of `docs/issue-12-testing-guide.md` (TC-24 to TC-28) and Parts C and F
+   again. Undo with each section's ROLLBACK block, in reverse order (C, B, A).
+
+`triggers.sql` is a record of the triggers, **not** a step: do not run it (it stops itself
+and rolls back if run by mistake).
+
+`hardening2.sql` has **not** been run on the live database yet (as of 2026-10-10).
 
 `hardening.sql` was run on the live database on 2026-10-10 and tested (TC-18 to TC-23 and the
 regression TC-12 to TC-17 in `docs/issue-12-testing-guide.md`). It is a change on top of the live
@@ -47,14 +58,15 @@ Admin: everything).
 Views, `private` functions and policies now match the live database (export of
 2026-10-10). These are still **not exported** and are therefore not in this folder:
 
-- **Triggers.** For example the trigger on `clearances` that calls
-  `private.create_clearance_items()` (the function is in `private_functions.sql`, the
-  `CREATE TRIGGER` is not). List them with:
+- **Triggers.** `triggers.sql` records them, but the exact definition of
+  `trg_clearances_create_items` on `clearances` (calls `private.create_clearance_items()`)
+  is still to be filled in from the live database. List them with:
   `select event_object_table, trigger_name, action_timing, event_manipulation, action_statement from information_schema.triggers where trigger_schema = 'public';`
 - **Grants.** No `GRANT` / `REVOKE` statements were exported (schema `private`, functions,
   tables, views). `private_functions.sql` keeps the old draft grants as a comment only;
   verify them against the live database.
-- **Audit triggers.** `audit_logs` is empty until the Sprint 3 triggers (REQ-ADM-03) exist.
+- **Audit triggers.** `audit_logs` is empty until `hardening2.sql` section B (REQ-ADM-03)
+  is run; it does not back-fill older changes.
 - **`types/database.types.ts`** lists more view columns than the live views have; regenerate
   the types or update the views.
 

@@ -284,6 +284,193 @@ Expected: the three `rows_changed` are 1.
 
 After Part F, run Part C again: TC-12 to TC-17 must still pass.
 
+## Part G: tests for hardening2.sql (issue #50)
+
+Run after `docs/database/hardening2.sql`: TC-26 needs section A, TC-24 and TC-25 need section B, TC-27 and TC-28 need section C. Same rules as Part F: run each block on its own, as a whole (never a selection); each block ends with `rollback`, so nothing is changed; if a block stops at an unexpected error, run `rollback;` as its own query. The temporary `grant` lines are needed for the same reason as in Part F and are undone by the rollback.
+
+The Supabase SQL editor shows only the last result, so each block ends with ONE result row that holds everything. Where an error is the expected result, the block catches it in a `do` block and shows the error text (`sqlerrm`) in that row instead of stopping.
+
+After Part G, run Part C and Part F again (TC-12 to TC-23 must still pass; TC-16 may now show "permission denied" instead of 0 rows, which is an accepted result). Part F now also writes audit rows, which its `rollback` removes.
+
+Registrar grade correction is written to the audit log (TC-24, section B). The audit row is read back as `postgres` inside the same transaction:
+
+```sql
+begin;
+grant update on public.grades to authenticated; -- temporary, undone by the rollback
+select set_config('app.reg', (select id::text from auth.users where email = 'registrar@pnc.test'), true);
+select set_config('app.gid', (select min(grade_id)::text from public.grades), true);
+set local role authenticated;
+select set_config('request.jwt.claims',
+  json_build_object('sub', current_setting('app.reg'), 'role', 'authenticated')::text, true);
+update public.grades set grade_code = '1.25', encoded_by = auth.uid(), encoded_at = now()
+  where grade_id = current_setting('app.gid')::bigint;
+reset role; -- back to postgres to read audit_logs
+select count(*) as audit_rows,
+  bool_and(a.actor_id = current_setting('app.reg')::uuid) as actor_is_registrar,
+  max(a.old_data ->> 'grade_code') as old_grade,
+  max(a.new_data ->> 'grade_code') as new_grade
+from public.audit_logs a
+where a.table_name = 'grades' and a.action = 'UPDATE'
+  and a.record_id = current_setting('app.gid') and a.created_at = now();
+rollback;
+```
+
+Expected: `audit_rows` 1, `actor_is_registrar` true, `new_grade` 1.25 (`old_grade` is the grade before). `audit_rows` 0 means the trigger is missing.
+
+`audit_logs` cannot be changed, deleted or truncated, even as `postgres` (TC-25, section B). The block adds its own test row first (as `postgres`, undone by the rollback). The `truncate` is inside the same rolled-back transaction, so even if it were not blocked nothing would be lost; it briefly locks `audit_logs`, so run it at a quiet time:
+
+```sql
+begin;
+insert into public.audit_logs (action, table_name, record_id) values ('INSERT', 'tc25_test', 'tc25'); -- undone by the rollback
+do $$
+begin
+  begin
+    update public.audit_logs set table_name = 'changed' where record_id = 'tc25';
+    perform set_config('app.r_update', 'NOT BLOCKED', true);
+  exception when others then
+    perform set_config('app.r_update', 'blocked: ' || sqlerrm, true);
+  end;
+  begin
+    delete from public.audit_logs where record_id = 'tc25';
+    perform set_config('app.r_delete', 'NOT BLOCKED', true);
+  exception when others then
+    perform set_config('app.r_delete', 'blocked: ' || sqlerrm, true);
+  end;
+  begin
+    truncate public.audit_logs;
+    perform set_config('app.r_truncate', 'NOT BLOCKED', true);
+  exception when others then
+    perform set_config('app.r_truncate', 'blocked: ' || sqlerrm, true);
+  end;
+end $$;
+select current_user as ran_as,
+  current_setting('app.r_update') as update_result,
+  current_setting('app.r_delete') as delete_result,
+  current_setting('app.r_truncate') as truncate_result,
+  (select count(*) from public.audit_logs where record_id = 'tc25') as test_row_still_there;
+rollback;
+```
+
+Expected: `ran_as` postgres; the three results are `blocked: audit_logs is append-only: UPDATE is not allowed` (DELETE, TRUNCATE for the others); `test_row_still_there` 1. Any `NOT BLOCKED` is a Fail.
+
+Department places a hold for a student of its own department and for a student of another department (TC-26, section A). The students are picked by query: "own" is a student whose program belongs to the department of `dept@pnc.test`, "other" a student whose program belongs to another department (with the seed: Ana Reyes, BSCS/CCS, and Carla Mendoza, BSBA/CBA). If the data has no such student, that column says SKIPPED with the reason:
+
+```sql
+begin;
+grant insert on public.academic_holds to authenticated; -- temporary, undone by the rollback
+select set_config('app.dept', (select id::text from auth.users where email = 'dept@pnc.test'), true);
+select set_config('request.jwt.claims',
+  json_build_object('sub', current_setting('app.dept'), 'role', 'authenticated')::text, true);
+select set_config('app.mydept', coalesce(private.my_department_id()::text, ''), true);
+select set_config('app.own', coalesce((select s.student_id::text from public.students s
+  join public.programs pr on pr.program_id = s.program_id
+  where pr.department_id::text = current_setting('app.mydept')
+  order by s.student_number limit 1), ''), true);
+select set_config('app.other', coalesce((select s.student_id::text from public.students s
+  join public.programs pr on pr.program_id = s.program_id
+  where pr.department_id::text <> current_setting('app.mydept')
+  order by s.student_number limit 1), ''), true);
+set local role authenticated;
+do $$
+begin
+  if current_setting('app.mydept') = '' then
+    perform set_config('app.r_own', 'SKIPPED: dept@pnc.test has no department', true);
+    perform set_config('app.r_other', 'SKIPPED: dept@pnc.test has no department', true);
+    return;
+  end if;
+  if current_setting('app.own') = '' then
+    perform set_config('app.r_own', 'SKIPPED: no student in a program of this department', true);
+  else
+    begin
+      insert into public.academic_holds (student_id, department_id, reason, placed_by)
+      values (current_setting('app.own')::uuid, current_setting('app.mydept')::bigint, 'Hardening2 test', auth.uid());
+      perform set_config('app.r_own', 'inserted', true);
+    exception when others then
+      perform set_config('app.r_own', 'ERROR: ' || sqlerrm, true);
+    end;
+  end if;
+  if current_setting('app.other') = '' then
+    perform set_config('app.r_other', 'SKIPPED: every student is in a program of this department; add a student in another department''s program to test this', true);
+  else
+    begin
+      insert into public.academic_holds (student_id, department_id, reason, placed_by)
+      values (current_setting('app.other')::uuid, current_setting('app.mydept')::bigint, 'Hardening2 test', auth.uid());
+      perform set_config('app.r_other', 'inserted', true);
+    exception when others then
+      perform set_config('app.r_other', 'ERROR: ' || sqlerrm, true);
+    end;
+  end if;
+end $$;
+select current_setting('app.r_own') as own_department_student,
+  current_setting('app.r_other') as other_department_student;
+rollback;
+```
+
+Expected: `own_department_student` = `inserted`; `other_department_student` = `ERROR: new row violates row-level security policy for table "academic_holds"`. (Before section A the second one is also `inserted`.) A SKIPPED column is "not run" for that half, not a Pass.
+
+Grants after section C (TC-27). Read-only, no transaction needed:
+
+```sql
+select
+  (select bool_or(has_table_privilege(r.rolname::name, c.oid, 'TRUNCATE')
+               or has_table_privilege(r.rolname::name, c.oid, 'REFERENCES')
+               or has_table_privilege(r.rolname::name, c.oid, 'TRIGGER'))
+     from pg_class c cross join (values ('anon'), ('authenticated')) as r(rolname)
+     where c.relnamespace = 'public'::regnamespace and c.relkind in ('r', 'v', 'm', 'p', 'f')) as any_truncate_refs_trigger,
+  (select bool_or(has_table_privilege('anon', c.oid, 'SELECT'))
+     from pg_class c where c.relnamespace = 'public'::regnamespace and c.relkind in ('r', 'v', 'm', 'p', 'f')) as anon_select_any,
+  has_table_privilege('anon', 'public.profiles', 'INSERT') as anon_profiles_insert,
+  has_table_privilege('authenticated', 'public.profiles', 'UPDATE') as auth_profiles_update,
+  (select bool_and(has_table_privilege('authenticated', c.oid, 'SELECT'))
+     from pg_class c where c.relnamespace = 'public'::regnamespace and c.relkind in ('r', 'v', 'm', 'p', 'f')) as auth_select_all,
+  has_table_privilege('authenticated', 'public.audit_logs', 'INSERT') as auth_audit_insert,
+  has_function_privilege('anon', 'private.create_clearance_items()', 'EXECUTE') as anon_exec_create_items,
+  has_function_privilege('anon', 'private.guard_immutable_columns()', 'EXECUTE') as anon_exec_guard,
+  has_function_privilege('anon', 'private.audit_log()', 'EXECUTE') as anon_exec_audit_log,
+  has_function_privilege('anon', 'private.audit_logs_readonly()', 'EXECUTE') as anon_exec_audit_readonly,
+  (has_function_privilege('authenticated', 'private.create_clearance_items()', 'EXECUTE')
+   and has_function_privilege('authenticated', 'private.guard_immutable_columns()', 'EXECUTE')
+   and has_function_privilege('authenticated', 'private.audit_log()', 'EXECUTE')
+   and has_function_privilege('authenticated', 'private.audit_logs_readonly()', 'EXECUTE')) as auth_exec_all_4;
+```
+
+Expected: `any_truncate_refs_trigger` false, `anon_select_any` false, `anon_profiles_insert` false, `auth_profiles_update` true, `auth_select_all` true, `auth_audit_insert` false, the four `anon_exec_*` false, `auth_exec_all_4` true.
+
+Regression: anonymous read and student isolation (TC-28, section C; repeats TC-16 and TC-12):
+
+```sql
+begin;
+select set_config('app.s1', (select id::text from auth.users where email = 'student1@pnc.test'), true);
+set local role anon;
+do $$
+begin
+  begin
+    perform set_config('app.r_grades', 'rows: ' || (select count(*) from public.grades), true);
+  exception when others then
+    perform set_config('app.r_grades', 'denied: ' || sqlerrm, true);
+  end;
+  begin
+    perform set_config('app.r_v_grades', 'rows: ' || (select count(*) from public.v_grades), true);
+  exception when others then
+    perform set_config('app.r_v_grades', 'denied: ' || sqlerrm, true);
+  end;
+end $$;
+reset role;
+set local role authenticated;
+select set_config('request.jwt.claims',
+  json_build_object('sub', current_setting('app.s1'), 'role', 'authenticated')::text, true);
+select current_setting('app.r_grades') as anon_grades,
+  current_setting('app.r_v_grades') as anon_v_grades,
+  (select count(*) from public.grades) as student1_visible_grades,
+  (select count(*) from public.grades g
+     join public.enrollment_items ei on ei.enrollment_item_id = g.enrollment_item_id
+     join public.enrollments e on e.enrollment_id = ei.enrollment_id
+     where e.student_id = auth.uid()) as student1_own_grades;
+rollback;
+```
+
+Expected: `anon_grades` and `anon_v_grades` are `denied: permission denied for ...` (after section C) or `rows: 0` (both accepted; any other number is a Fail); `student1_visible_grades` = `student1_own_grades` (3 with the seed).
+
 ## Part D (optional, later): test through the real Supabase client
 
 When the student pages use real data instead of mock data, repeat Part C by signing in as Student 1 and loading `/student/grades` while logged in. The page must show only Student 1's rows. Until then Part C is the real evidence.
@@ -317,6 +504,11 @@ Fill in this table (copy into `docs/testing-plan.md` for Sprint 4). Actual = wha
 | TC-21 | Cashier marks a charge Cleared; `my_department_id()` is the Financial department (Part F) | 1 row; ids match | dept_id = 1, expected = 1, rows_changed = 1 (2026-10-10, PM clicked Run in the Supabase SQL editor, Claude loaded and read the result; temporary grant inside a rolled-back transaction) | Pass |
 | TC-22 | Department clears an item with `cleared_by` NULL (Part F) | RLS error | dept_id = 2 = expected 2; blocked: new row violates row-level security policy for table "clearance_items" (2026-10-10, PM clicked Run in the Supabase SQL editor, Claude loaded and read the result; temporary grant inside a rolled-back transaction) | Pass |
 | TC-23 | Department clears an item and lifts a hold as self, places a valid hold (Part F) | 1, 1, 1 | clear_item_as_self = 1, lift_hold_as_self = 1, place_hold_as_self = 1 (2026-10-10, PM clicked Run in the Supabase SQL editor, Claude loaded and read the result; temporary grant inside a rolled-back transaction) | Pass |
+| TC-24 | Registrar corrects a grade; audit row written (Part G, after `hardening2.sql` section B) | 1 audit row, actor = Registrar, new grade 1.25 | Not run yet | NOT RUN |
+| TC-25 | UPDATE, DELETE, TRUNCATE on `audit_logs` as `postgres` (Part G) | All three blocked with "audit_logs is append-only"; test row still there | Not run yet | NOT RUN |
+| TC-26 | Department places a hold for an own-department student and for another department's student (Part G, section A) | `inserted`; RLS error | Not run yet | NOT RUN |
+| TC-27 | Table and function privileges after section C (Part G) | TRUNCATE/REFERENCES/TRIGGER and anon SELECT gone; anon profiles INSERT false; authenticated profiles UPDATE and SELECT true; anon cannot execute the 4 trigger functions | Not run yet | NOT RUN |
+| TC-28 | Regression: anonymous read of `grades` / `v_grades`; Student 1 sees only own grades (Part G) | Denied or 0 rows; visible = own | Not run yet | NOT RUN |
 
 ## Step 7: Fix what failed (before closing the issue)
 
