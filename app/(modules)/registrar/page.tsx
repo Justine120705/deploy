@@ -1,13 +1,16 @@
-import DashboardShell from '@/components/layout/DashboardShell'
-import RlsCheck from '@/components/layout/RlsCheck'
-import { requireRole } from '@/lib/auth/session'
+import ModulePage from '@/components/layout/ModulePage'
 
-export default async function RegistrarPage() {
-  const profile = await requireRole('Registrar')
-
+export default function RegistrarDashboardPage() {
   return (
-    <DashboardShell profile={profile} title="Registrar Dashboard">
-      <RlsCheck table="enrollments" expected="The Registrar should see every student's enrollment (3 with the test data)." />
-    </DashboardShell>
+    <ModulePage
+      role="Registrar"
+      title="Registrar Dashboard"
+      subtitle="Records and clearance overview."
+      planned={[
+      "Enrollments awaiting review",
+      "Pending document requests",
+      "Clearances ready for final approval",
+      ]}
+    />
   )
 }

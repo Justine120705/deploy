@@ -1,13 +1,16 @@
-import DashboardShell from '@/components/layout/DashboardShell'
-import RlsCheck from '@/components/layout/RlsCheck'
-import { requireRole } from '@/lib/auth/session'
+import ModulePage from '@/components/layout/ModulePage'
 
-export default async function CashierPage() {
-  const profile = await requireRole('Cashier')
-
+export default function CashierDashboardPage() {
   return (
-    <DashboardShell profile={profile} title="Cashier Dashboard">
-      <RlsCheck table="charges" expected="The Cashier should see every student's charges (3 with the test data)." />
-    </DashboardShell>
+    <ModulePage
+      role="Cashier"
+      title="Cashier Dashboard"
+      subtitle="Collections and finance clearance overview."
+      planned={[
+      "Unpaid charges summary",
+      "Recent payments",
+      "Students with finance holds",
+      ]}
+    />
   )
 }

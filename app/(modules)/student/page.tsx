@@ -1,13 +1,16 @@
-import DashboardShell from '@/components/layout/DashboardShell'
-import RlsCheck from '@/components/layout/RlsCheck'
-import { requireRole } from '@/lib/auth/session'
+import ModulePage from '@/components/layout/ModulePage'
 
-export default async function StudentPage() {
-  const profile = await requireRole('Student')
-
+export default function StudentDashboardPage() {
   return (
-    <DashboardShell profile={profile} title="Student Dashboard">
-      <RlsCheck table="enrollments" expected="A student should see only their own enrollment (1 with the test data)." />
-    </DashboardShell>
+    <ModulePage
+      role="Student"
+      title="Student Dashboard"
+      subtitle="Your clearance, grades and schedule at a glance."
+      planned={[
+      "Clearance progress and pending items",
+      "GWA by term and current grades",
+      "Clearance offices and their status",
+      ]}
+    />
   )
 }
