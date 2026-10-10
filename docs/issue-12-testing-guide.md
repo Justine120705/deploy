@@ -311,12 +311,12 @@ Fill in this table (copy into `docs/testing-plan.md` for Sprint 4). Actual = wha
 | TC-15 | Student 1 reads the 4 views (Part B and C) | Only Student 1's rows | All 4 views (v_active_holds, v_clearance_items, v_clearances, v_grades) have reloptions security_invoker=true, so RLS applies. Row test as student1: v_grades 3 = grades table 3, v_clearance_items 4 = clearance_items table 4, no extra rows (2026-10-10, PM, Supabase SQL editor) | Pass |
 | TC-16 | Anonymous role reads `grades` and `v_grades` | 0 rows or denied | set local role anon: grades 0 rows, v_grades 0 rows (2026-10-10, PM, Supabase SQL editor) | Pass |
 | TC-17 | Student 1 updates own `role_id` | `UPDATE 0` | UPDATE inside a CTE as student1 (set role_id to Admin): rows_changed = 0 (2026-10-10, PM, Supabase SQL editor) | Pass |
-| TC-18 | Registrar approves a clearance with `approved_by` NULL (Part F, after `hardening.sql`) | RLS error | | NOT RUN |
-| TC-19 | Registrar approves a clearance as self and corrects a grade (Part F) | 1 row each | | NOT RUN |
-| TC-20 | Cashier changes `charges.student_id` (Part F) | Error: column cannot be changed | | NOT RUN |
-| TC-21 | Cashier marks a charge Cleared; `my_department_id()` is the Financial department (Part F) | 1 row; ids match | | NOT RUN |
-| TC-22 | Department clears an item with `cleared_by` NULL (Part F) | RLS error | | NOT RUN |
-| TC-23 | Department clears an item and lifts a hold as self, places a valid hold (Part F) | 1, 1, 1 | | NOT RUN |
+| TC-18 | Registrar approves a clearance with `approved_by` NULL (Part F, after `hardening.sql`) | RLS error | ERROR 42501: new row violates row-level security policy for table "clearances" (before the temporary grant it failed earlier with permission denied) (2026-10-10, PM clicked Run in the Supabase SQL editor, Claude loaded and read the result; temporary grant inside a rolled-back transaction) | Pass |
+| TC-19 | Registrar approves a clearance as self and corrects a grade (Part F) | 1 row each | approve_clearance = 1, correct_grade = 1 (2026-10-10, PM clicked Run in the Supabase SQL editor, Claude loaded and read the result; temporary grant inside a rolled-back transaction) | Pass |
+| TC-20 | Cashier changes `charges.student_id` (Part F) | Error: column cannot be changed | ERROR 42501: column charges.student_id cannot be changed, raised by private.guard_immutable_columns (2026-10-10, PM clicked Run in the Supabase SQL editor, Claude loaded and read the result; temporary grant inside a rolled-back transaction) | Pass |
+| TC-21 | Cashier marks a charge Cleared; `my_department_id()` is the Financial department (Part F) | 1 row; ids match | dept_id = 1, expected = 1, rows_changed = 1 (2026-10-10, PM clicked Run in the Supabase SQL editor, Claude loaded and read the result; temporary grant inside a rolled-back transaction) | Pass |
+| TC-22 | Department clears an item with `cleared_by` NULL (Part F) | RLS error | dept_id = 2 = expected 2; blocked: new row violates row-level security policy for table "clearance_items" (2026-10-10, PM clicked Run in the Supabase SQL editor, Claude loaded and read the result; temporary grant inside a rolled-back transaction) | Pass |
+| TC-23 | Department clears an item and lifts a hold as self, places a valid hold (Part F) | 1, 1, 1 | clear_item_as_self = 1, lift_hold_as_self = 1, place_hold_as_self = 1 (2026-10-10, PM clicked Run in the Supabase SQL editor, Claude loaded and read the result; temporary grant inside a rolled-back transaction) | Pass |
 
 ## Step 7: Fix what failed (before closing the issue)
 
