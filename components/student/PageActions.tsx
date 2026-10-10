@@ -5,7 +5,7 @@ import { Button } from '@/components/ui'
 export function UnavailableAction({ label, reason }: { label: string; reason: string }) {
   return (
     <div className="flex flex-col gap-1 sm:items-end">
-      <Button disabled aria-describedby="unavailable-reason" className="max-lg:h-11">
+      <Button variant="outline" disabled aria-describedby="unavailable-reason">
         {label}
       </Button>
       <p id="unavailable-reason" className="text-sm text-muted">
@@ -15,12 +15,12 @@ export function UnavailableAction({ label, reason }: { label: string; reason: st
   )
 }
 
-// Heading link that jumps to a section of the same page, styled like the primary button.
+// Heading link that jumps to a section of the same page. Looks like the primary button.
 export function JumpLink({ href, children }: { href: string; children: React.ReactNode }) {
   return (
     <a
       href={href}
-      className="inline-flex h-10 items-center justify-center rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground transition-colors hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring max-lg:h-11"
+      className="inline-flex h-9 items-center justify-center rounded-md bg-primary px-3.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring max-lg:h-11 max-lg:px-4"
     >
       {children}
     </a>

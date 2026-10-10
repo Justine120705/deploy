@@ -2,7 +2,7 @@ import DashboardShell from '@/components/layout/DashboardShell'
 import { UnavailableAction } from '@/components/student/PageActions'
 import { ResponsiveTable, type Column } from '@/components/student/ResponsiveTable'
 import { StatGrid } from '@/components/student/StatGrid'
-import { Badge } from '@/components/ui'
+import { Badge, Section } from '@/components/ui'
 import { requireRole } from '@/lib/auth/session'
 import {
   MOCK_CURRENT_TERM_ID,
@@ -50,7 +50,7 @@ export default async function StudentGradesPage() {
     { key: 'code', header: 'Code', primary: true, cell: (g) => g.subject_code },
     { key: 'course', header: 'Course', cell: (g) => g.subject_title },
     { key: 'units', header: 'Units', className: 'w-20', cell: (g) => g.units },
-    { key: 'grade', header: 'Grade', className: 'w-24 font-bold', cell: (g) => <b>{g.grade_code}</b> },
+    { key: 'grade', header: 'Grade', className: 'w-24 font-semibold', cell: (g) => g.grade_code },
     {
       key: 'remarks',
       header: 'Remarks',
@@ -58,13 +58,10 @@ export default async function StudentGradesPage() {
       cell: (g) => {
         const r = result(g)
         return (
-          <Badge tone={r.tone} className="text-sm">
-            {r.label}
-          </Badge>
+          <Badge tone={r.tone}>{r.label}</Badge>
         )
       },
     },
-    { key: 'term', header: 'Term', cell: () => termLabel },
   ]
 
   return (
@@ -74,7 +71,7 @@ export default async function StudentGradesPage() {
       subtitle={[termLabel, program?.code, 'final grades per subject'].filter(Boolean).join(' · ')}
       actions={<UnavailableAction label="Download grade report" reason="Not available yet." />}
     >
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-8">
         <StatGrid
           stats={[
             { label: 'GWA', value: gwa, hint: `${termLabel}, lower is better` },
@@ -83,14 +80,15 @@ export default async function StudentGradesPage() {
             { label: 'Failed', value: failed, hint: 'subjects', hue: failed > 0 ? 'rose' : undefined },
           ]}
         />
-        <ResponsiveTable
-          columns={columns}
-          rows={rows}
-          rowKey={(g) => g.grade_id ?? g.subject_code ?? ''}
-          caption={`Final grades, ${termLabel}`}
-          empty="No grades have been posted for this term yet."
-          footer={`Showing ${rows.length} of ${rows.length} subjects`}
-        />
+        <Section title="Final grades" description={termLabel}>
+          <ResponsiveTable
+            columns={columns}
+            rows={rows}
+            rowKey={(g) => g.grade_id ?? g.subject_code ?? ''}
+            caption={`Final grades, ${termLabel}`}
+            empty="No grades have been posted for this term yet."
+          />
+        </Section>
       </div>
     </DashboardShell>
   )

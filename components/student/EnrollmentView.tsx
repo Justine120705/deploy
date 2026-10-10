@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Button, Card, CardHeader, Input, Select, StatusBadge, type Hue } from '@/components/ui'
+import { Button, Input, Section, Select, StatusBadge, type Hue } from '@/components/ui'
 import { formatShortDate } from './format'
 import { ResponsiveTable, type Column } from './ResponsiveTable'
 import { StatGrid } from './StatGrid'
@@ -100,16 +100,10 @@ export default function EnrollmentView({
     { key: 'units', header: 'Units', className: 'w-20', cell: (s) => s.units },
     { key: 'section', header: 'Section', cell: (s) => s.section_code },
     { key: 'schedule', header: 'Schedule', cell: (s) => s.schedule ?? 'To be announced' },
-    {
-      key: 'status',
-      header: 'Status',
-      badge: true,
-      cell: () => <StatusBadge status={current?.status ?? 'Pending'} className="text-sm" />,
-    },
   ]
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-8">
       <StatGrid
         stats={[
           {
@@ -128,18 +122,26 @@ export default function EnrollmentView({
         ]}
       />
 
-      <ResponsiveTable
-        columns={columns}
-        rows={currentSections}
-        rowKey={(s) => s.section_id}
-        caption={`Enrolled subjects, ${termLabel(defaultTermId)}`}
-        empty="You are not enrolled for this term yet. Use the form below."
-        footer={`Showing ${currentSections.length} of ${currentSections.length} subjects`}
-      />
+      <Section title="Enrolled subjects" description={termLabel(defaultTermId)}>
+        <ResponsiveTable
+          columns={columns}
+          rows={currentSections}
+          rowKey={(s) => s.section_id}
+          caption={`Enrolled subjects, ${termLabel(defaultTermId)}`}
+          empty="You are not enrolled for this term yet. Use the form below."
+        />
+      </Section>
 
-      <Card className="p-5" id="new-enrollment">
-        <CardHeader title="New enrollment" icon="enrollment" hue="sky" />
-        <form onSubmit={handleSubmit} noValidate className="mt-4 flex flex-col gap-5">
+      <Section
+        title="New enrollment"
+        description="New enrollments start as Pending until the Registrar reviews them."
+      >
+        <form
+          id="new-enrollment"
+          onSubmit={handleSubmit}
+          noValidate
+          className="flex flex-col gap-5 rounded-lg border border-edge bg-card p-4 lg:p-5"
+        >
           <div className="grid gap-4 sm:grid-cols-2">
             <Select
               id="enroll-term"
@@ -172,69 +174,67 @@ export default function EnrollmentView({
           </div>
 
           <fieldset className="flex flex-col gap-2">
-            <legend className="mb-1 text-sm font-semibold">Subject sections</legend>
+            <legend className="mb-1 text-[13px] leading-5 font-medium">
+              Subject sections{selected.length > 0 ? `, ${selected.length} selected` : ''}
+            </legend>
             {termSections.length === 0 ? (
               <p className="text-sm text-muted">No sections are open for this term.</p>
             ) : (
-              termSections.map((s) => (
-                <label
-                  key={s.section_id}
-                  className="flex min-h-11 cursor-pointer items-start gap-3 rounded-xl border border-border bg-card p-3 text-sm hover:bg-accent has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-ring"
-                >
-                  <Input
-                    type="checkbox"
-                    className="mt-0.5 size-5 shrink-0 accent-primary"
-                    checked={selected.includes(s.section_id)}
-                    onChange={() => toggle(s.section_id)}
-                  />
-                  <span className="flex flex-col gap-0.5">
-                    <span>
-                      <span className="font-semibold">{s.section_code}</span>
-                      <span className="text-muted"> · </span>
-                      <span className="font-semibold">{s.subject_code}</span> {s.subject_title}
+              <div className="divide-y divide-border-subtle overflow-hidden rounded-md border border-field-border">
+                {termSections.map((s) => (
+                  <label
+                    key={s.section_id}
+                    className="flex min-h-11 cursor-pointer items-start gap-3 bg-card px-3 py-2.5 text-sm hover:bg-hover-tint has-focus-visible:outline-2 has-focus-visible:-outline-offset-2 has-focus-visible:outline-ring"
+                  >
+                    <Input
+                      type="checkbox"
+                      className="mt-0.5 size-5 shrink-0 accent-primary"
+                      checked={selected.includes(s.section_id)}
+                      onChange={() => toggle(s.section_id)}
+                    />
+                    <span className="flex min-w-0 flex-col gap-0.5">
+                      <span>
+                        <span className="font-semibold">{s.subject_code}</span> {s.subject_title}
+                      </span>
+                      <span className="text-muted">
+                        Section {s.section_code} · {s.units} units · {s.schedule ?? 'Schedule to be announced'} ·
+                        Capacity {s.capacity}
+                      </span>
                     </span>
-                    <span className="text-muted">
-                      {s.units} units · {s.schedule ?? 'Schedule to be announced'} · Capacity{' '}
-                      {s.capacity}
-                    </span>
-                  </span>
-                </label>
-              ))
+                  </label>
+                ))}
+              </div>
             )}
             {error && (
-              <p role="alert" className="text-sm text-danger">
+              <p role="alert" className="text-[13px] leading-5 text-danger">
                 {error}
               </p>
             )}
           </fieldset>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <Button type="submit" className="max-lg:h-11">
-              Submit enrollment
-            </Button>
-            <span className="text-sm text-muted">New enrollments start as Pending.</span>
+          <div>
+            <Button type="submit">Submit enrollment</Button>
           </div>
         </form>
-      </Card>
+      </Section>
 
       {enrollments.length > 0 && (
-        <Card className="p-5">
-          <CardHeader title="Enrollment history" />
-          <ul className="mt-3 divide-y divide-border-subtle text-sm">
+        <Section title="Enrollment history">
+          <ul className="divide-y divide-border-subtle overflow-hidden rounded-lg border border-edge bg-card text-sm">
             {enrollments.map((en) => (
-              <li key={en.id} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 py-3">
+              <li key={en.id} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-4 py-3">
                 <span className="flex flex-col">
                   <span className="font-semibold">{termLabel(en.term_id)}</span>
                   <span className="text-muted">
-                    Year {en.year_level} · Submitted {formatShortDate(en.submitted_at)} ·{' '}
-                    {en.section_ids.length} subjects
+                    Year {en.year_level} · Submitted {formatShortDate(en.submitted_at)} · {en.section_ids.length}{' '}
+                    subjects
                   </span>
                 </span>
-                <StatusBadge status={en.status} className="text-sm" />
+                <StatusBadge status={en.status} />
               </li>
             ))}
           </ul>
-        </Card>
+        </Section>
       )}
     </div>
   )

@@ -1,4 +1,4 @@
-import { Card, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui'
+import { TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui'
 import { cn } from '@/lib/utils'
 
 export type Column<T> = {
@@ -37,9 +37,9 @@ export function ResponsiveTable<T>({
   const rest = columns.filter((c) => c !== primary && c !== badge)
 
   return (
-    <Card className={cn('overflow-hidden', className)}>
+    <div className={cn('overflow-hidden rounded-lg border border-edge bg-card', className)}>
       {rows.length === 0 ? (
-        <p className="px-5 py-8 text-center text-sm font-medium text-muted">{empty}</p>
+        <p className="px-4 py-8 text-sm text-muted">{empty}</p>
       ) : (
         <>
           <table className="hidden w-full text-left text-sm md:table">
@@ -47,7 +47,7 @@ export function ResponsiveTable<T>({
             <TableHeader>
               <TableRow className="hover:bg-transparent">
                 {columns.map((c) => (
-                  <TableHead key={c.key} scope="col" className={cn('px-4 text-sm', c.className)}>
+                  <TableHead key={c.key} scope="col" className={cn('px-4', c.className)}>
                     {c.header}
                   </TableHead>
                 ))}
@@ -57,7 +57,7 @@ export function ResponsiveTable<T>({
               {rows.map((r) => (
                 <TableRow key={rowKey(r)}>
                   {columns.map((c, i) => (
-                    <TableCell key={c.key} className={cn('px-4', i === 0 ? 'font-semibold' : 'font-normal', c.className)}>
+                    <TableCell key={c.key} className={cn('px-4', i === 0 ? 'font-medium' : 'font-normal', c.className)}>
                       {c.cell(r)}
                     </TableCell>
                   ))}
@@ -68,18 +68,18 @@ export function ResponsiveTable<T>({
 
           <ul aria-label={caption} className="divide-y divide-border-subtle md:hidden">
             {rows.map((r) => (
-              <li key={rowKey(r)} className="flex flex-col gap-3 px-4 py-4 text-sm">
+              <li key={rowKey(r)} className="flex flex-col gap-2 px-4 py-3.5 text-sm">
                 {(primary || badge) && (
                   <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0 font-bold">{primary?.cell(r)}</div>
+                    <div className="min-w-0 font-semibold">{primary?.cell(r)}</div>
                     {badge && <div className="shrink-0">{badge.cell(r)}</div>}
                   </div>
                 )}
-                <dl className="grid grid-cols-[minmax(0,8rem)_minmax(0,1fr)] gap-x-3 gap-y-1.5">
+                <dl className="grid grid-cols-[minmax(0,8rem)_minmax(0,1fr)] gap-x-3 gap-y-1">
                   {rest.map((c) => (
                     <div key={c.key} className="contents">
                       <dt className="text-muted">{c.header}</dt>
-                      <dd className="min-w-0 break-words font-medium">{c.cell(r)}</dd>
+                      <dd className="min-w-0 break-words">{c.cell(r)}</dd>
                     </div>
                   ))}
                 </dl>
@@ -88,7 +88,7 @@ export function ResponsiveTable<T>({
           </ul>
         </>
       )}
-      {footer && <div className="border-t border-border-subtle px-5 py-3.5 text-sm text-muted">{footer}</div>}
-    </Card>
+      {footer && <div className="border-t border-border-subtle px-4 py-3 text-sm text-muted">{footer}</div>}
+    </div>
   )
 }

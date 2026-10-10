@@ -65,11 +65,6 @@
   --neutral-soft: #eeedf1;
 
   /* Login backdrop (owned by the login page; removed with it). */
-  --orb-1: #c9a0e3;
-  --orb-2: #cde8f7;
-  --orb-3: #ebddf6;
-  --orb-opacity: 0.75;
-  --lattice-opacity: 0.22;
 
   /* Charts and calendar */
   --ink: #1a1923;
@@ -160,11 +155,6 @@
   --neutral: #a5a1b4;
   --neutral-soft: #272530;
 
-  --orb-1: #7e4fb0;
-  --orb-2: #4a3a99;
-  --orb-3: #c9a0e3;
-  --orb-opacity: 0.22;
-  --lattice-opacity: 0.16;
 
   --ink: #2a2834;
   --ink-foreground: #ecebf2;
@@ -315,53 +305,4 @@ a {
 }
 table {
   font-variant-numeric: tabular-nums;
-}
-
-/* Login page background: a drifting honeycomb (the hexagon of the logo) over soft moving light.
-   Only transform is animated, so it stays on the GPU. Switched off for reduced motion. */
-@keyframes login-lattice {
-  to { transform: translate3d(-52px, -90.0666px, 0); }
-}
-@keyframes login-drift-a {
-  from { transform: translate3d(-6%, -4%, 0) scale(1); }
-  to { transform: translate3d(8%, 10%, 0) scale(1.15); }
-}
-@keyframes login-drift-b {
-  from { transform: translate3d(6%, 6%, 0) scale(1.1); }
-  to { transform: translate3d(-8%, -8%, 0) scale(0.95); }
-}
-@keyframes login-drift-c {
-  from { transform: translate3d(-10%, 4%, 0) scale(0.9); }
-  to { transform: translate3d(10%, -6%, 0) scale(1.1); }
-}
-@keyframes login-pulse {
-  0% { transform: scale(1); opacity: 0.55; }
-  100% { transform: scale(2.1); opacity: 0; }
-}
-
-.login-lattice {
-  position: absolute;
-  top: -91px;
-  left: -53px;
-  width: calc(100% + 106px);
-  height: calc(100% + 182px);
-  color: var(--accent-foreground);
-  opacity: var(--lattice-opacity);
-  animation: login-lattice 70s linear infinite;
-  will-change: transform;
-}
-.login-orb {
-  position: absolute;
-  border-radius: 9999px;
-  filter: blur(80px);
-  opacity: var(--orb-opacity);
-  will-change: transform;
-}
-.login-orb-a { width: 52vw; height: 52vw; right: -10vw; top: -16vw; background: var(--orb-1); animation: login-drift-a 28s ease-in-out infinite alternate; }
-.login-orb-b { width: 44vw; height: 44vw; left: -12vw; bottom: -18vw; background: var(--orb-2); animation: login-drift-b 34s ease-in-out infinite alternate; }
-.login-orb-c { width: 30vw; height: 30vw; left: 38vw; top: 30vh; background: var(--orb-3); animation: login-drift-c 40s ease-in-out infinite alternate; }
-.login-pulse { animation: login-pulse 2.4s ease-out infinite; }
-
-@media (prefers-reduced-motion: reduce) {
-  .login-lattice, .login-orb, .login-pulse { animation: none; }
 }

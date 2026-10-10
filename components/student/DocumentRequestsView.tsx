@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Button, Card, CardHeader, Input, Select, StatusBadge } from '@/components/ui'
+import { Button, Input, Section, Select, StatusBadge } from '@/components/ui'
 import { formatShortDate } from './format'
 import { ResponsiveTable, type Column } from './ResponsiveTable'
 import { StatGrid } from './StatGrid'
@@ -78,19 +78,19 @@ export default function DocumentRequestsView({
       cell: (r) => (
         <>
           {typeName(r.document_type_id)}
-          <span className="block text-sm font-medium text-muted">{r.ticket_number}</span>
+          <span className="block text-sm font-normal text-muted">{r.ticket_number}</span>
         </>
       ),
     },
     { key: 'purpose', header: 'Purpose', cell: (r) => r.purpose },
     { key: 'copies', header: 'Copies', className: 'w-20', cell: (r) => r.copies },
     { key: 'requested', header: 'Requested on', cell: (r) => formatShortDate(r.requested_at) },
-    { key: 'status', header: 'Status', badge: true, cell: (r) => <StatusBadge status={r.status} className="text-sm" /> },
+    { key: 'status', header: 'Status', badge: true, cell: (r) => <StatusBadge status={r.status} /> },
     { key: 'processed', header: 'Processed on', cell: (r) => formatShortDate(r.processed_at) },
   ]
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-8">
       <StatGrid
         stats={[
           { label: 'Requests', value: requests.length, hint: 'all time' },
@@ -100,18 +100,23 @@ export default function DocumentRequestsView({
         ]}
       />
 
-      <ResponsiveTable
-        columns={columns}
-        rows={requests}
-        rowKey={(r) => r.id}
-        caption="Your document requests"
-        empty="No document requests yet."
-        footer="Students can only file requests. The Registrar updates the status."
-      />
+      <Section title="Your requests" description="Students can only file requests. The Registrar updates the status.">
+        <ResponsiveTable
+          columns={columns}
+          rows={requests}
+          rowKey={(r) => r.id}
+          caption="Your document requests"
+          empty="No document requests yet."
+        />
+      </Section>
 
-      <Card className="scroll-mt-4 p-5" id="new-request">
-        <CardHeader title="New document request" icon="documents" hue="violet" />
-        <form onSubmit={handleSubmit} noValidate className="mt-4 flex flex-col gap-4">
+      <Section title="New document request">
+        <form
+          id="new-request"
+          onSubmit={handleSubmit}
+          noValidate
+          className="flex scroll-mt-4 flex-col gap-4 rounded-lg border border-edge bg-card p-4 lg:p-5"
+        >
           <div className="grid gap-4 sm:grid-cols-[2fr_3fr_1fr]">
             <Select
               id="doc-type"
@@ -145,12 +150,10 @@ export default function DocumentRequestsView({
             />
           </div>
           <div>
-            <Button type="submit" className="max-lg:h-11">
-              Submit request
-            </Button>
+            <Button type="submit">Submit request</Button>
           </div>
         </form>
-      </Card>
+      </Section>
     </div>
   )
 }
