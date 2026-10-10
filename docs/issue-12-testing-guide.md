@@ -155,12 +155,12 @@ Fill in this table (copy into `docs/testing-plan.md` for Sprint 4). Actual = wha
 
 | ID | Steps | Expected | Actual | Result |
 |---|---|---|---|---|
-| TC-01 | Signed out, open `/student/grades` | Redirect to `/login` | | |
-| TC-02 | Signed out, open `/admin/users` | Redirect to `/login` | | |
-| TC-03 | Student, open `/registrar/grades` | Redirect to `/student` | | |
-| TC-04 | Student, open `/cashier/charges` | Redirect to `/student` | | |
-| TC-05 | Student, open `/department/holds` | Redirect to `/student` | | |
-| TC-06 | Student, open `/admin` and `/admin/audit-log` | Redirect to `/student` | | |
+| TC-01 | Signed out, open `/student/grades` | Redirect to `/login` | curl: 307 to /login (2026-10-10, Claude, localhost dev server) | Pass |
+| TC-02 | Signed out, open `/admin/users` | Redirect to `/login` | curl: 307 to /login (2026-10-10, Claude, localhost dev server) | Pass |
+| TC-03 | Student, open `/registrar/grades` | Redirect to `/student` | Redirect, ends at /student (2026-10-10, Claude, localhost dev server, signed in as student1) | Pass |
+| TC-04 | Student, open `/cashier/charges` | Redirect to `/student` | Redirect (2026-10-10, Claude, localhost dev server, student1) | Pass |
+| TC-05 | Student, open `/department/holds` | Redirect to `/student` | Redirect (2026-10-10, Claude, localhost dev server, student1) | Pass |
+| TC-06 | Student, open `/admin` and `/admin/audit-log` | Redirect to `/student` | Both redirect, end at /student (2026-10-10, Claude, localhost dev server, student1) | Pass |
 | TC-07 | Cashier, open `/registrar/enrollments` and `/student` | Redirect to `/cashier` | | |
 | TC-08 | Registrar, open `/admin/users` and `/cashier/payments` | Redirect to `/registrar` | | |
 | TC-09 | Department, open `/cashier/clearance` and `/registrar/clearance` | Redirect to `/department` | | |
