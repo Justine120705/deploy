@@ -25,6 +25,7 @@ This revision aligns the document with the database design files (`schema.sql`, 
 | 7 | Review fixes: SEC-02 `users` replaced by `profiles`; "ERD v2" changed to "ERD v3" (Phase 2 row, `types/` note); Financial Tracking objective reworded; Phase 1 date marked with a TODO comment (date unchanged). | Charter, SRS 4.1, Part 4 |
 | 8 | Development methodology changed from Rapid Application Development (RAD) to Agile. RAD wording replaced in the header, team roles and SRS 2.2; new Charter section 7 describes the Agile process. | Header, Charter 4 and 7, SRS 2.2 |
 | 9 | Charter section 7 replaced by the full SDLC plan (7.1 to 7.7). Sprint 2 ended Oct 10 instead of Oct 5; carry-over is recorded in 7.3. Phase 1 TODO comment removed (Sprint 1 end date is Oct 2). | Charter 6 and 7 |
+| 10 | Added the Activity Diagram (term clearance) and the Class Diagram (generated from `schema.sql`) as Part 3, Sections 4 and 5. | Part 3 |
 
 
 **Row 6 details (edits outside the sections I was asked to edit):**
@@ -409,6 +410,22 @@ The diagram has 5 actors: Admin, Department Head, Cashier, Registrar, and Studen
 | Cashier | View Financial Balances; Log Payments and Tag Charges Cleared («include» Update Finance Clearance, automatic, REQ-CSH-03) |
 | Registrar | Review Enrollments (Approve or Reject); Encode and Update Grades; Process Document Requests (extended by Reject Document Request when the request cannot be fulfilled); Issue Final Clearance («include» Verify All Departments and Finance Cleared) |
 | Student | View Enrollment Status; Submit Online Enrollment; View Academic Grades; Request Clearance; Check Clearance Status; Submit Document Request; Track Document Request |
+
+### 4. Activity Diagram (Term Clearance)
+
+![Figure 4. Activity Diagram: Term Clearance](diagrams/ActivityDiagram_Clearance.svg)
+
+*Figure 4. Activity Diagram of the term clearance process (`ActivityDiagram_Clearance.svg`).*
+
+The diagram shows the clearance process in five swimlanes (Student, Department, Cashier, Registrar, System). The Student requests the term clearance (REQ-STU-06) and the system creates one clearance item per department, including Finance. The Department and Cashier work in parallel: a department approves its item once all of its holds are lifted (REQ-DPT-03), and the Finance item is cleared automatically when every charge is Cleared or Waived (REQ-CSH-03, database trigger). When all items are cleared, the Registrar issues the final clearance approval (REQ-REG-03), the system sets the clearance to Approved and writes the audit log (REQ-ADM-03), and the Student sees the result.
+
+### 5. Class Diagram
+
+![Figure 5. Class Diagram](diagrams/ClassDiagram.svg)
+
+*Figure 5. Class Diagram (`ClassDiagram.svg`), generated from `docs/database/schema.sql`.*
+
+The diagram has one class for each of the 23 tables, with all columns, primary keys (PK) and foreign keys (FK). Associations are drawn for every foreign key except the actor columns that point to `profiles` (`approved_by`, `cleared_by`, `recorded_by`, `actor_id` and similar), which stay as FK attributes to keep the diagram readable. The classes are grouped as Accounts, Academic catalog, Enrollment and grades, Finance, and Clearance, documents and audit.
 
 ## Part 4: Developer Onboarding & Workflow Guide
 
