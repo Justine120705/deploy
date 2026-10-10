@@ -1,23 +1,27 @@
 // Inline logo (matches the Figma "Approved logo" light + dark variants).
-// No exported SVG files needed in /public — colors switch with the `dark:` variant.
-export function CabuyaoLogo({ className = '' }: { className?: string }) {
+// No exported SVG files needed in /public. Colors follow the theme tokens.
+const SIZES = {
+  md: { mark: 'h-[88px]', name: 'text-4xl', tagline: 'text-[10px]' },
+  lg: { mark: 'h-[88px] sm:h-[124px]', name: 'text-[38px] sm:text-[54px]', tagline: 'text-[10px] sm:text-xs' },
+} as const
+
+export function CabuyaoLogo({
+  className = '',
+  size = 'md',
+}: {
+  className?: string
+  size?: keyof typeof SIZES
+}) {
+  const s = SIZES[size]
   return (
     <div
       role="img"
-      aria-label="Cabuyao University — Learn, grow, build tomorrow"
-      className={`flex items-center gap-3 ${className}`}
+      aria-label="Cabuyao University: Learn, grow, build tomorrow"
+      className={`flex items-center gap-4 ${className}`}
     >
-      <svg
-        aria-hidden="true"
-        viewBox="0 0 80 92"
-        className="h-[88px] w-auto shrink-0"
-        fill="none"
-      >
+      <svg aria-hidden="true" viewBox="0 0 80 92" className={`${s.mark} w-auto shrink-0`} fill="none">
         {/* hexagon body */}
-        <path
-          d="M40 0 80 23v46L40 92 0 69V23z"
-          className="fill-[#1b1c26] dark:fill-white"
-        />
+        <path d="M40 0 80 23v46L40 92 0 69V23z" className="fill-foreground" />
         {/* purple top face */}
         <path d="M40 0 80 23 40 46 0 23z" className="fill-[#b78ae6] dark:fill-[#c9a0e3]" />
         {/* U-shaped cut-out */}
@@ -25,18 +29,18 @@ export function CabuyaoLogo({ className = '' }: { className?: string }) {
           d="M24 40v22l16 10 16-10V40"
           strokeWidth="8"
           strokeLinejoin="round"
-          className="stroke-white dark:stroke-[#181b27]"
+          className="stroke-card"
         />
       </svg>
 
       <div aria-hidden="true" className="flex flex-col">
-        <span className="text-4xl font-extrabold leading-[1.05] tracking-tight text-[#121319] dark:text-white">
+        <span className={`${s.name} font-extrabold leading-[1.02] tracking-tight text-foreground`}>
           Cabuyao
         </span>
-        <span className="text-4xl font-extrabold leading-[1.05] tracking-tight text-[#7e4fb0] dark:text-[#d9b8ee]">
+        <span className={`${s.name} font-extrabold leading-[1.02] tracking-tight text-accent-foreground`}>
           University
         </span>
-        <span className="mt-1 text-[10px] font-medium uppercase tracking-[0.14em] text-[#6e6c85] dark:text-[#a1a1b5]">
+        <span className={`mt-1.5 ${s.tagline} font-medium uppercase tracking-[0.14em] text-muted`}>
           Learn · Grow · Build tomorrow
         </span>
       </div>
