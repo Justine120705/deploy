@@ -147,12 +147,15 @@ Repeat the first block with the roles of the two students swapped (Student 2 rea
 
 ## Part F: Hardening tests (issue #50, after running `docs/database/hardening.sql`)
 
+Important: the live `authenticated` role has no INSERT or UPDATE permission on most tables (see the grants finding below), so without help every write fails with "permission denied" before RLS or the triggers run. Each block therefore starts with a temporary `grant` that the closing `rollback` undoes, so nothing is changed in the database. If a block ends in an error instead of `rollback`, run `rollback;` as its own query afterwards (a GRANT is also undone by that). For TC-18, TC-20 and TC-22 the expected error is the RLS or trigger error, not "permission denied".
+
 Same style as Part C. Run each block on its own, as a whole (never a selection: a partial run can commit). Each block ends with `rollback`, or stops at its expected error, which also leaves nothing committed. The expected results assume the seed data; if live rows differ (for example Ben's hold is already lifted), a count can be 0 instead of 1: check the row first.
 
 Registrar approves a clearance with `approved_by` NULL (TC-18, fix 1):
 
 ```sql
 begin;
+grant insert, update on all tables in schema public to authenticated; -- temporary, undone by the rollback
 select set_config('app.reg', (select id::text from auth.users where email = 'registrar@pnc.test'), true);
 select set_config('app.s1', (select id::text from auth.users where email = 'student1@pnc.test'), true);
 set local role authenticated;
@@ -169,6 +172,7 @@ Registrar normal updates still work (TC-19, fixes 1 and 2):
 
 ```sql
 begin;
+grant insert, update on all tables in schema public to authenticated; -- temporary, undone by the rollback
 select set_config('app.reg', (select id::text from auth.users where email = 'registrar@pnc.test'), true);
 select set_config('app.s1', (select id::text from auth.users where email = 'student1@pnc.test'), true);
 set local role authenticated;
@@ -191,6 +195,7 @@ Cashier changes `charges.student_id` (TC-20, fix 2):
 
 ```sql
 begin;
+grant insert, update on all tables in schema public to authenticated; -- temporary, undone by the rollback
 select set_config('app.cash', (select id::text from auth.users where email = 'cashier@pnc.test'), true);
 select set_config('app.s1', (select id::text from auth.users where email = 'student1@pnc.test'), true);
 select set_config('app.s2', (select id::text from auth.users where email = 'student2@pnc.test'), true);
@@ -208,6 +213,7 @@ Cashier normal update and department lookup (TC-21, fixes 2 and 4). The first se
 
 ```sql
 begin;
+grant insert, update on all tables in schema public to authenticated; -- temporary, undone by the rollback
 select set_config('app.cash', (select id::text from auth.users where email = 'cashier@pnc.test'), true);
 select set_config('app.s2', (select id::text from auth.users where email = 'student2@pnc.test'), true);
 select set_config('request.jwt.claims',
@@ -228,6 +234,7 @@ Department clears an item with `cleared_by` NULL (TC-22, fixes 1, 3 and 4):
 
 ```sql
 begin;
+grant insert, update on all tables in schema public to authenticated; -- temporary, undone by the rollback
 select set_config('app.dept', (select id::text from auth.users where email = 'dept@pnc.test'), true);
 select set_config('app.s1', (select id::text from auth.users where email = 'student1@pnc.test'), true);
 select set_config('request.jwt.claims',
@@ -247,6 +254,7 @@ Department valid updates still work (TC-23, fixes 1 and 2):
 
 ```sql
 begin;
+grant insert, update on all tables in schema public to authenticated; -- temporary, undone by the rollback
 select set_config('app.dept', (select id::text from auth.users where email = 'dept@pnc.test'), true);
 select set_config('app.s1', (select id::text from auth.users where email = 'student1@pnc.test'), true);
 select set_config('app.s2', (select id::text from auth.users where email = 'student2@pnc.test'), true);
@@ -356,3 +364,14 @@ Issue #50: `docs/database/hardening.sql` addresses 1 to 4 and adds read-only dia
 4. `private.my_department_id()`: for a Cashier it uses `LIMIT 1` with no ORDER BY on Financial departments, and for Department staff a scalar subquery that errors if a profile has two `department_staff` rows.
 5. `holds_dept_place` does not check that the student belongs to the Department user's department. Not fixed in `hardening.sql`: the only available check (`private.student_in_my_department`) means "the student has requested any clearance", which protects little and would block holds placed before a clearance request. It needs a real student-to-department link first (open in #50).
 6. Grants on the 6 `SECURITY DEFINER` functions and on the `private` schema were not exported; check that `private` is not exposed through the API.
+
+## Grants found in the live database (2026-10-10, PM, Supabase SQL editor)
+
+Query: `information_schema.role_table_grants` for `anon` and `authenticated`, schema public.
+
+- `authenticated` can only SELECT on every table, except `profiles` (also INSERT, UPDATE, DELETE). So the INSERT and UPDATE policies on all other tables cannot take effect through the API until grants are added. This fails safe; the app will need targeted grants when it starts writing.
+- `authenticated` also has TRUNCATE, REFERENCES and TRIGGER on every table. TRUNCATE is not covered by RLS. PostgREST does not expose TRUNCATE, so it is not reachable through the API today, but nobody needs it. To review: `REVOKE TRUNCATE, REFERENCES, TRIGGER ... FROM authenticated`.
+- `anon` can SELECT every table and has DELETE, INSERT and UPDATE on `profiles`. RLS blocks it (the `profiles` policies are `TO authenticated`), so RLS is the only protection there. To review: revoke everything from `anon` that the login page does not need.
+- No GRANT or REVOKE statements exist in the repo; the live grants come from Supabase defaults plus changes that were never written down.
+- Found by TC-18: `permission denied for table clearances` (error 42501) before RLS ran.
+
