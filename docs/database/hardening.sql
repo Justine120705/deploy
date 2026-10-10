@@ -9,7 +9,8 @@
 --      API users: BEFORE UPDATE triggers, because RLS cannot restrict columns.
 --   3. clearance_items_dept_update checks the role in WITH CHECK as well.
 --   4. private.my_department_id() is deterministic (ORDER BY ... LIMIT 1).
---   5. holds_dept_place requires the student to be linked to the caller's department.
+--   5. (removed) holds_dept_place is left as it is: see issue #50, it needs a real
+--      student-to-department link first.
 --   6. Grants are NOT changed here; diagnostic queries are at the end (commented).
 --
 -- How to run: AFTER rls.sql (and private_functions.sql), in the Supabase SQL editor,
@@ -68,7 +69,7 @@ CREATE POLICY clearance_items_dept_update ON public.clearance_items
 -- ------------------------------------------
 -- USING unchanged. WITH CHECK requires lifted_by = the caller.
 -- Flow affected: "un-lifting" a hold (lifted_by / lifted_at back to NULL) through the
--- API is now rejected; place a new hold instead (INSERT, holds_dept_place).
+-- API is now rejected; place a new hold instead (INSERT).
 DROP POLICY IF EXISTS holds_dept_lift ON public.academic_holds;
 CREATE POLICY holds_dept_lift ON public.academic_holds
   FOR UPDATE TO authenticated
@@ -86,23 +87,6 @@ CREATE POLICY clearances_registrar_approve ON public.clearances
   FOR UPDATE TO authenticated
   USING ((( SELECT private.current_role_name() AS current_role_name) = 'Registrar'::text))
   WITH CHECK (((( SELECT private.current_role_name() AS current_role_name) = 'Registrar'::text) AND (approved_by = ( SELECT private.active_uid() AS active_uid))));
-
--- ------------------------------------------
--- 5. holds_dept_place
--- ------------------------------------------
--- Adds private.student_in_my_department(student_id).
--- LIMITATION: that helper does not read the student's program/department. It returns
--- true when the student has ANY clearance (any term) with a clearance_items row for the
--- caller's department. The clearances trigger (private.create_clearance_items) creates
--- one item per department for every clearance, so in practice this means "the student
--- has requested at least one clearance". Consequence: a Department user cannot place a
--- hold on a student who has never requested a clearance (possible flow break, see the
--- report). A stricter rule (students.program_id -> programs.department_id) would need a
--- new helper and a product decision, so it is not done here.
-DROP POLICY IF EXISTS holds_dept_place ON public.academic_holds;
-CREATE POLICY holds_dept_place ON public.academic_holds
-  FOR INSERT TO authenticated
-  WITH CHECK (((( SELECT private.current_role_name() AS current_role_name) = 'Department'::text) AND (department_id = private.my_department_id()) AND private.student_in_my_department(student_id) AND (placed_by = ( SELECT private.active_uid() AS active_uid)) AND (lifted_by IS NULL) AND (lifted_at IS NULL)));
 
 -- ------------------------------------------
 -- 2. Immutable columns (BEFORE UPDATE triggers)
@@ -210,7 +194,7 @@ COMMIT;
 -- ==========================================
 -- Uncomment and run as one block. The policy and function texts below are verbatim
 -- copies of the originals in rls.sql (policies clearance_items_dept_update,
--- holds_dept_lift, clearances_registrar_approve, holds_dept_place) and
+-- holds_dept_lift, clearances_registrar_approve) and
 -- private_functions.sql (private.my_department_id). If those files changed after this
 -- one was written, use the versions in those files instead.
 --
@@ -236,11 +220,6 @@ COMMIT;
 --   FOR UPDATE TO authenticated
 --   USING (((( SELECT private.current_role_name() AS current_role_name) = 'Department'::text) AND (department_id = private.my_department_id())))
 --   WITH CHECK (((department_id = private.my_department_id()) AND ((lifted_by IS NULL) OR (lifted_by = ( SELECT private.active_uid() AS active_uid)))));
---
--- DROP POLICY IF EXISTS holds_dept_place ON public.academic_holds;
--- CREATE POLICY holds_dept_place ON public.academic_holds
---   FOR INSERT TO authenticated
---   WITH CHECK (((( SELECT private.current_role_name() AS current_role_name) = 'Department'::text) AND (department_id = private.my_department_id()) AND (placed_by = ( SELECT private.active_uid() AS active_uid)) AND (lifted_by IS NULL) AND (lifted_at IS NULL)));
 --
 -- DROP POLICY IF EXISTS clearances_registrar_approve ON public.clearances;
 -- CREATE POLICY clearances_registrar_approve ON public.clearances
