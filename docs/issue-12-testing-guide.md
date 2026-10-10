@@ -169,7 +169,7 @@ Fill in this table (copy into `docs/testing-plan.md` for Sprint 4). Actual = wha
 | TC-12 | Student 1 reads Student 2's grades (Part C) | 0 rows | 0 rows (2026-10-10, run by the PM in the Supabase SQL editor as student1 via request.jwt.claims) | Pass |
 | TC-13 | Student 1 reads Student 2's charges and payments | 0 rows | charges: 0 rows. payments: not tested (2026-10-10, run by the PM in the Supabase SQL editor as student1 via request.jwt.claims) | Partial |
 | TC-14 | Student 1 reads Student 2's clearances, holds, enrollments, document requests | 0 rows | clearances: 0, holds: 0. enrollments and document_requests: not tested (2026-10-10, run by the PM in the Supabase SQL editor as student1 via request.jwt.claims) | Partial |
-| TC-15 | Student 1 reads the 4 views (Part B and C) | Only Student 1's rows | As student1, v_grades returned 3 rows and v_clearance_items 4, equal to the base tables under RLS. Admin count shows the full data is 6 grades (2 students x 3) and 12 clearance items (3 students x 4), so student1 saw only their own share. v_clearances and v_active_holds not tested; security_invoker setting not checked. The live v_grades has no student_id column although types/database.types.ts lists one (2026-10-10, PM, Supabase SQL editor) | Partial: v_grades and v_clearance_items Pass |
+| TC-15 | Student 1 reads the 4 views (Part B and C) | Only Student 1's rows | All 4 views (v_active_holds, v_clearance_items, v_clearances, v_grades) have reloptions security_invoker=true, so RLS applies. Row test as student1: v_grades 3 = grades table 3, v_clearance_items 4 = clearance_items table 4, no extra rows (2026-10-10, PM, Supabase SQL editor) | Pass |
 | TC-16 | Anonymous role reads `grades` and `v_grades` | 0 rows or denied | | |
 | TC-17 | Student 1 updates own `role_id` | `UPDATE 0` | | |
 
@@ -193,3 +193,10 @@ Fill in this table (copy into `docs/testing-plan.md` for Sprint 4). Actual = wha
 - [ ] TC-12 to TC-17 have a real result from the live database
 - [ ] Any Fail has a fix or an open issue
 - [ ] The test table is in the repo for Sprint 4
+
+## Findings from the live checks (2026-10-10)
+
+- All 4 views have `security_invoker=true`. The RLS-bypass risk from the code review does not apply.
+- The live `v_grades` column list starts `grade_id, enrollment_item_id, grade_code, numeric_value, is_passing, encoded...` and has no `student_id` or `term_id`, but `types/database.types.ts` lists both. The generated types are out of date. When the student Grades page switches from mock data to Supabase it cannot filter `v_grades` by `student_id`: regenerate the types, then either add the columns to the view or query through `grades` and its joins.
+- Still not in the repo: the SQL definitions of the 4 views. Export them with the `pg_views` query in Part B and save to `docs/database/`.
+- Not tested yet: TC-16 (anonymous), TC-17 (role change), payments, enrollments and document_requests isolation.
