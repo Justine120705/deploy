@@ -9,7 +9,7 @@ export default async function CashierClearancePage() {
     <DashboardShell
       profile={profile}
       title="Finance Clearance"
-      subtitle={`Cashier's Office · ${CASHIER_TERM} · one clearance item per student, cleared automatically`}
+      subtitle={`Cashier's Office, ${CASHIER_TERM}. One clearance item per student, cleared automatically.`}
     >
       <ClearanceView />
     </DashboardShell>

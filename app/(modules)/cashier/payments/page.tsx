@@ -10,10 +10,10 @@ export default async function CashierPaymentsPage() {
     <DashboardShell
       profile={profile}
       title="Payments"
-      subtitle={`Cashier's Office · ${CASHIER_TERM} · payments are logged by the Cashier (no online gateway)`}
+      subtitle={`Cashier's Office, ${CASHIER_TERM}. The cashier logs each payment by hand.`}
       actions={
         <LinkButton href="#record" icon="check">
-          Log payment
+          Log a payment
         </LinkButton>
       }
     >

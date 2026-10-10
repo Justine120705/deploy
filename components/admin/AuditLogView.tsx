@@ -2,16 +2,13 @@
 
 import { useId, useMemo, useState } from 'react'
 import TableCard from '@/components/admin/TableCard'
-import { Icon } from '@/components/layout/Icon'
 import {
   Badge,
   Button,
-  Card,
   EmptyRow,
-  HUE_TEXT,
   Input,
   Select,
-  StatCard,
+  SummaryStrip,
   TableBody,
   TableCell,
   TableHead,
@@ -59,50 +56,49 @@ export default function AuditLogView({ rows }: { rows: AuditRow[] }) {
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatCard label="Entries" value={rows.length} hint="recorded so far" />
-        <StatCard label="Inserts" value={<span className={HUE_TEXT.teal}>{count('Insert')}</span>} hint="new records" />
-        <StatCard label="Updates" value={<span className={HUE_TEXT.amber}>{count('Update')}</span>} hint="changes" />
-        <StatCard label="Deletes" value={count('Delete')} hint="records" />
-      </div>
+    <div className="flex flex-col gap-6">
+      <SummaryStrip
+        items={[
+          { label: 'Entries', value: rows.length, hint: 'recorded so far' },
+          { label: 'Inserts', value: count('Insert'), hint: 'new records', hue: 'teal' },
+          { label: 'Updates', value: count('Update'), hint: 'changes', hue: 'amber' },
+          { label: 'Deletes', value: count('Delete'), hint: 'records' },
+        ]}
+      />
 
-      <div className="flex flex-wrap items-end gap-3">
-        <div className="min-w-[200px] flex-1">
-          <Input
-            id={`${uid}-search`}
-            label="Search entries"
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-wrap items-end gap-3 border-b border-edge pb-4">
+          <div className="min-w-[200px] flex-1">
+            <Input
+              id={`${uid}-search`}
+              label="Search entries"
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+          </div>
+          <div className="w-full sm:w-48">
+            <Select id={`${uid}-action`} label="Action" value={action} onChange={(e) => setAction(e.target.value)}>
+              <option value="">All actions</option>
+              <option value="Insert">Insert</option>
+              <option value="Update">Update</option>
+              <option value="Delete">Delete</option>
+            </Select>
+          </div>
+          <Button variant="outline" onClick={exportCsv} className="max-sm:w-full" disabled={visible.length === 0}>
+            Export CSV
+          </Button>
         </div>
-        <div className="w-full sm:w-48">
-          <Select id={`${uid}-action`} label="Action" value={action} onChange={(e) => setAction(e.target.value)}>
-            <option value="">All actions</option>
-            <option value="Insert">Insert</option>
-            <option value="Update">Update</option>
-            <option value="Delete">Delete</option>
-          </Select>
-        </div>
-        <Button onClick={exportCsv} className="max-lg:h-11 max-sm:w-full" disabled={visible.length === 0}>
-          <Icon name="check" className="mr-2 size-4" />
-          Export CSV
-        </Button>
-      </div>
 
-      {/* Phone: one card per entry. */}
-      <ul className="flex flex-col gap-3 md:hidden">
-        {visible.length === 0 && (
-          <li>
-            <Card className="p-5 text-center text-sm font-medium text-muted">No entries match.</Card>
-          </li>
-        )}
-        {visible.map((r) => (
-          <li key={r.id}>
-            <Card className="flex flex-col gap-2 p-4">
+        {/* Phone: one hairline list, one entry per block. */}
+        <ul className="divide-y divide-edge overflow-hidden rounded-lg border border-edge bg-card md:hidden">
+          {visible.length === 0 && (
+            <li className="px-4 py-8 text-center text-sm text-muted">No entries match.</li>
+          )}
+          {visible.map((r) => (
+            <li key={r.id} className="flex flex-col gap-1 px-4 py-3">
               <div className="flex items-start justify-between gap-2">
-                <p className="font-bold">{r.actor}</p>
+                <p className="font-semibold">{r.actor}</p>
                 <Badge tone={ACTION_TONE[r.action]}>{r.action}</Badge>
               </div>
               <p className="text-sm text-muted">{r.when}</p>
@@ -115,42 +111,46 @@ export default function AuditLogView({ rows }: { rows: AuditRow[] }) {
               <p className="text-sm">
                 <span className="text-muted">Details:</span> {r.details}
               </p>
-            </Card>
-          </li>
-        ))}
-      </ul>
+            </li>
+          ))}
+        </ul>
+        <p className="text-sm text-muted md:hidden">
+          Showing {visible.length} of {rows.length} entries. The log cannot be edited or deleted.
+        </p>
 
-      <div className="max-md:hidden">
-        <TableCard
-          minWidth="min-w-[860px]"
-          footer={`Showing ${visible.length} of ${rows.length} entries. The log cannot be edited or deleted.`}
-        >
-          <TableHeader>
-            <TableRow className="hover:bg-transparent">
-              <TableHead scope="col">Time</TableHead>
-              <TableHead scope="col">Actor</TableHead>
-              <TableHead scope="col">Action</TableHead>
-              <TableHead scope="col">Table</TableHead>
-              <TableHead scope="col">Record</TableHead>
-              <TableHead scope="col">Details</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {visible.length === 0 && <EmptyRow colSpan={6}>No entries match.</EmptyRow>}
-            {visible.map((r) => (
-              <TableRow key={r.id}>
-                <TableCell className="whitespace-nowrap font-normal text-muted">{r.when}</TableCell>
-                <TableCell>{r.actor}</TableCell>
-                <TableCell>
-                  <Badge tone={ACTION_TONE[r.action]}>{r.action}</Badge>
-                </TableCell>
-                <TableCell className="font-normal text-muted">{r.table}</TableCell>
-                <TableCell className="font-normal text-muted">{r.record}</TableCell>
-                <TableCell className="font-normal text-muted">{r.details}</TableCell>
+        <div className="max-md:hidden">
+          <TableCard
+            title="Entries"
+            minWidth="min-w-[860px]"
+            footer={`Showing ${visible.length} of ${rows.length} entries. The log cannot be edited or deleted.`}
+          >
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                <TableHead scope="col">Time</TableHead>
+                <TableHead scope="col">Actor</TableHead>
+                <TableHead scope="col">Action</TableHead>
+                <TableHead scope="col">Table</TableHead>
+                <TableHead scope="col">Record</TableHead>
+                <TableHead scope="col">Details</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </TableCard>
+            </TableHeader>
+            <TableBody>
+              {visible.length === 0 && <EmptyRow colSpan={6}>No entries match.</EmptyRow>}
+              {visible.map((r) => (
+                <TableRow key={r.id}>
+                  <TableCell className="whitespace-nowrap font-normal text-muted">{r.when}</TableCell>
+                  <TableCell>{r.actor}</TableCell>
+                  <TableCell>
+                    <Badge tone={ACTION_TONE[r.action]}>{r.action}</Badge>
+                  </TableCell>
+                  <TableCell className="font-normal text-muted">{r.table}</TableCell>
+                  <TableCell className="font-normal text-muted">{r.record}</TableCell>
+                  <TableCell className="font-normal text-muted">{r.details}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </TableCard>
+        </div>
       </div>
     </div>
   )

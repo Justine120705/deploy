@@ -1,6 +1,7 @@
+import Link from 'next/link'
 import { requireRole } from '@/lib/auth/session'
 import DashboardShell from '@/components/layout/DashboardShell'
-import { EmptyRow, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui'
+import { EmptyRow, Section, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui'
 import { DeptStats } from '@/components/department/DeptStats'
 import { HoldFlagBadge, ItemStatusBadge } from '@/components/department/DeptBadges'
 import { RecordList } from '@/components/department/RecordList'
@@ -12,6 +13,9 @@ import {
   studentByNo,
 } from '@/lib/mock/department-data'
 
+const LINK =
+  'inline-flex items-center text-sm font-semibold text-accent-foreground underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring max-lg:min-h-11'
+
 export default async function DepartmentDashboardPage() {
   const profile = await requireRole('Department')
 
@@ -22,20 +26,24 @@ export default async function DepartmentDashboardPage() {
 
   return (
     <DashboardShell profile={profile} title="Dashboard" subtitle={`${DEPT_NAME} · 1st Sem 2026-2027`}>
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-6">
         <DeptStats
           stats={[
+            { label: 'Items to review', value: pending.length, hint: 'waiting for you', hue: pending.length ? 'amber' : undefined },
+            { label: 'Active holds', value: activeHolds.length, hint: 'block approval', hue: activeHolds.length ? 'rose' : undefined },
+            { label: 'Cleared', value: cleared.length, hint: 'items approved' },
             { label: 'Students', value: DEPT_STUDENTS.length, hint: 'in clearance' },
-            { label: 'Pending items', value: pending.length, hint: 'to review', hue: 'amber' },
-            { label: 'Cleared', value: cleared.length, hint: 'items', hue: 'teal' },
-            { label: 'Active holds', value: activeHolds.length, hint: 'academic', hue: 'rose' },
           ]}
         />
 
-        <section aria-labelledby="pending-heading" className="flex flex-col gap-2">
-          <h2 id="pending-heading" className="text-base font-bold">
-            Pending clearance items
-          </h2>
+        <Section
+          title="Items to review"
+          action={
+            <Link href="/department/clearance" className={LINK}>
+              Review items
+            </Link>
+          }
+        >
           <div className="hidden md:block">
             <Table>
               <TableHeader>
@@ -43,7 +51,7 @@ export default async function DepartmentDashboardPage() {
                   <TableHead scope="col">Student no.</TableHead>
                   <TableHead scope="col">Student name</TableHead>
                   <TableHead scope="col">Program</TableHead>
-                  <TableHead scope="col">Clearance item</TableHead>
+                  <TableHead scope="col">Status</TableHead>
                   <TableHead scope="col">Hold</TableHead>
                   <TableHead scope="col">Requested</TableHead>
                 </TableRow>
@@ -54,42 +62,45 @@ export default async function DepartmentDashboardPage() {
                   const s = studentByNo(item.studentNo)
                   return (
                     <TableRow key={item.studentNo}>
-                      <TableCell className="font-normal text-muted">{s.studentNo}</TableCell>
+                      <TableCell className="text-muted">{s.studentNo}</TableCell>
                       <TableCell className="font-semibold">{s.name}</TableCell>
-                      <TableCell className="font-normal text-muted">{s.program}</TableCell>
+                      <TableCell className="text-muted">{s.program}</TableCell>
                       <TableCell><ItemStatusBadge status={item.status} /></TableCell>
                       <TableCell><HoldFlagBadge active={holdNos.has(item.studentNo)} /></TableCell>
-                      <TableCell className="font-normal text-muted">{item.requestedOn}</TableCell>
+                      <TableCell className="text-muted">{item.requestedOn}</TableCell>
                     </TableRow>
                   )
                 })}
               </TableBody>
             </Table>
           </div>
-          <div className="surface rounded-2xl border border-edge bg-card shadow-elev-sm md:hidden">
-            <RecordList
-              empty="No pending clearance items."
-              items={pending.map((item) => {
-                const s = studentByNo(item.studentNo)
-                return {
-                  key: item.studentNo,
-                  title: s.name,
-                  subtitle: `${s.studentNo} · ${s.program}`,
-                  badge: <ItemStatusBadge status={item.status} />,
-                  fields: [
-                    { label: 'Hold', value: <HoldFlagBadge active={holdNos.has(item.studentNo)} /> },
-                    { label: 'Requested', value: item.requestedOn },
-                  ],
-                }
-              })}
-            />
-          </div>
-        </section>
+          <RecordList
+            className="md:hidden"
+            empty="No pending clearance items."
+            items={pending.map((item) => {
+              const s = studentByNo(item.studentNo)
+              return {
+                key: item.studentNo,
+                title: s.name,
+                subtitle: `${s.studentNo} · ${s.program}`,
+                badge: <ItemStatusBadge status={item.status} />,
+                fields: [
+                  { label: 'Hold', value: <HoldFlagBadge active={holdNos.has(item.studentNo)} /> },
+                  { label: 'Requested', value: item.requestedOn },
+                ],
+              }
+            })}
+          />
+        </Section>
 
-        <section aria-labelledby="holds-heading" className="flex flex-col gap-2">
-          <h2 id="holds-heading" className="text-base font-bold">
-            Active academic holds
-          </h2>
+        <Section
+          title="Active holds"
+          action={
+            <Link href="/department/holds" className={LINK}>
+              Manage holds
+            </Link>
+          }
+        >
           <div className="hidden md:block">
             <Table>
               <TableHeader>
@@ -107,36 +118,35 @@ export default async function DepartmentDashboardPage() {
                   const s = studentByNo(h.studentNo)
                   return (
                     <TableRow key={h.id}>
-                      <TableCell className="font-normal text-muted">{s.studentNo}</TableCell>
+                      <TableCell className="text-muted">{s.studentNo}</TableCell>
                       <TableCell className="font-semibold">{s.name}</TableCell>
-                      <TableCell className="font-normal text-muted">{h.reason}</TableCell>
-                      <TableCell className="font-normal text-muted">{h.placedBy}</TableCell>
-                      <TableCell className="font-normal text-muted">{h.placedOn}</TableCell>
+                      <TableCell>{h.reason}</TableCell>
+                      <TableCell className="text-muted">{h.placedBy}</TableCell>
+                      <TableCell className="text-muted">{h.placedOn}</TableCell>
                     </TableRow>
                   )
                 })}
               </TableBody>
             </Table>
           </div>
-          <div className="surface rounded-2xl border border-edge bg-card shadow-elev-sm md:hidden">
-            <RecordList
-              empty="No active academic holds."
-              items={activeHolds.map((h) => {
-                const s = studentByNo(h.studentNo)
-                return {
-                  key: h.id,
-                  title: s.name,
-                  subtitle: s.studentNo,
-                  fields: [
-                    { label: 'Reason', value: h.reason },
-                    { label: 'Placed by', value: h.placedBy },
-                    { label: 'Placed on', value: h.placedOn },
-                  ],
-                }
-              })}
-            />
-          </div>
-        </section>
+          <RecordList
+            className="md:hidden"
+            empty="No active academic holds."
+            items={activeHolds.map((h) => {
+              const s = studentByNo(h.studentNo)
+              return {
+                key: h.id,
+                title: s.name,
+                subtitle: s.studentNo,
+                fields: [
+                  { label: 'Reason', value: h.reason },
+                  { label: 'Placed by', value: h.placedBy },
+                  { label: 'Placed on', value: h.placedOn },
+                ],
+              }
+            })}
+          />
+        </Section>
       </div>
     </DashboardShell>
   )

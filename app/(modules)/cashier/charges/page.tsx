@@ -10,10 +10,10 @@ export default async function CashierChargesPage() {
     <DashboardShell
       profile={profile}
       title="Charges"
-      subtitle={`Cashier's Office · ${CASHIER_TERM} · balance = charges minus payments`}
+      subtitle={`Cashier's Office, ${CASHIER_TERM}. Balance is charges minus payments.`}
       actions={
         <LinkButton href="/cashier/payments#record" icon="check">
-          Record payment
+          Log a payment
         </LinkButton>
       }
     >

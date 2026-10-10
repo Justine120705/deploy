@@ -1,12 +1,12 @@
 'use client'
 
 import { createContext, useContext, useState } from 'react'
-import { Button, EmptyRow, StatusBadge, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui'
+import { Button, EmptyRow, Section, StatusBadge, SummaryStrip, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui'
 import { Icon } from '@/components/layout/Icon'
 import { cn } from '@/lib/utils'
 import { REGISTRAR_ENROLLMENTS, type EnrollmentRow } from '@/lib/mock/registrar-data'
 import RowRadio from './RowRadio'
-import StatGrid from './StatGrid'
+import { QueueSheet, QueueTable, StatusLine, StudentCell } from './QueueParts'
 
 type Ctx = {
   rows: EnrollmentRow[]
@@ -51,10 +51,10 @@ export function EnrollmentsActions() {
   const canDecide = current?.status === 'Pending'
   return (
     <div className="flex gap-2 max-sm:w-full">
-      <Button variant="outline" disabled={!canDecide} onClick={() => decide('Rejected')} className="max-lg:h-11 max-sm:flex-1">
+      <Button variant="outline" disabled={!canDecide} onClick={() => decide('Rejected')} className="max-sm:flex-1">
         Reject
       </Button>
-      <Button disabled={!canDecide} onClick={() => decide('Approved')} className="gap-2 max-lg:h-11 max-sm:flex-1">
+      <Button disabled={!canDecide} onClick={() => decide('Approved')} className="max-sm:flex-1">
         <Icon name="check" className="size-4" />
         Approve enrollment
       </Button>
@@ -65,6 +65,7 @@ export function EnrollmentsActions() {
 export function EnrollmentsBody() {
   const { rows, selected, select, current, note } = useReview()
   const count = (s: string) => rows.filter((r) => r.status === s).length
+  const pending = count('Pending')
   const hint = !current
     ? 'Select a pending enrollment to approve or reject it.'
     : current.status === 'Pending'
@@ -72,52 +73,49 @@ export function EnrollmentsBody() {
       : `${current.name} is already ${current.status.toLowerCase()}, so there is nothing to decide.`
 
   return (
-    <div className="flex flex-col gap-4">
-      <StatGrid
+    <div className="flex flex-col gap-6">
+      <SummaryStrip
         items={[
-          { label: 'Submitted', value: rows.length, hint: 'this term' },
-          { label: 'Approved', value: count('Approved'), hint: 'enrolled', hue: count('Approved') ? 'teal' : undefined },
-          { label: 'Pending', value: count('Pending'), hint: 'needs review', hue: count('Pending') ? 'amber' : undefined },
-          { label: 'Current term', value: '1st Sem', hint: '2026-2027' },
+          { label: 'Needs review', value: pending, hint: 'pending', hue: pending ? 'amber' : undefined },
+          { label: 'Approved', value: count('Approved'), hint: 'enrolled' },
+          { label: 'Rejected', value: count('Rejected'), hint: 'sent back' },
         ]}
       />
-      <p aria-live="polite" className="px-1 text-sm text-muted">
-        {note || hint}
-      </p>
-      <div>
-        <Table className="min-w-[720px]">
-          <TableHeader>
-            <tr>
-              <TableHead className="w-12"><span className="sr-only">Select</span></TableHead>
-              <TableHead>Student no.</TableHead>
-              <TableHead>Student name</TableHead>
-              <TableHead>Program</TableHead>
-              <TableHead>Subjects</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Submitted on</TableHead>
-            </tr>
-          </TableHeader>
-          <TableBody>
-            {rows.length === 0 && <EmptyRow colSpan={7}>No enrollments submitted this term.</EmptyRow>}
-            {rows.map((r) => (
-              <TableRow key={r.id} className={cn(selected === r.id && 'bg-accent/60')}>
-                <TableCell className="w-12 px-1.5">
-                  <RowRadio name="enrollment" checked={selected === r.id} onChange={() => select(r.id)} label={`Select ${r.name}`} />
-                </TableCell>
-                <TableCell className="font-normal text-muted">{r.studentNo}</TableCell>
-                <TableCell className="font-semibold">{r.name}</TableCell>
-                <TableCell className="font-normal text-muted">{r.program}</TableCell>
-                <TableCell className="font-normal text-muted">{r.subjects} subjects</TableCell>
-                <TableCell><StatusBadge status={r.status} /></TableCell>
-                <TableCell className="font-normal text-muted">{r.submitted}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-        <p className="px-1 pt-3 text-sm text-muted">
-          Showing {rows.length} of {rows.length} enrollments
-        </p>
-      </div>
+
+      <Section title="Submitted enrollments">
+        <QueueSheet
+          toolbar={<StatusLine>{note || hint}</StatusLine>}
+          footer={<p className="text-sm text-muted">{rows.length} {rows.length === 1 ? 'enrollment' : 'enrollments'} this term</p>}
+        >
+          <QueueTable minWidth="min-w-[680px]">
+            <TableHeader>
+              <tr>
+                <TableHead className="w-12"><span className="sr-only">Select</span></TableHead>
+                <TableHead>Student</TableHead>
+                <TableHead>Program</TableHead>
+                <TableHead>Subjects</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Submitted</TableHead>
+              </tr>
+            </TableHeader>
+            <TableBody>
+              {rows.length === 0 && <EmptyRow colSpan={6}>No enrollments submitted this term.</EmptyRow>}
+              {rows.map((r) => (
+                <TableRow key={r.id} className={cn(selected === r.id && 'bg-accent')}>
+                  <TableCell className="w-12 px-1.5">
+                    <RowRadio name="enrollment" checked={selected === r.id} onChange={() => select(r.id)} label={`Select ${r.name}`} />
+                  </TableCell>
+                  <TableCell><StudentCell name={r.name} sub={r.studentNo} /></TableCell>
+                  <TableCell className="text-muted">{r.program}</TableCell>
+                  <TableCell className="text-muted">{r.subjects} subjects</TableCell>
+                  <TableCell><StatusBadge status={r.status} /></TableCell>
+                  <TableCell className="text-muted">{r.submitted}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </QueueTable>
+        </QueueSheet>
+      </Section>
     </div>
   )
 }

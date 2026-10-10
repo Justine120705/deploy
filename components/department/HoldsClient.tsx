@@ -1,12 +1,11 @@
 'use client'
 
 import { useId, useState } from 'react'
-import { Button, Card, CardHeader, EmptyRow, Input, Select, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui'
+import { Button, EmptyRow, Input, Section, Select, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui'
 import { DeptStats } from '@/components/department/DeptStats'
 import { HoldStatusBadge } from '@/components/department/DeptBadges'
 import { RecordList, type RecordItem } from '@/components/department/RecordList'
 import { DEPT_HOLDS, DEPT_STUDENTS, DEPT_USER, studentByNo, todayLabel, type DeptHold } from '@/lib/mock/department-data'
-
 
 // Mock-only hold state: nothing is saved. A hold always shows its reason and who placed it.
 export default function HoldsClient() {
@@ -45,14 +44,12 @@ export default function HoldsClient() {
 
   const active = holds.filter((h) => h.status === 'Active')
   const lifted = holds.filter((h) => h.status === 'Lifted')
-  const affected = new Set(holds.map((h) => h.studentNo)).size
+  const affected = new Set(active.map((h) => h.studentNo)).size
 
   function liftButton(h: DeptHold) {
-    if (h.status !== 'Active') return <span className="text-sm text-muted">Lifted</span>
     return (
       <Button
         variant="outline"
-        className="h-11 lg:h-10"
         aria-label={`Lift hold for ${studentByNo(h.studentNo).name}`}
         onClick={() => lift(h.id)}
       >
@@ -61,7 +58,23 @@ export default function HoldsClient() {
     )
   }
 
-  const mobile: RecordItem[] = holds.map((h) => {
+  const activeMobile: RecordItem[] = active.map((h) => {
+    const s = studentByNo(h.studentNo)
+    return {
+      key: h.id,
+      title: s.name,
+      subtitle: s.studentNo,
+      badge: <HoldStatusBadge status={h.status} />,
+      fields: [
+        { label: 'Reason', value: h.reason },
+        { label: 'Placed by', value: h.placedBy },
+        { label: 'Placed on', value: h.placedOn },
+      ],
+      footer: liftButton(h),
+    }
+  })
+
+  const liftedMobile: RecordItem[] = lifted.map((h) => {
     const s = studentByNo(h.studentNo)
     return {
       key: h.id,
@@ -74,25 +87,26 @@ export default function HoldsClient() {
         { label: 'Placed on', value: h.placedOn },
         { label: 'Lifted on', value: h.liftedOn ?? 'Not lifted' },
       ],
-      footer: h.status === 'Active' ? liftButton(h) : undefined,
     }
   })
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       <DeptStats
         stats={[
-          { label: 'Active', value: active.length, hint: 'hold', hue: 'rose' },
+          { label: 'Active holds', value: active.length, hint: 'block approval', hue: active.length ? 'rose' : undefined },
+          { label: 'Students on hold', value: affected, hint: 'right now' },
           { label: 'Lifted', value: lifted.length, hint: 'this term' },
           { label: 'Placed', value: holds.length, hint: 'this term' },
-          { label: 'Students', value: affected, hint: 'affected' },
         ]}
       />
 
-      <Card className="p-5">
-        <CardHeader title="Place a hold" icon="holds" hue="rose" />
+      <Section
+        title="Place a hold"
+        description={`Placed by ${DEPT_USER}. Holds are academic only; finance is handled by the Cashier.`}
+      >
         <form
-          className="mt-4 grid gap-4 md:grid-cols-[1fr_1.5fr_auto] md:items-start"
+          className="grid gap-3 md:grid-cols-[1fr_1.5fr_auto] md:items-start"
           onSubmit={(e) => {
             e.preventDefault()
             place()
@@ -120,52 +134,83 @@ export default function HoldsClient() {
             error={errors.reason}
             onChange={(e) => setReason(e.target.value)}
           />
-          <Button type="submit" className="h-11 md:mt-[26px]">
+          <Button type="submit" className="md:mt-[26px]">
             Place hold
           </Button>
         </form>
-        <p className="mt-3 text-sm text-muted">
-          Placed by {DEPT_USER}. Holds are academic only; finance is handled by the Cashier.
-        </p>
-      </Card>
+      </Section>
 
-      <div className="hidden md:block">
-        <Table>
-          <TableHeader>
-            <TableRow className="hover:bg-transparent">
-              <TableHead scope="col">Student no.</TableHead>
-              <TableHead scope="col">Student name</TableHead>
-              <TableHead scope="col">Reason</TableHead>
-              <TableHead scope="col">Placed by</TableHead>
-              <TableHead scope="col">Placed on</TableHead>
-              <TableHead scope="col">Status</TableHead>
-              <TableHead scope="col">Lifted on</TableHead>
-              <TableHead scope="col">Action</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {holds.length === 0 && <EmptyRow colSpan={8}>No holds placed.</EmptyRow>}
-            {holds.map((h) => {
-              const s = studentByNo(h.studentNo)
-              return (
-                <TableRow key={h.id}>
-                  <TableCell className="font-normal text-muted">{s.studentNo}</TableCell>
-                  <TableCell className="font-semibold">{s.name}</TableCell>
-                  <TableCell className="font-normal text-muted">{h.reason}</TableCell>
-                  <TableCell className="font-normal text-muted">{h.placedBy}</TableCell>
-                  <TableCell className="font-normal text-muted">{h.placedOn}</TableCell>
-                  <TableCell><HoldStatusBadge status={h.status} /></TableCell>
-                  <TableCell className="font-normal text-muted">{h.liftedOn ?? 'Not lifted'}</TableCell>
-                  <TableCell>{liftButton(h)}</TableCell>
-                </TableRow>
-              )
-            })}
-          </TableBody>
-        </Table>
-      </div>
-      <div className="surface rounded-2xl border border-edge bg-card shadow-elev-sm md:hidden">
-        <RecordList items={mobile} empty="No holds placed." />
-      </div>
+      <Section title="Active holds">
+        <div className="hidden md:block">
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                <TableHead scope="col">Student</TableHead>
+                <TableHead scope="col">Reason</TableHead>
+                <TableHead scope="col">Placed by</TableHead>
+                <TableHead scope="col">Placed on</TableHead>
+                <TableHead scope="col">Status</TableHead>
+                <TableHead scope="col">Action</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {active.length === 0 && <EmptyRow colSpan={6}>No active holds.</EmptyRow>}
+              {active.map((h) => {
+                const s = studentByNo(h.studentNo)
+                return (
+                  <TableRow key={h.id}>
+                    <TableCell>
+                      <span className="block font-semibold">{s.name}</span>
+                      <span className="block text-xs text-muted">{s.studentNo}</span>
+                    </TableCell>
+                    <TableCell className="max-w-72 whitespace-normal">{h.reason}</TableCell>
+                    <TableCell className="text-muted">{h.placedBy}</TableCell>
+                    <TableCell className="text-muted">{h.placedOn}</TableCell>
+                    <TableCell><HoldStatusBadge status={h.status} /></TableCell>
+                    <TableCell>{liftButton(h)}</TableCell>
+                  </TableRow>
+                )
+              })}
+            </TableBody>
+          </Table>
+        </div>
+        <RecordList className="md:hidden" items={activeMobile} empty="No active holds." />
+      </Section>
+
+      <Section title="Lifted holds">
+        <div className="hidden md:block">
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                <TableHead scope="col">Student</TableHead>
+                <TableHead scope="col">Reason</TableHead>
+                <TableHead scope="col">Placed by</TableHead>
+                <TableHead scope="col">Placed on</TableHead>
+                <TableHead scope="col">Lifted on</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {lifted.length === 0 && <EmptyRow colSpan={5}>No lifted holds yet.</EmptyRow>}
+              {lifted.map((h) => {
+                const s = studentByNo(h.studentNo)
+                return (
+                  <TableRow key={h.id}>
+                    <TableCell>
+                      <span className="block font-semibold">{s.name}</span>
+                      <span className="block text-xs text-muted">{s.studentNo}</span>
+                    </TableCell>
+                    <TableCell className="max-w-72 whitespace-normal">{h.reason}</TableCell>
+                    <TableCell className="text-muted">{h.placedBy}</TableCell>
+                    <TableCell className="text-muted">{h.placedOn}</TableCell>
+                    <TableCell className="text-muted">{h.liftedOn ?? 'Not lifted'}</TableCell>
+                  </TableRow>
+                )
+              })}
+            </TableBody>
+          </Table>
+        </div>
+        <RecordList className="md:hidden" items={liftedMobile} empty="No lifted holds yet." />
+      </Section>
 
       <p className="text-sm text-muted">Changes on this screen are examples and are not saved.</p>
     </div>

@@ -3,11 +3,11 @@
 import { useState } from 'react'
 import {
   Button,
-  Card,
-  CardHeader,
+  Section,
   EmptyRow,
   Input,
   Select,
+  SummaryStrip,
   Table,
   TableBody,
   TableCell,
@@ -23,7 +23,6 @@ import {
   formatPeso,
   type CashierPayment,
 } from '@/lib/mock/cashier-data'
-import { StatRow } from './StatRow'
 
 const NUM = 'text-right tabular-nums'
 
@@ -77,9 +76,9 @@ export default function PaymentsView() {
   }
 
   return (
-    <>
-      <StatRow
-        stats={[
+    <div className="flex flex-col gap-8">
+      <SummaryStrip
+        items={[
           { label: 'Payments', value: String(payments.length), hint: 'logged this term' },
           { label: 'Total collected', value: formatPeso(total), hint: 'this term', hue: 'teal' },
           {
@@ -87,110 +86,116 @@ export default function PaymentsView() {
             value: last ? formatPaidOn(last.paidOn).replace(/, \d{4}$/, '') : 'None',
             hint: last ? last.paidOn.slice(0, 4) : 'no payments yet',
           },
-          {
-            label: 'Average',
-            value: payments.length ? formatPeso(Math.round(total / payments.length)) : formatPeso(0),
-            hint: 'per payment',
-          },
         ]}
       />
 
-      <Card id="record" className="mb-4 scroll-mt-4 p-5">
-        <CardHeader title="Log a payment" icon="payments" hue="teal" />
-        <p className="mt-1 text-sm text-muted">
-          Payments are logged by hand after the student pays at the Cashier&apos;s Office. There is no online gateway.
-        </p>
-        {owing.length === 0 ? (
-          <p className="mt-4 text-sm font-medium">Every charge is paid. There is nothing to log.</p>
-        ) : (
-          <form onSubmit={submit} noValidate className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Select
-              id="pay-charge"
-              label="Charge"
-              value={chargeId}
-              onChange={(e) => setChargeId(e.target.value)}
-              error={errors.charge}
+      <Section
+        title="Log a payment"
+        description="Log each payment by hand after the student pays at the Cashier's Office. There is no online gateway."
+      >
+        <div id="record" className="scroll-mt-4 rounded-lg border border-edge bg-card p-4 lg:p-5">
+          {owing.length === 0 ? (
+            <p className="text-sm font-medium">Every charge is paid. There is nothing to log.</p>
+          ) : (
+            <form
+              onSubmit={submit}
+              noValidate
+              className="grid gap-4 sm:grid-cols-2 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto] lg:items-start"
             >
-              <option value="">Choose a charge</option>
-              {owing.map((r) => (
-                <option key={r.chargeId} value={r.chargeId}>
-                  {r.studentName}, {r.feeType} ({formatPeso(r.balance)} left)
-                </option>
-              ))}
-            </Select>
-            <Input
-              id="pay-amount"
-              label="Amount (PHP)"
-              type="number"
-              inputMode="decimal"
-              min="0"
-              step="0.01"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              error={errors.amount}
-            />
-            <Input
-              id="pay-receipt"
-              label="Receipt no."
-              value={receipt}
-              onChange={(e) => setReceipt(e.target.value)}
-              error={errors.receipt}
-            />
-            <Input
-              id="pay-date"
-              label="Date paid"
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              error={errors.date}
-            />
-            <div className="flex flex-wrap items-center gap-3 sm:col-span-2 lg:col-span-4">
-              <Button type="submit" className="max-lg:h-11">
+              <div className="sm:col-span-2 lg:col-span-1">
+                <Select
+                  id="pay-charge"
+                  label="Charge"
+                  value={chargeId}
+                  onChange={(e) => setChargeId(e.target.value)}
+                  error={errors.charge}
+                >
+                  <option value="">Choose a charge</option>
+                  {owing.map((r) => (
+                    <option key={r.chargeId} value={r.chargeId}>
+                      {r.studentName}, {r.feeType} ({formatPeso(r.balance)} left)
+                    </option>
+                  ))}
+                </Select>
+              </div>
+              <Input
+                id="pay-amount"
+                label="Amount (PHP)"
+                type="number"
+                inputMode="decimal"
+                min="0"
+                step="0.01"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                error={errors.amount}
+              />
+              <Input
+                id="pay-receipt"
+                label="Receipt no."
+                value={receipt}
+                onChange={(e) => setReceipt(e.target.value)}
+                error={errors.receipt}
+              />
+              <Input
+                id="pay-date"
+                label="Date paid"
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                error={errors.date}
+              />
+              <Button type="submit" className="sm:col-span-2 lg:col-span-1 lg:mt-[26px]">
                 Log payment
               </Button>
-              {saved && (
-                <p role="status" className="text-sm font-medium text-hue-teal-strong">
-                  {saved}
-                </p>
-              )}
-            </div>
-          </form>
-        )}
-      </Card>
+            </form>
+          )}
+          {saved && (
+            <p role="status" className="mt-4 text-sm font-medium text-hue-teal-strong">
+              {saved}
+            </p>
+          )}
+        </div>
+      </Section>
 
-      <Table className="min-w-[420px]">
-        <TableHeader>
-          <tr>
-            <TableHead>Receipt no.</TableHead>
-            <TableHead className="hidden md:table-cell">Student no.</TableHead>
-            <TableHead>Student name</TableHead>
-            <TableHead className="hidden md:table-cell">Charge</TableHead>
-            <TableHead className={NUM}>Amount</TableHead>
-            <TableHead className="hidden sm:table-cell">Date</TableHead>
-            <TableHead className="hidden lg:table-cell">Recorded by</TableHead>
-          </tr>
-        </TableHeader>
-        <TableBody>
-          {sorted.length === 0 && <EmptyRow colSpan={7}>No payments logged yet.</EmptyRow>}
-          {sorted.map((p) => {
-            const c = rows.find((r) => r.chargeId === p.chargeId)
-            return (
-              <TableRow key={p.receiptNo}>
-                <TableCell className="font-semibold">{p.receiptNo}</TableCell>
-                <TableCell className="hidden font-normal text-muted md:table-cell">{c?.studentNo}</TableCell>
-                <TableCell className="font-normal text-muted">{c?.studentName}</TableCell>
-                <TableCell className="hidden font-normal text-muted md:table-cell">{c?.feeType}</TableCell>
-                <TableCell className={`${NUM} font-normal text-muted`}>{formatPeso(p.amount)}</TableCell>
-                <TableCell className="hidden font-normal text-muted sm:table-cell">{formatPaidOn(p.paidOn)}</TableCell>
-                <TableCell className="hidden font-normal text-muted lg:table-cell">{p.recordedBy}</TableCell>
-              </TableRow>
-            )
-          })}
-        </TableBody>
-      </Table>
-      <p className="mt-3 px-2 text-sm text-muted">
-        The Cashier&apos;s Office clearance item clears automatically once every charge is Cleared or Waived.
-      </p>
-    </>
+      <Section
+        title="Payment log"
+        description="The Cashier's Office item clears automatically once every charge is Cleared or Waived."
+      >
+        <Table className="min-w-[420px]">
+          <TableHeader>
+            <tr>
+              <TableHead>Receipt no.</TableHead>
+              <TableHead>Student</TableHead>
+              <TableHead className="hidden md:table-cell">Charge</TableHead>
+              <TableHead className={NUM}>Amount</TableHead>
+              <TableHead className="hidden sm:table-cell">Date</TableHead>
+              <TableHead className="hidden lg:table-cell">Recorded by</TableHead>
+            </tr>
+          </TableHeader>
+          <TableBody>
+            {sorted.length === 0 && <EmptyRow colSpan={6}>No payments logged yet.</EmptyRow>}
+            {sorted.map((p) => {
+              const c = rows.find((r) => r.chargeId === p.chargeId)
+              return (
+                <TableRow key={p.receiptNo}>
+                  <TableCell className="font-medium">{p.receiptNo}</TableCell>
+                  <TableCell>
+                    <span className="block">{c?.studentName}</span>
+                    <span className="block text-xs text-muted">
+                      {c?.studentNo}
+                      <span className="sm:hidden">, {formatPaidOn(p.paidOn)}</span>
+                    </span>
+                  </TableCell>
+                  <TableCell className="hidden text-muted md:table-cell">{c?.feeType}</TableCell>
+                  <TableCell className={`${NUM} font-medium`}>{formatPeso(p.amount)}</TableCell>
+                  <TableCell className="hidden text-muted sm:table-cell">{formatPaidOn(p.paidOn)}</TableCell>
+                  <TableCell className="hidden text-muted lg:table-cell">{p.recordedBy}</TableCell>
+                </TableRow>
+              )
+            })}
+          </TableBody>
+        </Table>
+      </Section>
+    </div>
   )
 }

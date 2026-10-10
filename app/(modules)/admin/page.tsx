@@ -4,15 +4,14 @@ import TableCard from '@/components/admin/TableCard'
 import { requireRole } from '@/lib/auth/session'
 import {
   Badge,
-  StatCard,
+  SummaryStrip,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
-  HUE_TEXT,
 } from '@/components/ui'
-import { auditLogs, profiles, roles } from '@/lib/mock-data'
+import { auditLogs, profiles } from '@/lib/mock-data'
 import { getAuditRows, getRoleCounts } from '@/lib/mock/admin-data'
 
 const ACTION_TONE = { Insert: 'success', Update: 'warning', Delete: 'danger' } as const
@@ -21,29 +20,23 @@ export default async function AdminDashboardPage() {
   const profile = await requireRole('Admin')
 
   const active = profiles.filter((p) => p.is_active).length
+  const inactive = profiles.length - active
   const roleCounts = getRoleCounts()
   const recent = getAuditRows().slice(0, 3)
-  const roleNames = roles.map((r) => r.role_name)
 
   return (
-    <DashboardShell profile={profile} title="Dashboard" subtitle="System overview: accounts and recent activity">
-      <div className="flex flex-col gap-4">
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <StatCard label="Total users" value={profiles.length} hint="accounts" />
-          <StatCard
-            label="Active"
-            value={<span className={HUE_TEXT.teal}>{active}</span>}
-            hint="accounts"
-          />
-          <StatCard
-            label="Roles"
-            value={roles.length}
-            hint={`${roleNames[0]} to ${roleNames[roleNames.length - 1]}`}
-          />
-          <StatCard label="Audit entries" value={auditLogs.length} hint="recorded so far" />
-        </div>
+    <DashboardShell profile={profile} title="Dashboard" subtitle="Accounts and recent activity">
+      <div className="flex flex-col gap-6">
+        <SummaryStrip
+          items={[
+            { label: 'Total users', value: profiles.length, hint: 'accounts' },
+            { label: 'Active', value: active, hint: 'can sign in', hue: 'teal' },
+            { label: 'Inactive', value: inactive, hint: 'deactivated' },
+            { label: 'Audit entries', value: auditLogs.length, hint: 'recorded so far' },
+          ]}
+        />
 
-        <TableCard title="Users by role" minWidth="min-w-[480px]">
+        <TableCard title="Users by role" minWidth="min-w-[420px]">
           <TableHeader>
             <TableRow className="hover:bg-transparent">
               <TableHead scope="col">Role</TableHead>
@@ -69,12 +62,12 @@ export default async function AdminDashboardPage() {
           action={
             <Link
               href="/admin/audit-log"
-              className="inline-flex h-9 items-center rounded-full px-3 text-sm font-semibold text-accent-foreground hover:bg-accent max-lg:h-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+              className="inline-flex h-9 items-center rounded-md px-2 text-sm font-semibold text-accent-foreground hover:bg-accent max-lg:h-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
             >
-              View all
+              View full log
             </Link>
           }
-          minWidth="min-w-[620px]"
+          minWidth="min-w-[560px]"
         >
           <TableHeader>
             <TableRow className="hover:bg-transparent">

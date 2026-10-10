@@ -1,10 +1,9 @@
 import DashboardShell from '@/components/layout/DashboardShell'
 import TableCard from '@/components/admin/TableCard'
-import { Icon } from '@/components/layout/Icon'
 import { requireRole } from '@/lib/auth/session'
 import {
   Button,
-  StatCard,
+  SummaryStrip,
   StatusBadge,
   TableBody,
   TableCell,
@@ -35,38 +34,29 @@ export default async function AdminAcademicSetupPage() {
   const setup = getAcademicSetup()
 
   // Adding records needs the database; until then the buttons are off and the reason is on screen.
-  const actions = (
-    <div className="flex flex-wrap gap-2">
-      <Button variant="outline" disabled aria-describedby="setup-reason" className="max-lg:h-11">
-        Add program
-      </Button>
-      <Button disabled aria-describedby="setup-reason" className="max-lg:h-11">
-        <Icon name="check" className="mr-2 size-4" />
-        Add term
-      </Button>
-    </div>
+  const addButton = (label: string) => (
+    <Button variant="outline" disabled aria-describedby="setup-reason">
+      {label}
+    </Button>
   )
 
   return (
-    <DashboardShell
-      profile={profile}
-      title="Academic Setup"
-      subtitle="Terms, programs, subjects and sections"
-      actions={actions}
-    >
-      <div className="flex flex-col gap-4">
-        <p id="setup-reason" className="px-2 text-sm text-muted">
+    <DashboardShell profile={profile} title="Academic Setup" subtitle="Terms, programs, departments, subjects and sections">
+      <div className="flex flex-col gap-6">
+        <SummaryStrip
+          items={[
+            { label: 'Terms', value: setup.termCount, hint: `current: ${setup.currentLabel}` },
+            { label: 'Programs', value: setup.programCount, hint: setup.programRows.map((p) => p.code).join(', ') },
+            { label: 'Subjects', value: setup.subjectCount, hint: 'this term' },
+            { label: 'Sections', value: setup.sectionCount, hint: 'open' },
+          ]}
+        />
+
+        <p id="setup-reason" className="text-sm text-muted">
           Adding terms and programs is turned off until the database is connected.
         </p>
 
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <StatCard label="Terms" value={setup.termCount} hint={`current: ${setup.currentLabel}`} />
-          <StatCard label="Programs" value={setup.programCount} hint={setup.programRows.map((p) => p.code).join(', ')} />
-          <StatCard label="Subjects" value={setup.subjectCount} hint="this term" />
-          <StatCard label="Sections" value={setup.sectionCount} hint="open" />
-        </div>
-
-        <TableCard title="Terms" minWidth="min-w-[560px]">
+        <TableCard title="Terms" action={addButton('Add term')} minWidth="min-w-[560px]">
           <Head cols={['School year', 'Semester', 'Start', 'End', 'Status']} />
           <TableBody>
             {setup.termRows.map((t) => (
@@ -83,7 +73,7 @@ export default async function AdminAcademicSetupPage() {
           </TableBody>
         </TableCard>
 
-        <TableCard title="Programs" minWidth="min-w-[600px]">
+        <TableCard title="Programs" action={addButton('Add program')} minWidth="min-w-[600px]">
           <Head cols={['Code', 'Program', 'Department', 'Students']} />
           <TableBody>
             {setup.programRows.map((p) => (
