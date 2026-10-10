@@ -51,9 +51,11 @@ All older token names still work; the status, tint, dot and chart-green tokens n
    tints). Solid is for marks, not for text.
 5. **Color is never alone**: chips keep their words, calendar events keep their titles (and a dot),
    charts have a text label or tooltip for the value that matters.
-6. **One memorable moment per screen**. On the student dashboard it is the Progress chart (violet
-   line, fading violet area, the best term pinned). The shell (sidebar, top bar, page) stays neutral.
-7. Gradients only between two soft tints (the sidebar promo card) or as a chart area fill.
+6. **One memorable moment per screen**. On the student dashboard it is the photo banner at the top
+   (docs/design/depth.md); the Progress chart is the strongest data moment below it. The shell
+   (sidebar, top bar, page) stays neutral.
+7. Gradients only between two soft tints, as a chart area fill, or as a photo veil (a scrim that
+   keeps text readable, see depth.md). Never as decoration.
 
 ## Contrast (WCAG 2.x)
 

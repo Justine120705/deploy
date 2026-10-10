@@ -10,7 +10,8 @@ import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { Icon } from './Icon'
 
 const NAV_ITEM = 'flex h-11 w-full items-center gap-3 rounded-lg px-3 text-sm transition-colors'
-const NAV_ACTIVE = 'rounded-[10px] bg-accent font-bold text-accent-foreground'
+// The active pill gets a lit top edge (shadow-pill), so it reads as pressed into the rail, not painted on.
+const NAV_ACTIVE = 'rounded-[10px] bg-accent font-bold text-accent-foreground shadow-pill'
 const NAV_IDLE = 'font-medium text-muted hover:bg-accent/60 hover:text-accent-foreground'
 const ICON_BUTTON =
   'inline-flex size-8 items-center justify-center rounded-lg text-muted transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring'
@@ -59,7 +60,9 @@ export default function ShellFrame({
 
       <aside
         className={cn(
-          'fixed inset-y-3 left-3 z-40 flex w-[232px] flex-col gap-2 overflow-y-auto rounded-xl border border-border bg-card px-[18px] py-6',
+          'fixed inset-y-3 left-3 z-40 flex w-[232px] flex-col gap-2 overflow-y-auto rounded-2xl border border-edge bg-card px-[18px] py-6 surface',
+          // Level 1 on desktop (chrome sits low so content floats above it); level 3 as the mobile drawer.
+          'shadow-elev-lg lg:shadow-elev-xs',
           'transition-transform lg:sticky lg:inset-y-auto lg:top-4 lg:h-[calc(100vh-2rem)] lg:shrink-0 lg:translate-x-0',
           open ? 'translate-x-0' : '-translate-x-[110%]'
         )}
@@ -112,7 +115,7 @@ export default function ShellFrame({
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col gap-4">
-        <header className="flex h-[60px] shrink-0 items-center justify-between gap-3 rounded-xl border border-border bg-card px-5">
+        <header className="flex h-[60px] shrink-0 items-center justify-between gap-3 rounded-2xl border border-edge bg-card px-5 shadow-elev-xs surface">
           <button
             type="button"
             aria-label="Open menu"

@@ -1,5 +1,11 @@
 import { clsx, type ClassValue } from "clsx";
-import { twMerge } from "tailwind-merge";
+import { extendTailwindMerge } from "tailwind-merge";
+
+// Teach the merger the custom shadows (app/globals.css), so shadow-elev-sm and shadow-xl are seen as
+// the same property and the later one wins (instead of shadow-elev-sm being read as a shadow color).
+const twMerge = extendTailwindMerge({
+  extend: { theme: { shadow: ["elev-xs", "elev-sm", "elev-md", "elev-lg", "pill"] } },
+});
 
 // 1. Tailwind class merger (Prevents CSS conflicts in your components)
 export function cn(...inputs: ClassValue[]) {

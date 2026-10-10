@@ -10,3 +10,5 @@ export { CardMenuButton } from "./CardMenuButton";
 export { EventCalendar, type CalendarEvent, type CalendarTone } from "./EventCalendar";
 export { ScheduleList, type ScheduleEntry, type ScheduleTone } from "./ScheduleList";
 export { HUE_SOFT, HUE_SOLID, HUE_TEXT, hueVar, type Hue } from "./hue";
+export { PhotoBanner } from "./PhotoBanner";
+export { PHOTOS, type PhotoKey } from "./photos";

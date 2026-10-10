@@ -10,6 +10,7 @@ import {
   CardHeader,
   CardMenuButton,
   EventCalendar,
+  PhotoBanner,
   ScheduleList,
   StatusBadge,
   TableBody,
@@ -40,11 +41,25 @@ import {
 
 const SEE_ALL = 'text-sm font-semibold text-accent-foreground hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring'
 const TH = 'text-sm'
+const ON_VEIL_LINK =
+  'inline-flex h-10 items-center gap-2 rounded-full bg-on-veil px-4 text-sm font-bold text-(--veil-violet) shadow-elev-sm transition-colors hover:bg-on-veil-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-on-veil'
+
+// Greeting by the hour in the Philippines (the server may run in another time zone).
+function greeting() {
+  const hour = Number(
+    new Intl.DateTimeFormat('en-US', { hour: 'numeric', hourCycle: 'h23', timeZone: 'Asia/Manila' }).format(new Date())
+  )
+  return hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'
+}
 
 export default async function StudentDashboardPage() {
   const profile = await requireRole('Student')
   const student = students.find((s) => s.student_id === MOCK_STUDENT_ID)
   const clearedPercent = Math.round((CLEARANCE_SUMMARY.cleared / CLEARANCE_SUMMARY.total) * 100)
+  const waitingOn = CLEARANCE_OFFICES.filter((o) => o.status !== 'Cleared').map((o) => o.name)
+  const bannerNote =
+    `${CLEARANCE_SUMMARY.cleared} of ${CLEARANCE_SUMMARY.total} clearance offices cleared.` +
+    (waitingOn.length ? ` Waiting on ${waitingOn.join(', ')}.` : '')
 
   // Lower GWA is better, so the bar height is the distance below 3.25 (T5, 1.75, is the tallest).
   // Best (lowest) point of the progress line, pinned on the chart.
@@ -61,13 +76,31 @@ export default async function StudentDashboardPage() {
     <DashboardShell
       profile={profile}
       userMeta={student ? `ID ${student.student_number}` : undefined}
-      promo={<PromoCard value={DASHBOARD_UNITS_THIS_TERM} label="Units this term" note="Keep it up!" />}
+      promo={
+        <PromoCard
+          value={DASHBOARD_UNITS_THIS_TERM}
+          label="Units this term"
+          note="Keep it up!"
+          image="graduation-cap-books"
+        />
+      }
     >
       <h1 className="sr-only">Student dashboard</h1>
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_304px]">
         <div className="flex min-w-0 flex-col gap-4">
+          <PhotoBanner
+            image="study-desk"
+            title={`${greeting()}, ${profile.firstName}`}
+            subtitle={bannerNote}
+            aside={
+              <Link href="/student/clearance" className={ON_VEIL_LINK}>
+                Open clearance
+              </Link>
+            }
+          />
+
           <div className="grid gap-4 md:grid-cols-3">
-            <Card className="flex min-h-[214px] flex-col gap-3 p-5">
+            <Card className="flex min-h-[204px] flex-col gap-3 p-5">
               <CardHeader title="Clearance" icon="clearance" hue="teal" action={<CardMenuButton />} />
               <div className="flex h-28 items-center justify-center">
                 <GaugeChart
@@ -83,12 +116,12 @@ export default async function StudentDashboardPage() {
               </div>
             </Card>
 
-            <Card className="flex min-h-[214px] flex-col gap-3 p-5">
+            <Card className="flex min-h-[204px] flex-col gap-3 p-5">
               <CardHeader title="GWA by term" icon="grades" hue="violet" action={<CardMenuButton />} />
               <BarChart data={bars} max={1.5} hue="violet" ariaLabel="GWA by term" />
             </Card>
 
-            <Card className="flex min-h-[214px] flex-col gap-3 p-5">
+            <Card className="flex min-h-[204px] flex-col gap-3 p-5">
               <CardHeader title="Pending items" icon="clock" hue="amber" action={<CardMenuButton />} />
               {PENDING_ITEMS.map((p) => (
                 <div key={p.title} className="flex flex-col gap-1.5 text-sm">

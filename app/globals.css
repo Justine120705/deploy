@@ -76,6 +76,29 @@
   --tint-rose: var(--hue-rose-soft);
   --tint-green: var(--hue-teal-soft);
   --tint-amber: var(--hue-amber-soft);
+
+  /* Depth (docs/design/depth.md). Shadows are tinted with a deep brand violet (#2e1a47), never grey,
+     and stacked in two layers: a tight contact shadow plus a soft ambient one. Named --elevation-*
+     (not --shadow-*) so they do not overwrite Tailwind's own shadow-sm/md/lg; use them as
+     shadow-elev-xs/sm/md/lg. */
+  --elevation-xs: 0 1px 2px rgb(46 26 71 / 0.05);
+  --elevation-sm: 0 1px 2px rgb(46 26 71 / 0.06), 0 6px 16px -4px rgb(46 26 71 / 0.09);
+  --elevation-md: 0 1px 3px rgb(46 26 71 / 0.08), 0 12px 28px -8px rgb(46 26 71 / 0.16);
+  --elevation-lg: 0 2px 4px rgb(46 26 71 / 0.08), 0 24px 48px -14px rgb(46 26 71 / 0.32);
+  --edge: rgb(46 26 71 / 0.08);          /* hairline around elevated surfaces (softer than --border) */
+  --card-raised: #ffffff;                 /* level 3 surfaces; in light the shadow does the lifting */
+  /* Card surface: a translucent overlay on top of the card color, so any bg-* override still shows.
+     Light: the lower edge settles by about 1% violet. Dark: a faint lit top edge. */
+  --card-surface: linear-gradient(180deg, transparent 55%, rgb(126 79 176 / 0.025));
+  --pill-highlight: inset 0 1px 0 rgb(255 255 255 / 0.85), 0 1px 2px rgb(46 26 71 / 0.08);
+  /* Photo veils (components/ui/PhotoBanner.tsx): deep tones of the hue family. */
+  --veil-violet: #2a1544;
+  --veil-sky: #0b2b40;
+  --veil-teal: #0a2f26;
+  --veil-amber: #3a2208;
+  --veil-rose: #3d1522;
+  --on-veil: #ffffff;
+  --on-veil-muted: #e8ddf7;
 }
 
 :root[data-theme='dark'] {
@@ -143,9 +166,36 @@
   --tint-rose: var(--hue-rose-soft);
   --tint-green: var(--hue-teal-soft);
   --tint-amber: var(--hue-amber-soft);
+
+  /* Depth, dark: a shadow is invisible on #000, so height is shown by light instead. Each level adds
+     a brighter top highlight and a faint lilac ring; level 3 also gets a low violet glow and the
+     slightly lighter --card-raised surface. */
+  --elevation-xs: inset 0 1px 0 rgb(255 255 255 / 0.04);
+  --elevation-sm: inset 0 1px 0 rgb(255 255 255 / 0.06), 0 0 0 1px rgb(201 160 227 / 0.03);
+  --elevation-md: inset 0 1px 0 rgb(255 255 255 / 0.08), 0 0 0 1px rgb(201 160 227 / 0.07);
+  --elevation-lg: inset 0 1px 0 rgb(255 255 255 / 0.1), 0 0 0 1px rgb(201 160 227 / 0.12),
+    0 20px 44px -18px rgb(126 79 176 / 0.4);
+  --edge: rgb(201 160 227 / 0.13);
+  --card-raised: #15121f;
+  --card-surface: linear-gradient(180deg, rgb(255 255 255 / 0.035), transparent 72px);
+  --pill-highlight: inset 0 1px 0 rgb(255 255 255 / 0.07), 0 0 0 1px rgb(201 160 227 / 0.1);
+  --veil-violet: #1f1033;
+  --veil-sky: #071f2f;
+  --veil-teal: #06221b;
+  --veil-amber: #2a1805;
+  --veil-rose: #2c0f18;
 }
 
 @theme inline {
+  --shadow-elev-xs: var(--elevation-xs);
+  --shadow-elev-sm: var(--elevation-sm);
+  --shadow-elev-md: var(--elevation-md);
+  --shadow-elev-lg: var(--elevation-lg);
+  --shadow-pill: var(--pill-highlight);
+  --color-edge: var(--edge);
+  --color-card-raised: var(--card-raised);
+  --color-on-veil: var(--on-veil);
+  --color-on-veil-muted: var(--on-veil-muted);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
@@ -199,6 +249,11 @@
   --color-hue-rose-strong: var(--hue-rose-strong);
   --color-hue-rose-solid: var(--hue-rose-solid);
   --color-ring: var(--ring);
+}
+
+/* Card surface overlay (see --card-surface). Sits over bg-card / bg-card-raised as a background image. */
+@utility surface {
+  background-image: var(--card-surface);
 }
 
 body {

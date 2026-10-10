@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 
 const pad = (n: number) => String(n).padStart(2, '0')
 
-// Dark "Next lesson in" card with a hh:mm:ss countdown. The first render uses `seconds` exactly as
+// Dark "Next lesson in" card, raised one level above its card (shadow-elev-md) with a hh:mm:ss countdown. The first render uses `seconds` exactly as
 // given (same on server and browser); it only starts ticking after mount, so there is no hydration
 // mismatch.
 export function NextLesson({ seconds, title }: { seconds: number; title: string }) {
@@ -18,7 +18,7 @@ export function NextLesson({ seconds, title }: { seconds: number; title: string 
   const parts = [Math.floor(left / 3600), Math.floor((left % 3600) / 60), left % 60]
 
   return (
-    <div className="flex flex-col gap-2 rounded-xl bg-ink p-4 text-ink-foreground">
+    <div className="flex flex-col gap-2 rounded-xl bg-ink p-4 text-ink-foreground shadow-elev-md">
       <p className="text-sm font-medium">Next lesson in</p>
       <p
         role="timer"

@@ -49,9 +49,9 @@ export const CALENDAR_EVENTS = [
 
 export const SCHEDULE = [
   // One hue per course (violet, sky, teal only; amber and rose mean attention and problems).
-  { time: 'MWF 8–9 AM', title: 'Intro to Computing', code: 'CS101', tone: 'violet' },
-  { time: 'TTh 9–10:30', title: 'Programming 1', code: 'CS102', tone: 'sky' },
-  { time: 'MWF 10–11 AM', title: 'Understanding Self', code: 'GE101', tone: 'teal' },
+  { time: 'MWF 8-9 AM', title: 'Intro to Computing', code: 'CS101', tone: 'violet' },
+  { time: 'TTh 9-10:30', title: 'Programming 1', code: 'CS102', tone: 'sky' },
+  { time: 'MWF 10-11 AM', title: 'Understanding Self', code: 'GE101', tone: 'teal' },
 ] as const
 
 /** Seconds until the next class, shown as 00:42:18. */
