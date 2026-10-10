@@ -1,9 +1,9 @@
 'use client'
 
-import Image from 'next/image'
 import { useActionState, useState } from 'react'
-import { EyeIcon, EyeOffIcon } from '@/components/auth/AuthIcons'
-import { CabuyaoLogo } from '@/components/auth/CabuyaoLogo'
+import { EyeIcon, EyeOffIcon, LockIcon, MailIcon } from '@/components/auth/AuthIcons'
+import { CabuyaoLogo, CuMark } from '@/components/auth/CabuyaoLogo'
+import { LoginShowcase } from '@/components/auth/LoginShowcase'
 import { Button } from '@/components/ui/Button'
 import { FIELD, FIELD_LABEL } from '@/components/ui/Input'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
@@ -28,6 +28,9 @@ export default function LoginPage() {
 
         <div className="flex flex-1 items-center">
           <div className="mx-auto w-full max-w-[360px] py-10">
+            <span aria-hidden="true" className="mb-5 flex size-11 items-center justify-center rounded-lg bg-accent">
+              <CuMark className="w-7" />
+            </span>
             <h1 className="text-2xl font-semibold tracking-[-0.01em] text-foreground">Welcome back</h1>
             <p className="mt-1 text-sm text-muted">Sign in to your portal account.</p>
 
@@ -36,6 +39,8 @@ export default function LoginPage() {
               <label htmlFor="email" className={FIELD_LABEL}>
                 Email
               </label>
+              <div className="relative">
+                <MailIcon className="pointer-events-none absolute left-3 top-1/2 size-[18px] -translate-y-1/2 text-muted" />
               <input
                 id="email"
                 name="email"
@@ -45,8 +50,9 @@ export default function LoginPage() {
                 spellCheck={false}
                 required
                 aria-invalid={state.error ? true : undefined}
-                className={FIELD}
+                className={cn(FIELD, 'pl-10')}
               />
+              </div>
             </div>
 
             <div className="flex flex-col gap-1.5">
@@ -54,6 +60,7 @@ export default function LoginPage() {
                 Password
               </label>
               <div className="relative">
+                <LockIcon className="pointer-events-none absolute left-3 top-1/2 size-[18px] -translate-y-1/2 text-muted" />
                 <input
                   id="password"
                   name="password"
@@ -61,7 +68,7 @@ export default function LoginPage() {
                   autoComplete="current-password"
                   required
                   aria-invalid={state.error ? true : undefined}
-                  className={cn(FIELD, 'pr-11')}
+                  className={cn(FIELD, 'pl-10 pr-11')}
                 />
                 <button
                   type="button"
@@ -94,26 +101,7 @@ export default function LoginPage() {
         <footer className="text-xs text-muted">© 2026 Cabuyao University</footer>
       </div>
 
-      <aside className="relative m-4 hidden overflow-hidden rounded-xl bg-ink lg:block">
-        <Image
-          src="/photos/lecture-hall.jpg"
-          alt="Students in a lecture hall with laptops"
-          fill
-          priority
-          sizes="50vw"
-          className="object-cover"
-        />
-        {/* Scrim for the text only: solid at the bottom where the text sits, clear at the top. */}
-        <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-transparent" />
-        <div className="absolute inset-x-0 bottom-0 p-10 text-white">
-          <p className="max-w-md text-3xl font-semibold leading-tight tracking-[-0.01em]">
-            Enrollment, grades and clearance in one place.
-          </p>
-          <p className="mt-3 max-w-md text-sm leading-6 text-white/90">
-            Sign in to see where your requests stand and what to do next.
-          </p>
-        </div>
-      </aside>
+      <LoginShowcase />
     </main>
   )
 }
