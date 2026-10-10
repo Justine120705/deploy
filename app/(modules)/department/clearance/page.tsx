@@ -1,15 +1,17 @@
-import ModulePage from '@/components/layout/ModulePage'
+import { requireRole } from '@/lib/auth/session'
+import DashboardShell from '@/components/layout/DashboardShell'
+import ClearanceItemsClient from '@/components/department/ClearanceItemsClient'
+import { DEPT_NAME } from '@/lib/mock/department-data'
 
-export default function DepartmentClearancePage() {
+export default async function DepartmentClearancePage() {
+  const profile = await requireRole('Department')
   return (
-    <ModulePage
-      role="Department"
+    <DashboardShell
+      profile={profile}
       title="Clearance Items"
-      subtitle="Approve clearance items for your department."
-      planned={[
-      "Pending items for your department",
-      "Approve or reject with remarks",
-      ]}
-    />
+      subtitle={`${DEPT_NAME} · approve an item once all your holds are lifted`}
+    >
+      <ClearanceItemsClient />
+    </DashboardShell>
   )
 }
