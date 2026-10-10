@@ -384,3 +384,14 @@ After `hardening.sql` was run on the live database, TC-12 to TC-17 were run agai
 - TC-15: `v_grades` 3 = `grades` 3; `v_clearance_items` 4 = `clearance_items` 4. Pass.
 - TC-16: anonymous role reads 0 `grades` rows and 0 `v_grades` rows. Pass.
 - TC-17: a student updating their own `role_id` to Admin changes 0 rows. Pass.
+
+## Grants on schema private and Data API exposure (2026-10-10)
+
+Read-only checks, run in the Supabase SQL editor and the dashboard (Integrations, Data API, Settings):
+
+- Schema `private`: `anon` has no USAGE; `authenticated` has USAGE (the RLS policies need it).
+- The 5 helper functions (`active_uid`, `current_role_name`, `my_department_id`, `clearance_in_my_department`, `student_in_my_department`): `anon` cannot EXECUTE them, `authenticated` can.
+- `private.create_clearance_items()` and `private.guard_immutable_columns()` are trigger functions and `anon` can EXECUTE them (default PUBLIC execute). They cannot be called directly, only as triggers, so this is hygiene, not an exploit. To review: `REVOKE EXECUTE ... FROM PUBLIC`.
+- Data API exposed schemas: `graphql_public` and `public`. `private` is NOT exposed, so the `private` functions cannot be reached through the API.
+- Data API exposed tables: "1 of 27 tables exposed". This matches the grants export: only `profiles` allows writes for `authenticated`. When the app starts writing data, the needed tables must be exposed and given targeted GRANTs on purpose.
+- Table triggers found: one app trigger, `trg_clearances_create_items` on `clearances` (calls `private.create_clearance_items()`), plus Supabase's own `realtime` and `storage` triggers. No audit triggers (REQ-ADM-03) exist yet.
