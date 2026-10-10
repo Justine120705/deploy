@@ -67,10 +67,10 @@ LEFT JOINs, so with `security_invoker` every role keeps exactly the rows it saw 
 For Cashier and Department, `total_items` / `cleared_items` count only their own
 department's items (RLS on `clearance_items`).
 
-**`views.sql` still shows the OLD definitions** (the live export of 2026-10-10). It is
-updated to the new definitions (export from `pg_views`) only AFTER the PM has run
-`views_extend.sql` on the live database and Part H has passed. Until then, a database
-built from this folder needs step 9 to match the types.
+`views_extend.sql` was run on the live database on 2026-10-10 and Part H (TC-29 to TC-33) passed.
+`views.sql` now holds the extended definitions. To recreate the database from scratch, run
+`schema.sql`, then `views.sql` (not `views_extend.sql`, which is the change script for a database that
+still has the old thin views).
 
 These files were run end to end against an in-memory PostgreSQL (with a stand-in for
 `auth.users`/`auth.uid()`): the seed gives 3 students, charges of 45,000 with 20,000
@@ -92,8 +92,8 @@ Views, `private` functions and policies now match the live database (export of
   verify them against the live database.
 - **Audit triggers.** `hardening2.sql` section B (REQ-ADM-03) is live; `audit_logs` only holds
   changes made after 2026-10-10 (no back-fill).
-- **`types/database.types.ts`** lists more view columns than the live views have; regenerate
-  the types or update the views. Fix prepared in `views_extend.sql` (issue #49, not run yet).
+- **Views vs types (issue #49): fixed** on 2026-10-10 with `views_extend.sql`; the live views have every
+  column of `types/database.types.ts`. Open: `v_clearances.status` has no `Ready` value (the mock data does).
 
 ## Read before running
 
