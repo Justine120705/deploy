@@ -375,3 +375,12 @@ Query: `information_schema.role_table_grants` for `anon` and `authenticated`, sc
 - No GRANT or REVOKE statements exist in the repo; the live grants come from Supabase defaults plus changes that were never written down.
 - Found by TC-18: `permission denied for table clearances` (error 42501) before RLS ran.
 
+
+## Regression after hardening.sql (2026-10-10)
+
+After `hardening.sql` was run on the live database, TC-12 to TC-17 were run again (PM clicked Run in the Supabase SQL editor, Claude read the results):
+
+- TC-12 to TC-14: own profile 1; every `student2` count (grades, charges, payments, clearances, holds, enrollments, document_requests) is 0. Pass.
+- TC-15: `v_grades` 3 = `grades` 3; `v_clearance_items` 4 = `clearance_items` 4. Pass.
+- TC-16: anonymous role reads 0 `grades` rows and 0 `v_grades` rows. Pass.
+- TC-17: a student updating their own `role_id` to Admin changes 0 rows. Pass.
