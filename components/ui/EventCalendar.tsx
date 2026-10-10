@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
-import { HUE_SOFT, HUE_SOLID, HUE_TEXT, type Hue } from './hue'
+import { HUE_SOLID, type Hue } from './hue'
 
 /** Event type color: a hue of the color system ('green' is kept as an alias of teal). */
 export type CalendarTone = Hue | 'green'
@@ -22,7 +22,7 @@ const WEEKDAYS = [
 
 const pad = (n: number) => String(n).padStart(2, '0')
 
-// Month calendar with tinted event days. `today` is passed in (a "YYYY-MM-DD" string) instead of
+// Compact month calendar: event days carry a dot in the event's hue. `today` is passed in (a "YYYY-MM-DD" string) instead of
 // read from the clock, so the server and the browser always render the same thing.
 export function EventCalendar({
   year,
@@ -67,46 +67,43 @@ export function EventCalendar({
     ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
   ]
 
-  // The button is a 44px touch target on small screens; the visible circle inside stays 26px.
+  // The button is a 44px touch target on small screens; the visible square inside stays 28px.
   const navButton =
-    'group flex size-[26px] max-lg:-m-[9px] max-lg:size-11 items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring'
-  const navCircle =
-    'flex size-[26px] items-center justify-center rounded-full bg-chip text-sm font-bold text-accent-foreground transition-colors group-hover:bg-accent'
+    'group flex size-7 max-lg:-m-2 max-lg:size-11 items-center justify-center rounded-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring'
+  const navSquare =
+    'flex size-7 items-center justify-center rounded-md text-muted transition-colors group-hover:bg-hover-tint group-hover:text-foreground'
 
   return (
     <div className={cn('flex flex-col gap-3', className)}>
       <div className="flex items-center justify-between">
         <button type="button" aria-label="Previous month" onClick={() => shift(-1)} className={navButton}>
-          <span aria-hidden="true" className={navCircle}>
-            ‹
+          <span aria-hidden="true" className={navSquare}>
+            <Chevron dir="left" />
           </span>
         </button>
         <p aria-live="polite" className="text-sm font-semibold">
           {title}
         </p>
         <button type="button" aria-label="Next month" onClick={() => shift(1)} className={navButton}>
-          <span aria-hidden="true" className={navCircle}>
-            ›
+          <span aria-hidden="true" className={navSquare}>
+            <Chevron dir="right" />
           </span>
         </button>
       </div>
 
-      <div role="grid" aria-label={title} className="grid grid-cols-7 justify-items-center gap-y-3">
+      <div role="grid" aria-label={title} className="grid grid-cols-7 justify-items-center gap-y-1">
         {WEEKDAYS.map((d) => (
           <div
             key={d.name}
             role="columnheader"
             aria-label={d.name}
-            className={cn(
-              'flex size-[34px] items-center justify-center text-sm font-medium',
-              'text-muted'
-            )}
+            className="flex size-8 items-center justify-center text-xs font-medium text-muted"
           >
             {d.letter}
           </div>
         ))}
         {cells.map((day, i) => {
-          if (day === null) return <div key={`blank-${i}`} role="gridcell" className="size-[34px]" />
+          if (day === null) return <div key={`blank-${i}`} role="gridcell" className="size-8" />
           const iso = `${prefix}${pad(day)}`
           const event = byDate.get(iso)
           const isToday = iso === today
@@ -119,22 +116,21 @@ export function EventCalendar({
               aria-label={event ? `${day}, ${event.title}` : undefined}
               title={event?.title}
               className={cn(
-                'relative flex size-[34px] items-center justify-center rounded-md text-sm font-medium',
-                hue && !isToday
-                  ? cn(HUE_SOFT[hue], HUE_TEXT[hue], 'font-bold')
-                  : i % 7 === 0
-                    ? 'text-muted'
-                    : 'text-foreground',
-                // Today: a filled pill in the primary color (ink in light, lilac in dark), readable on the card in both themes.
-                isToday && 'rounded-full bg-primary font-bold text-primary-foreground'
+                'relative flex size-8 items-center justify-center rounded-md text-sm tabular-nums',
+                hue ? 'font-semibold text-foreground' : i % 7 === 0 ? 'text-muted' : 'text-foreground',
+                // Today: the accent, solid, in both themes.
+                isToday && 'bg-primary font-semibold text-primary-foreground'
               )}
             >
               {day}
               {hue && (
-                // Solid dot under the number: the event mark keeps 3:1 even where the tint is faint.
+                // Event mark: a solid dot in the event's hue (>= 3:1 on the card).
                 <span
                   aria-hidden="true"
-                  className={cn('absolute bottom-1 left-1/2 size-1 -translate-x-1/2 rounded-full', HUE_SOLID[hue])}
+                  className={cn(
+                    'absolute bottom-0.5 left-1/2 size-1 -translate-x-1/2 rounded-full',
+                    isToday ? 'bg-primary-foreground' : HUE_SOLID[hue]
+                  )}
                 />
               )}
             </div>
@@ -151,7 +147,7 @@ export function EventCalendar({
             {shown.map(({ e, day, iso }) => (
               <li key={`${e.id}-${iso}`} className="flex items-center gap-2 text-sm">
                 <span aria-hidden="true" className={cn('size-2 shrink-0 rounded-full', HUE_SOLID[hueOf(e.tone)])} />
-                <span className="w-14 shrink-0 font-semibold text-muted">{dayLabel(day)}</span>
+                <span className="w-14 shrink-0 font-medium text-muted tabular-nums">{dayLabel(day)}</span>
                 <span className="min-w-0 truncate font-medium">{e.title}</span>
               </li>
             ))}
@@ -162,5 +158,19 @@ export function EventCalendar({
         )}
       </div>
     </div>
+  )
+}
+
+function Chevron({ dir }: { dir: 'left' | 'right' }) {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" className="size-4">
+      <path
+        d={dir === 'left' ? 'M10 3.5 5.5 8l4.5 4.5' : 'M6 3.5 10.5 8 6 12.5'}
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   )
 }

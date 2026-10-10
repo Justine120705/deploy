@@ -4,11 +4,12 @@ const R = 64
 const CX = 80
 const CY = 80
 
-// Half-circle progress gauge drawn from a 0-100 value. The big label sits inside the arc.
+// Legacy half-circle progress gauge (0-100). Prefer a plain figure or a progress bar in new screens.
+// Flat strokes, no rounded caps; the figure sits inside the arc.
 export function GaugeChart({
   value,
   label,
-  color = 'var(--lilac)',
+  color = 'var(--accent-foreground)',
   trackColor = 'var(--track)',
   ariaLabel,
   className,
@@ -35,21 +36,16 @@ export function GaugeChart({
       className={cn('relative h-[92px] w-[160px]', className)}
     >
       <svg aria-hidden="true" viewBox="0 0 160 92" fill="none" className="absolute inset-0 size-full">
-        <path
-          d={`M ${CX - R} ${CY} A ${R} ${R} 0 0 1 ${CX + R} ${CY}`}
-          stroke={trackColor}
-          strokeWidth="14"
-          strokeLinecap="round"
-        />
+        <path d={`M ${CX - R} ${CY} A ${R} ${R} 0 0 1 ${CX + R} ${CY}`} stroke={trackColor} strokeWidth="10" />
         {fraction > 0 && (
           <path
             d={`M ${CX - R} ${CY} A ${R} ${R} 0 0 1 ${x.toFixed(3)} ${y.toFixed(3)}`}
             stroke={color}
-            strokeWidth="14"
+            strokeWidth="10"
           />
         )}
       </svg>
-      <p className="absolute inset-x-0 top-12 text-center text-2xl font-extrabold leading-normal">
+      <p className="absolute inset-x-0 top-12 text-center text-3xl font-semibold tabular-nums">
         {label ?? `${Math.round(value)}%`}
       </p>
     </div>
@@ -59,7 +55,7 @@ export function GaugeChart({
 // Small colored dot plus label, used under charts.
 export function LegendItem({ color, children }: { color: string; children: React.ReactNode }) {
   return (
-    <span className="flex items-center gap-1.5 text-sm font-medium text-muted">
+    <span className="flex items-center gap-1.5 text-xs text-muted">
       <span aria-hidden="true" className="size-2 rounded-full" style={{ background: color }} />
       {children}
     </span>

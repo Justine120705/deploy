@@ -4,7 +4,7 @@ import { NAV_ITEMS } from '@/lib/nav'
 import { Icon } from './Icon'
 import ShellFrame from './ShellFrame'
 
-// Shared frame for every module page: role-based sidebar, top bar, optional page title and sign-out.
+// Shared frame for every module page: flat role-based sidebar, optional page header and sign-out.
 // Build each module's real UI inside {children}.
 export default function DashboardShell({
   profile,
@@ -18,16 +18,16 @@ export default function DashboardShell({
   children,
 }: {
   profile: CurrentProfile
-  /** Page heading. Leave it out for screens whose design has no heading (the student dashboard). */
+  /** Page heading. Leave it out for screens that open with their own first line (the student dashboard). */
   title?: string
   subtitle?: string
   actions?: React.ReactNode
-  /** Line under the user's name in the top bar; defaults to the role. */
+  /** Line under the user's name in the sidebar user row; defaults to the role. */
   userMeta?: string
-  /** Optional sidebar card above Settings, for example <PromoCard />. */
+  /** Accepted for compatibility; the flat shell does not render a sidebar promo. */
   promo?: React.ReactNode
   settingsHref?: string
-  /** Defaults to `student` for the Student role and `staff` for every other role. */
+  /** Defaults to `student` for the Student role and `staff` for every other role (staff adds the role label). */
   variant?: 'student' | 'staff'
   children: React.ReactNode
 }) {
@@ -41,32 +41,26 @@ export default function DashboardShell({
       promo={promo}
       settingsHref={settingsHref}
       variant={shell}
+      title={title}
       signOut={
         <form action={logout}>
-          {shell === 'staff' ? (
-            <button
-              aria-label="Sign out"
-              className="flex size-9 items-center justify-center rounded-lg text-muted transition-colors max-lg:size-11 hover:bg-accent hover:text-accent-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-            >
+          <button className="flex h-10 w-full items-center gap-3 rounded-md px-2.5 text-sm font-medium text-muted transition-colors max-lg:h-11 hover:bg-hover-tint hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
+            <span className="flex size-5 shrink-0 items-center justify-center">
               <Icon name="logout" />
-            </button>
-          ) : (
-          <button className="flex h-11 w-full items-center gap-3 rounded-lg px-3 text-sm font-medium text-muted transition-colors hover:bg-accent/60 hover:text-accent-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
-            <Icon name="logout" />
+            </span>
             Sign out
           </button>
-          )}
         </form>
       }
     >
       {title && (
-        <div className="mb-4 flex flex-wrap items-end justify-between gap-3 px-2">
-          <div>
-            <h1 className="text-2xl font-extrabold">{title}</h1>
-            {subtitle && <p className="mt-1 text-sm text-muted">{subtitle}</p>}
+        <header className="mb-6 flex flex-wrap items-end justify-between gap-x-4 gap-y-3 lg:mb-8">
+          <div className="min-w-0">
+            <h1 className="text-2xl font-semibold tracking-[-0.01em]">{title}</h1>
+            {subtitle && <p className="mt-1 max-w-[70ch] text-sm text-muted">{subtitle}</p>}
           </div>
-          {actions}
-        </div>
+          {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
+        </header>
       )}
       {children}
     </ShellFrame>

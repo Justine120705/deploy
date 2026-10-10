@@ -4,71 +4,83 @@
    device setting), not by the media query. See app/layout.tsx and components/ui/ThemeToggle.tsx. */
 @custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
 
-/* Design tokens from the Figma file Cabuyao_Uni. Use these (bg-card, text-muted,
-   bg-success-soft ...) instead of hard-coded colors so light and dark stay in sync. */
+/* Design tokens: "calm records office" direction (.impeccable/surfaces/app-modules-student-page-tsx.md).
+   Near-white ground, white sheets, hairlines, ONE lavender accent from the CU mark, semantic tints that
+   always travel with words. Use the token classes (bg-card, text-muted, bg-success-soft ...) instead of
+   hard-coded colors so light and dark stay in sync. Contrast figures are measured (WCAG 2 ratio). */
 :root {
   color-scheme: light;
 
-  /* Hue family (docs/design/colors.md). Five hues built in OKLCH with one lightness and chroma per
-     tier, so they read as one family with the brand purple. soft = tinted background, strong = text
-     and icons (>= 4.5:1 on soft, card and page), solid = chart marks, dots, bars (>= 3:1 on card). */
-  --hue-violet-soft: #f4ecff;
-  --hue-violet-strong: #7e4fb0;  /* = brand purple */
-  --hue-violet-solid: #976ec6;
-  --hue-sky-soft: #e2f3fe;
-  --hue-sky-strong: #03709e;
-  --hue-sky-solid: #078fc8;
-  --hue-teal-soft: #dbf8eb;
-  --hue-teal-strong: #037a59;
-  --hue-teal-solid: #049c73;
-  --hue-amber-soft: #feefdd;
-  --hue-amber-strong: #8d5b04;
-  --hue-amber-solid: #bc7b00;
-  --hue-rose-soft: #ffebec;
-  --hue-rose-strong: #a44250;
-  --hue-rose-solid: #c85e6c;
-  --ring: #976ec6;               /* focus outline, 3.9:1 on card (lilac was 2.2:1) */
-  --background: #f5f3fa;
-  --foreground: #232430;
-  --muted: #6e6c85;
-  --card: #ffffff;
-  --border: #e5e7eb;
-  --border-subtle: #f2f2f4;
+  /* Hue family. soft = tinted background, strong = text and icons (>= 5.8:1 on soft, card and page),
+     solid = chart marks, dots, bars (>= 4:1 on card, >= 3.5:1 on soft). Calmer, lower chroma than before.
+     violet = academics + the brand accent, sky = info/enrollment, teal = success/clearance,
+     amber = attention/fees, rose = problems/holds. */
+  --hue-violet-soft: #f1ebf8;
+  --hue-violet-strong: #62379a;
+  --hue-violet-solid: #8a62b8;
+  --hue-sky-soft: #e7f1f8;
+  --hue-sky-strong: #1d5d84;
+  --hue-sky-solid: #3d7fab;
+  --hue-teal-soft: #e5f2ec;
+  --hue-teal-strong: #1b684c;
+  --hue-teal-solid: #3a886a;
+  --hue-amber-soft: #f8eedd;
+  --hue-amber-strong: #7f5110;
+  --hue-amber-solid: #a8741f;
+  --hue-rose-soft: #f8e9eb;
+  --hue-rose-strong: #983244;
+  --hue-rose-solid: #c05a68;
 
-  --primary: #1b1c26;            /* ink: primary buttons, selected day */
+  --ring: #7e4fb0;               /* CU brand purple; focus outline, 5.3:1 on the page */
+  --background: #f6f5f8;         /* uncoated ground */
+  --foreground: #1a1923;         /* ink, never pure black: 16:1 on the page */
+  --muted: #5f5c6c;              /* secondary text: 6.0:1 on page, 6.5:1 on card, 5.6:1 on the accent tint */
+  --card: #ffffff;               /* sheet */
+  --card-raised: #ffffff;
+  --border: #dddae3;             /* hairline */
+  --border-subtle: #ebe9ef;      /* row rules inside a sheet */
+  --edge: #e3e0e8;               /* outline of a sheet */
+  --field-border: #8b8799;       /* input/select/textarea border: 3.5:1 on card, 3.2:1 on page */
+  --hover-tint: #f3f1f6;         /* row and ghost-button hover */
+
+  --primary: #6b40a0;            /* the one primary action: white text 7.3:1 */
   --primary-foreground: #ffffff;
-  --accent: var(--hue-violet-soft);             /* active nav, soft panels (was #f3eeff) */
-  --accent-foreground: var(--hue-violet-strong);
-  --lilac: #c9a0e3;
-  --lilac-soft: #ebddf6;         /* table header, select */
-  --sky: #cde8f7;
+  --primary-hover: #5a3489;
+  --accent: var(--hue-violet-soft);              /* active nav, selected states */
+  --accent-foreground: var(--hue-violet-strong); /* links, active nav text: 7.1:1 on the tint */
+  --lilac: #8a62b8;              /* legacy name: the accent as a mark (gauge fill) */
+  --lilac-soft: #e7dff1;         /* legacy name: one step deeper than the accent tint (hover) */
+  --sky: #e7f1f8;
 
-  /* Status colors are the teal, amber and rose of the hue family: green = good, amber = attention,
-     rose = problem. */
+  /* Status: teal = good, amber = attention, rose = problem, sky = information. */
   --success: var(--hue-teal-strong);
   --success-soft: var(--hue-teal-soft);
   --warning: var(--hue-amber-strong);
   --warning-soft: var(--hue-amber-soft);
   --danger: var(--hue-rose-strong);
   --danger-soft: var(--hue-rose-soft);
-  --neutral: #646278;
-  --neutral-soft: #ececf1;
+  --info: var(--hue-sky-strong);
+  --info-soft: var(--hue-sky-soft);
+  --neutral: #5f5c6c;
+  --neutral-soft: #eeedf1;
 
+  /* Login backdrop (owned by the login page; removed with it). */
   --orb-1: #c9a0e3;
   --orb-2: #cde8f7;
   --orb-3: #ebddf6;
   --orb-opacity: 0.75;
   --lattice-opacity: 0.22;
 
-  /* Dashboard charts and calendar (Figma Student Dashboard) */
-  --ink: #1b1c26;                /* dark cards: next lesson, selected day */
+  /* Charts and calendar */
+  --ink: #1a1923;
   --ink-foreground: #ffffff;
-  --track: #ebddf6;              /* unfilled gauge track */
-  --chip: rgba(27, 28, 38, 0.14); /* small round buttons (calendar arrows) */
+  --track: #ebe9ef;              /* unfilled gauge track */
+  --chip: transparent;
+  --chart-muted: #8e8a9b;        /* non-highlighted bars: 3.4:1 on card */
   --chart-green: var(--hue-teal-solid);
-  --chart-green-soft: #a5e0c7;
-  --chart-area: rgba(201, 160, 227, 0.12);
-  --tooltip: #232430;
+  --chart-green-soft: var(--hue-teal-soft);
+  --chart-area: transparent;     /* no area fills */
+  --tooltip: #1a1923;
   --tooltip-foreground: #ffffff;
   --dot-rose: var(--hue-rose-solid);
   --dot-green: var(--hue-teal-solid);
@@ -77,21 +89,15 @@
   --tint-green: var(--hue-teal-soft);
   --tint-amber: var(--hue-amber-soft);
 
-  /* Depth (docs/design/depth.md). Shadows are tinted with a deep brand violet (#2e1a47), never grey,
-     and stacked in two layers: a tight contact shadow plus a soft ambient one. Named --elevation-*
-     (not --shadow-*) so they do not overwrite Tailwind's own shadow-sm/md/lg; use them as
-     shadow-elev-xs/sm/md/lg. */
-  --elevation-xs: 0 1px 2px rgb(46 26 71 / 0.05);
-  --elevation-sm: 0 1px 2px rgb(46 26 71 / 0.06), 0 6px 16px -4px rgb(46 26 71 / 0.09);
-  --elevation-md: 0 1px 3px rgb(46 26 71 / 0.08), 0 12px 28px -8px rgb(46 26 71 / 0.16);
-  --elevation-lg: 0 2px 4px rgb(46 26 71 / 0.08), 0 24px 48px -14px rgb(46 26 71 / 0.32);
-  --edge: rgb(46 26 71 / 0.08);          /* hairline around elevated surfaces (softer than --border) */
-  --card-raised: #ffffff;                 /* level 3 surfaces; in light the shadow does the lifting */
-  /* Card surface: a translucent overlay on top of the card color, so any bg-* override still shows.
-     Light: the lower edge settles by about 1% violet. Dark: a faint lit top edge. */
-  --card-surface: linear-gradient(180deg, transparent 55%, rgb(126 79 176 / 0.025));
-  --pill-highlight: inset 0 1px 0 rgb(255 255 255 / 0.85), 0 1px 2px rgb(46 26 71 / 0.08);
-  /* Photo veils (components/ui/PhotoBanner.tsx): deep tones of the hue family. */
+  /* Depth. Hairlines do the work; shadows are neutral ink, tiny and always offset. Use as shadow-elev-*.
+     xs/sm = a sheet resting on the page, md = a slightly lifted sheet, lg = drawer and popovers only. */
+  --elevation-xs: 0 1px 1px rgb(26 25 35 / 0.03);
+  --elevation-sm: 0 1px 2px rgb(26 25 35 / 0.05);
+  --elevation-md: 0 1px 2px rgb(26 25 35 / 0.05), 0 2px 6px -2px rgb(26 25 35 / 0.08);
+  --elevation-lg: 0 2px 4px rgb(26 25 35 / 0.06), 0 12px 32px -12px rgb(26 25 35 / 0.24);
+  --card-surface: none;          /* the old gradient overlay is gone; `surface` is a no-op */
+  --pill-highlight: none;
+  /* Photo veils (PhotoBanner, PromoCard): deep tones of the hue family. */
   --veil-violet: #2a1544;
   --veil-sky: #0b2b40;
   --veil-teal: #0a2f26;
@@ -101,40 +107,47 @@
   --on-veil-muted: #e8ddf7;
 }
 
+/* Dark: deep violet-ink ground (not black), sheets one step lighter, visible hairlines. Depth comes from
+   the lighter surface plus the hairline; no glow, no lilac rings. */
 :root[data-theme='dark'] {
   color-scheme: dark;
 
-  /* Hue family, dark: deep tinted surfaces, light tinted text, slightly calmer solids. */
-  --hue-violet-soft: #271b35;
-  --hue-violet-strong: #dac0fe;
-  --hue-violet-solid: #b492df;
-  --hue-sky-soft: #032536;
-  --hue-sky-strong: #96d7ff;
-  --hue-sky-solid: #53afe3;
-  --hue-teal-soft: #02291c;
-  --hue-teal-strong: #93e1c0;
-  --hue-teal-solid: #51bb94;
-  --hue-amber-soft: #331f04;
-  --hue-amber-strong: #f3c58c;
-  --hue-amber-solid: #e0a454;
-  --hue-rose-soft: #36171a;
-  --hue-rose-strong: #ffb8bd;
-  --hue-rose-solid: #e3858f;
-  --ring: #c9a0e3;
+  --hue-violet-soft: #2b2238;
+  --hue-violet-strong: #d0b8f0;
+  --hue-violet-solid: #9e80cc;
+  --hue-sky-soft: #162a37;
+  --hue-sky-strong: #9ecdeb;
+  --hue-sky-solid: #5b9cc6;
+  --hue-teal-soft: #152b23;
+  --hue-teal-strong: #97d4b9;
+  --hue-teal-solid: #4fa383;
+  --hue-amber-soft: #2e2414;
+  --hue-amber-strong: #e8c48d;
+  --hue-amber-solid: #c49451;
+  --hue-rose-soft: #341e25;
+  --hue-rose-strong: #f1afb9;
+  --hue-rose-solid: #cf707f;
 
-  /* Black page; cards are near-black with a violet tint so the lilac accent still belongs. */
-  --background: #000000;
-  --foreground: #f5f2ff;
-  --muted: #a9a3c4;
-  --card: #0d0b14;
-  --border: #2b2542;
-  --border-subtle: #17131f;
+  --ring: #a888d6;               /* 6.3:1 on the page */
+  --background: #131219;
+  --foreground: #ecebf2;         /* 15.7:1 on page, 14.6:1 on card */
+  --muted: #a5a1b4;              /* 7.4:1 on page, 6.9:1 on card, 6.0:1 on the accent tint */
+  --card: #1b1a23;
+  --card-raised: #211f2a;
+  --border: #33313f;
+  --border-subtle: #272530;
+  --edge: #2c2a37;
+  --field-border: #6f6b82;       /* 3.4:1 on card, 3.6:1 on page */
+  --hover-tint: #23212c;
 
-  --primary: #c9a0e3;          /* lilac pill buttons with dark text */
-  --primary-foreground: #0d0b14;
+  --primary: #c3a6eb;            /* lavender button, ink text 8.8:1 */
+  --primary-foreground: #131219;
+  --primary-hover: #d2bbf1;
   --accent: var(--hue-violet-soft);
   --accent-foreground: var(--hue-violet-strong);
-  --lilac-soft: #17132a;
+  --lilac: #9e80cc;
+  --lilac-soft: #342a44;
+  --sky: #162a37;
 
   --success: var(--hue-teal-strong);
   --success-soft: var(--hue-teal-soft);
@@ -142,8 +155,10 @@
   --warning-soft: var(--hue-amber-soft);
   --danger: var(--hue-rose-strong);
   --danger-soft: var(--hue-rose-soft);
-  --neutral: #b9b4d3;
-  --neutral-soft: #1f1a33;
+  --info: var(--hue-sky-strong);
+  --info-soft: var(--hue-sky-soft);
+  --neutral: #a5a1b4;
+  --neutral-soft: #272530;
 
   --orb-1: #7e4fb0;
   --orb-2: #4a3a99;
@@ -151,15 +166,16 @@
   --orb-opacity: 0.22;
   --lattice-opacity: 0.16;
 
-  --ink: #1d1833;
-  --ink-foreground: #f5f2ff;
-  --track: #2a2245;
-  --chip: rgba(255, 255, 255, 0.12);
+  --ink: #2a2834;
+  --ink-foreground: #ecebf2;
+  --track: #2c2a37;
+  --chip: transparent;
+  --chart-muted: #6e6a80;        /* 3.3:1 on card */
   --chart-green: var(--hue-teal-solid);
-  --chart-green-soft: #0e3f2e;
-  --chart-area: rgba(201, 160, 227, 0.1);
-  --tooltip: #f5f2ff;
-  --tooltip-foreground: #0d0b14;
+  --chart-green-soft: var(--hue-teal-soft);
+  --chart-area: transparent;
+  --tooltip: #ecebf2;
+  --tooltip-foreground: #131219;
   --dot-rose: var(--hue-rose-solid);
   --dot-green: var(--hue-teal-solid);
   --dot-amber: var(--hue-amber-solid);
@@ -167,23 +183,29 @@
   --tint-green: var(--hue-teal-soft);
   --tint-amber: var(--hue-amber-soft);
 
-  /* Depth, dark: a shadow is invisible on #000, so height is shown by light instead. Each level adds
-     a brighter top highlight and a faint lilac ring; level 3 also gets a low violet glow and the
-     slightly lighter --card-raised surface. */
-  --elevation-xs: inset 0 1px 0 rgb(255 255 255 / 0.04);
-  --elevation-sm: inset 0 1px 0 rgb(255 255 255 / 0.06), 0 0 0 1px rgb(201 160 227 / 0.03);
-  --elevation-md: inset 0 1px 0 rgb(255 255 255 / 0.08), 0 0 0 1px rgb(201 160 227 / 0.07);
-  --elevation-lg: inset 0 1px 0 rgb(255 255 255 / 0.1), 0 0 0 1px rgb(201 160 227 / 0.12),
-    0 20px 44px -18px rgb(126 79 176 / 0.4);
-  --edge: rgb(201 160 227 / 0.13);
-  --card-raised: #15121f;
-  --card-surface: linear-gradient(180deg, rgb(255 255 255 / 0.035), transparent 72px);
-  --pill-highlight: inset 0 1px 0 rgb(255 255 255 / 0.07), 0 0 0 1px rgb(201 160 227 / 0.1);
+  /* A shadow does not read on a dark ground: only the drawer keeps one. */
+  --elevation-xs: 0 0 #0000;
+  --elevation-sm: 0 0 #0000;
+  --elevation-md: 0 0 #0000;
+  --elevation-lg: 0 12px 32px -12px rgb(0 0 0 / 0.6);
+  --card-surface: none;
+  --pill-highlight: none;
   --veil-violet: #1f1033;
   --veil-sky: #071f2f;
   --veil-teal: #06221b;
   --veil-amber: #2a1805;
   --veil-rose: #2c0f18;
+}
+
+/* Type scale 12/14/16/20/24/28 maps onto Tailwind's own size names so tailwind-merge (cn in lib/utils)
+   still recognises them: text-xs 12/16, text-sm 14/20, text-base 16/24, text-xl 20/28,
+   text-2xl 24/32 (page title), text-3xl 28/36 (stat numbers). Weights stop at 700: extrabold and
+   black are capped so old classes cannot render heavier. */
+@theme {
+  --text-3xl: 1.75rem;
+  --text-3xl--line-height: 2.25rem;
+  --font-weight-extrabold: 700;
+  --font-weight-black: 700;
 }
 
 @theme inline {
@@ -193,6 +215,8 @@
   --shadow-elev-lg: var(--elevation-lg);
   --shadow-pill: var(--pill-highlight);
   --color-edge: var(--edge);
+  --color-field-border: var(--field-border);
+  --color-hover-tint: var(--hover-tint);
   --color-card-raised: var(--card-raised);
   --color-on-veil: var(--on-veil);
   --color-on-veil-muted: var(--on-veil-muted);
@@ -204,6 +228,7 @@
   --color-border-subtle: var(--border-subtle);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-primary-hover: var(--primary-hover);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-lilac: var(--lilac);
@@ -215,6 +240,8 @@
   --color-warning-soft: var(--warning-soft);
   --color-danger: var(--danger);
   --color-danger-soft: var(--danger-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
   --color-neutral: var(--neutral);
   --color-neutral-soft: var(--neutral-soft);
   --font-sans: var(--font-jakarta);
@@ -222,6 +249,7 @@
   --color-ink-foreground: var(--ink-foreground);
   --color-track: var(--track);
   --color-chip: var(--chip);
+  --color-chart-muted: var(--chart-muted);
   --color-chart-green: var(--chart-green);
   --color-chart-green-soft: var(--chart-green-soft);
   --color-chart-area: var(--chart-area);
@@ -251,7 +279,8 @@
   --color-ring: var(--ring);
 }
 
-/* Card surface overlay (see --card-surface). Sits over bg-card / bg-card-raised as a background image. */
+/* Legacy: the old card gradient overlay. --card-surface is `none`, so this does nothing; it is kept so
+   screens that still carry the class compile. Do not use it in new code. */
 @utility surface {
   background-image: var(--card-surface);
 }
@@ -260,6 +289,32 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), sans-serif;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Browser surfaces, themed from the palette. */
+::selection {
+  background: color-mix(in srgb, var(--ring) 28%, transparent);
+  color: var(--foreground);
+}
+html {
+  accent-color: var(--primary);
+  caret-color: var(--accent-foreground);
+  scrollbar-color: var(--border) transparent;
+}
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+a {
+  text-underline-offset: 3px;
+}
+table {
+  font-variant-numeric: tabular-nums;
 }
 
 /* Login page background: a drifting honeycomb (the hexagon of the logo) over soft moving light.
@@ -310,4 +365,3 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .login-lattice, .login-orb, .login-pulse { animation: none; }
 }
-

@@ -59,13 +59,13 @@ export function ThemeToggle({ className }: { className?: string }) {
       onClick={toggle}
       aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
       className={cn(
-        'inline-flex size-10 max-lg:size-11 shrink-0 items-center justify-center rounded-full border border-border bg-card text-foreground transition-colors hover:bg-accent',
+        'inline-flex size-9 max-lg:size-11 shrink-0 items-center justify-center rounded-md text-muted transition-colors hover:bg-hover-tint hover:text-foreground',
         'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
         className
       )}
     >
       {/* Shows what you will switch to: a moon in light mode, a sun in dark mode. */}
-      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" className="size-5 dark:hidden">
+      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" className="size-[18px] dark:hidden">
         <path
           d="M20.5 14.2A8.5 8.5 0 0 1 9.8 3.5a8.5 8.5 0 1 0 10.7 10.7Z"
           stroke="currentColor"
@@ -73,7 +73,7 @@ export function ThemeToggle({ className }: { className?: string }) {
           strokeLinejoin="round"
         />
       </svg>
-      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" className="hidden size-5 dark:block">
+      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" className="hidden size-[18px] dark:block">
         <circle cx="12" cy="12" r="4" stroke="currentColor" strokeWidth="1.8" />
         <path
           d="M12 2.5v2.2M12 19.3v2.2M4.9 4.9l1.6 1.6M17.5 17.5l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.9 19.1l1.6-1.6M17.5 6.5l1.6-1.6"

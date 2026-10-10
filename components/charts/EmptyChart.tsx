@@ -4,8 +4,13 @@ import { cn } from '@/lib/utils'
 // screen readers.
 export function EmptyChart({ ariaLabel, className }: { ariaLabel: string; className?: string }) {
   return (
-    <div className={cn('flex min-h-28 w-full items-center justify-center rounded-xl bg-accent/40 px-4 py-6 text-center', className)}>
-      <p className="max-w-[28ch] text-sm font-medium text-muted">
+    <div
+      className={cn(
+        'flex min-h-28 w-full items-center justify-center rounded-lg border border-dashed border-border px-4 py-6 text-center',
+        className
+      )}
+    >
+      <p className="max-w-[32ch] text-sm text-muted">
         <span className="sr-only">{ariaLabel}: </span>
         No grades yet. They appear after the Registrar encodes them.
       </p>

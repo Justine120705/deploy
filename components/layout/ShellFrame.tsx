@@ -10,40 +10,40 @@ import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { Icon } from './Icon'
 
 const FOCUS = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring'
-const NAV_ITEM = `flex h-11 w-full items-center gap-3 rounded-lg px-3 text-sm transition-colors ${FOCUS}`
-// The active pill gets a lit top edge (shadow-pill), so it reads as pressed into the rail, not painted on.
-const NAV_ACTIVE = 'rounded-[10px] bg-accent font-bold text-accent-foreground shadow-pill'
-const NAV_IDLE = 'font-medium text-muted hover:bg-accent/60 hover:text-accent-foreground'
-// Staff shell (Figma Registrar frame): the active item is a solid ink pill, not the soft violet one.
-const NAV_ACTIVE_STAFF = 'rounded-[10px] bg-primary font-bold text-primary-foreground shadow-elev-xs'
-// 44px: the menu button only exists below lg, where it is a touch target.
-const ICON_BUTTON = `inline-flex size-11 items-center justify-center rounded-lg text-muted transition-colors hover:text-foreground ${FOCUS}`
+// Nav rows: 40px on desktop, 44px touch targets below lg; 6px corners; 20px icon column.
+const NAV_ITEM = `flex h-10 w-full items-center gap-3 rounded-md px-2.5 text-sm transition-colors max-lg:h-11 ${FOCUS}`
+const NAV_ACTIVE = 'bg-accent font-semibold text-accent-foreground'
+const NAV_IDLE = 'font-medium text-muted hover:bg-hover-tint hover:text-foreground'
+const ICON_BUTTON = `inline-flex size-11 items-center justify-center rounded-md text-muted transition-colors hover:bg-hover-tint hover:text-foreground ${FOCUS}`
 
-// Client half of the shell: sidebar with the active link, mobile drawer and top bar.
-// The server half (DashboardShell) passes plain data plus the sign-out form.
+// Client half of the shell: flat sidebar (fixed, full height, one hairline on its right edge), the
+// mobile drawer and the slim mobile top bar. The server half (DashboardShell) passes plain data plus
+// the sign-out form. Student and staff render the same flat shell; staff also shows the role label.
 export default function ShellFrame({
   items,
   roleLabel,
   userName,
   userMeta,
   signOut,
-  promo,
   settingsHref,
   variant = 'student',
+  title,
   children,
 }: {
   items: NavItem[]
   roleLabel: string
   userName: string
-  /** Second line under the name in the top bar (for example "ID 2026-0001"). Defaults to the role. */
+  /** Second line under the name in the user row (for example "ID 2026-0001"). Defaults to the role. */
   userMeta?: string
   signOut: React.ReactNode
-  /** Optional card above Settings at the bottom of the sidebar (see PromoCard). */
+  /** Accepted for compatibility; the flat shell has no sidebar promo. */
   promo?: React.ReactNode
   /** Where Settings goes. Without it the item is shown but disabled (there is no settings page yet). */
   settingsHref?: string
-  /** `student`: floating topbar and promo card. `staff`: no topbar on desktop, role label, user card with sign-out. */
+  /** `staff` adds the role label under the logo; otherwise identical. */
   variant?: 'student' | 'staff'
+  /** Page title, shown in the mobile top bar (the logo name when absent). */
+  title?: string
   children: React.ReactNode
 }) {
   const staff = variant === 'staff'
@@ -75,12 +75,12 @@ export default function ShellFrame({
     href === homeHref ? pathname === href : pathname === href || pathname.startsWith(href + '/')
 
   return (
-    <div className="flex min-h-screen gap-4 bg-background p-3 text-foreground lg:p-4">
+    <div className="min-h-screen bg-background text-foreground lg:pl-60">
       <a
         href="#main"
         inert={open}
         className={cn(
-          'sr-only rounded-lg bg-card px-4 py-2 text-sm font-semibold text-foreground focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:shadow-elev-lg',
+          'sr-only rounded-md bg-card px-4 py-2 text-sm font-semibold text-foreground focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:border focus:border-border focus:shadow-elev-lg',
           'focus:outline-2 focus:outline-offset-2 focus:outline-ring'
         )}
       >
@@ -98,32 +98,27 @@ export default function ShellFrame({
 
       <aside
         ref={drawerRef}
+        aria-label="Sidebar"
         className={cn(
-          'fixed inset-y-3 left-3 z-40 flex flex-col gap-2 overflow-y-auto rounded-2xl border border-edge bg-card px-[18px] py-6 surface',
-          // Level 1 on desktop (chrome sits low so content floats above it); level 3 as the mobile drawer.
-          staff ? 'w-[248px]' : 'w-[232px]',
-          'shadow-elev-lg lg:shadow-elev-xs',
-          'transition-[transform,visibility] lg:sticky lg:inset-y-auto lg:top-4 lg:h-[calc(100vh-2rem)] lg:shrink-0 lg:translate-x-0',
+          'fixed inset-y-0 left-0 z-40 flex w-60 flex-col overflow-y-auto border-r border-border bg-background px-3 pb-3',
+          // Desktop: always in place, flat. Phone: a drawer with the one real shadow in the system.
+          'shadow-elev-lg lg:translate-x-0 lg:shadow-none',
           // Closed on a phone: off screen and out of the Tab order (visibility switches after the slide).
           // Opening skips the visibility transition so the first link can take focus at once.
-          open ? 'translate-x-0 transition-transform' : '-translate-x-[110%] max-lg:invisible'
+          open
+            ? 'translate-x-0 transition-transform duration-200 ease-out motion-reduce:transition-none'
+            : 'max-lg:invisible max-lg:-translate-x-full max-lg:transition-[transform,visibility] max-lg:duration-200 motion-reduce:transition-none'
         )}
       >
-        <div className="flex h-14 shrink-0 items-center gap-3 px-2">
+        <div className="flex h-16 shrink-0 items-center gap-2.5 px-2.5">
           <LogoMark />
-          <p className="text-xl font-extrabold leading-tight">
-            <span className="text-accent-foreground">Cabuyao</span> University
-          </p>
+          <div className="min-w-0 leading-tight">
+            <p className="truncate text-sm font-semibold">Cabuyao University</p>
+            {staff && <p className="truncate text-xs text-muted">{roleLabel}</p>}
+          </div>
         </div>
 
-        {staff && (
-          <div className="mt-2 flex items-center justify-between px-2">
-            <p className="text-xs font-semibold uppercase tracking-widest text-muted">{roleLabel}</p>
-            <ThemeToggle />
-          </div>
-        )}
-
-        <nav aria-label="Main" className={cn('flex flex-col gap-2', staff ? 'mt-1' : 'mt-[13px]')}>
+        <nav aria-label="Main" className="mt-2 flex flex-col gap-0.5">
           {items.map((item) => {
             const active = isActive(item.href)
             return (
@@ -132,92 +127,79 @@ export default function ShellFrame({
                 href={item.href}
                 onClick={() => setOpen(false)}
                 aria-current={active ? 'page' : undefined}
-                className={cn(NAV_ITEM, active ? (staff ? NAV_ACTIVE_STAFF : NAV_ACTIVE) : NAV_IDLE)}
+                className={cn(NAV_ITEM, active ? NAV_ACTIVE : NAV_IDLE)}
               >
-                <Icon name={item.icon} />
+                <span className="flex size-5 shrink-0 items-center justify-center">
+                  <Icon name={item.icon} />
+                </span>
                 {item.label}
               </Link>
             )
           })}
         </nav>
 
-        <div className="mt-auto flex flex-col gap-2 pt-4">
-          {!staff && promo}
-          {!staff && (settingsHref ? (
-            <Link href={settingsHref} className={cn(NAV_ITEM, NAV_IDLE)}>
-              <Icon name="settings" />
+        <div className="mt-auto flex flex-col gap-0.5 pt-6">
+          {settingsHref ? (
+            <Link href={settingsHref} onClick={() => setOpen(false)} className={cn(NAV_ITEM, NAV_IDLE)}>
+              <span className="flex size-5 shrink-0 items-center justify-center">
+                <Icon name="settings" />
+              </span>
               Settings
             </Link>
           ) : (
-            <button
-              type="button"
-              aria-disabled="true"
-              className={cn(NAV_ITEM, 'cursor-not-allowed font-medium text-muted')}
-            >
-              <Icon name="settings" />
+            <button type="button" aria-disabled="true" className={cn(NAV_ITEM, 'cursor-not-allowed font-medium text-muted')}>
+              <span className="flex size-5 shrink-0 items-center justify-center">
+                <Icon name="settings" />
+              </span>
               Settings
               <span className="ml-auto text-xs font-medium">Soon</span>
             </button>
-          ))}
-          {staff && (
-            <div className="flex items-center gap-3 rounded-xl bg-accent/60 px-3 py-2.5">
-              <span
-                aria-hidden="true"
-                className="flex size-9 shrink-0 items-center justify-center rounded-full bg-hue-violet-soft text-sm font-bold text-hue-violet-strong"
-              >
-                {userName.charAt(0)}
-              </span>
-              <div className="min-w-0 flex-1 text-sm leading-tight">
-                <p className="truncate font-bold">{userName}</p>
-                <p className="truncate text-muted">{roleLabel}</p>
-              </div>
-              {signOut}
-            </div>
           )}
-          {!staff && signOut}
+          {signOut}
+
+          <div className="mt-2 flex items-center gap-2.5 border-t border-border px-1 pt-3">
+            <span
+              aria-hidden="true"
+              className="flex size-8 shrink-0 items-center justify-center rounded-full bg-accent text-sm font-semibold text-accent-foreground"
+            >
+              {userName.charAt(0)}
+            </span>
+            <div className="min-w-0 flex-1 leading-tight">
+              <p className="truncate text-sm font-semibold">{userName}</p>
+              <p className="truncate text-xs text-muted">{userMeta ?? roleLabel}</p>
+            </div>
+            <ThemeToggle />
+          </div>
         </div>
       </aside>
 
-      <div inert={open} className="flex min-w-0 flex-1 flex-col gap-4">
-        <header
-          className={cn(
-            'flex h-[60px] shrink-0 items-center justify-between gap-3 rounded-2xl border border-edge bg-card px-5 shadow-elev-xs surface',
-            staff && 'lg:hidden'
-          )}
-        >
-          <button
-            type="button"
-            ref={menuRef}
-            aria-label="Open menu"
-            onClick={() => setOpen(true)}
-            className={cn(ICON_BUTTON, 'lg:hidden')}
-          >
+      <div inert={open} className="flex min-h-screen min-w-0 flex-col">
+        {/* Below lg only: slim sticky bar with the menu button, the page title and the theme toggle. */}
+        <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center gap-1 border-b border-border bg-background px-1.5 lg:hidden">
+          <button type="button" ref={menuRef} aria-label="Open menu" onClick={() => setOpen(true)} className={ICON_BUTTON}>
             <Icon name="menu" className="size-5" />
           </button>
-          <div className={cn('ml-auto flex items-center gap-3 sm:gap-[18px]', staff && 'hidden')}>
-            <ThemeToggle />
-            <div className="flex items-center gap-2.5">
-              <span
-                aria-hidden="true"
-                className="flex size-9 shrink-0 items-center justify-center rounded-full bg-hue-violet-soft text-sm font-bold text-hue-violet-strong"
-              >
-                {userName.charAt(0)}
-              </span>
-              <div className="hidden text-sm leading-tight sm:block">
-                <p className="font-bold">{userName}</p>
-                <p className="text-muted">{userMeta ?? roleLabel}</p>
-              </div>
-            </div>
+          <div className="flex min-w-0 flex-1 items-center gap-2">
+            {!title && <LogoMark small />}
+            <p className="truncate text-base font-semibold">{title ?? 'Cabuyao University'}</p>
           </div>
+          <ThemeToggle />
         </header>
-        <main id="main" tabIndex={-1} className="flex min-w-0 flex-1 flex-col outline-none">{children}</main>
+        <main
+          id="main"
+          tabIndex={-1}
+          className="mx-auto flex w-full max-w-[1200px] min-w-0 flex-1 flex-col px-4 py-5 outline-none sm:px-6 lg:px-8 lg:py-8"
+        >
+          {children}
+        </main>
       </div>
     </div>
   )
 }
 
-// Cabuyao CU monogram: Figma's own vector (public/brand), same files as the login logo.
-function LogoMark() {
+// Cabuyao CU monogram: Figma's own vector (public/brand), same files as the login logo. Never redrawn.
+function LogoMark({ small = false }: { small?: boolean }) {
+  const size = small ? 'w-7' : 'w-9'
   return (
     <>
       <Image
@@ -228,7 +210,7 @@ function LogoMark() {
         height={77}
         unoptimized
         loading="eager"
-        className="h-auto w-11 shrink-0 dark:hidden"
+        className={cn('h-auto shrink-0 dark:hidden', size)}
       />
       <Image
         src="/brand/cu-mark-dark.svg"
@@ -238,7 +220,7 @@ function LogoMark() {
         height={77}
         unoptimized
         loading="eager"
-        className="hidden h-auto w-11 shrink-0 dark:block"
+        className={cn('hidden h-auto shrink-0 dark:block', size)}
       />
     </>
   )

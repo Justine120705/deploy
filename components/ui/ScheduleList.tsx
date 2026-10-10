@@ -18,16 +18,16 @@ export function ScheduleList({ items, className }: { items: readonly ScheduleEnt
     <ul className={cn('flex flex-col gap-3', className)}>
       {items.map((item) => (
         <li key={item.code} className="flex items-center gap-2.5">
-          <span className="shrink-0 text-sm font-semibold text-muted">{item.time}</span>
+          <span className="w-[4.5rem] shrink-0 text-sm font-medium tabular-nums text-muted">{item.time}</span>
           <span
             aria-hidden="true"
             className={cn(
-              'h-8 w-[3px] shrink-0 rounded-sm',
+              'h-8 w-0.5 shrink-0 rounded-full',
               isLegacy(item.tone) ? LEGACY_BAR[item.tone] : HUE_SOLID[item.tone]
             )}
           />
           <span className="flex min-w-0 flex-col text-sm">
-            <span className="truncate font-bold">{item.title}</span>
+            <span className="truncate font-semibold">{item.title}</span>
             <span className={cn('font-medium', isLegacy(item.tone) ? 'text-muted' : HUE_TEXT[item.tone])}>
               {item.code}
             </span>
