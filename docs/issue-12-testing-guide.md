@@ -508,7 +508,7 @@ Fill in this table (copy into `docs/testing-plan.md` for Sprint 4). Actual = wha
 | TC-25 | audit_logs cannot be updated, deleted or truncated, even as postgres (Part G, section B) | all three blocked | ran_as = postgres; update, delete and truncate each blocked: audit_logs is append-only; test_row_still_there = 1 (2026-10-10, PM ran section B and clicked Run, Claude loaded and read the test; rolled back) | Pass |
 | TC-26 | Department places a hold for an own-department student and for another department's student (Part G, section A) | `inserted`; RLS error | own_department_student = inserted; other_department_student = ERROR: new row violates row-level security policy for table "academic_holds" (2026-10-10, PM ran section A and clicked Run, Claude loaded and read the test; temporary grant in a rolled-back transaction) | Pass |
 | TC-27 | Grants after section C (Part G) | no TRUNCATE/REFERENCES/TRIGGER/MAINTAIN, anon cannot read or write, authenticated still reads and updates profiles | any_truncate_refs_trigger false, any_maintain false, anon_select_any false, anon_profiles_insert false, auth_profiles_update true, auth_select_all true, auth_audit_insert false, all four anon_exec_* false, auth_exec_all_4 true (2026-10-10, PM ran section C and clicked Run, Claude loaded and read the check) | Pass |
-| TC-28 | Regression: anonymous read of `grades` / `v_grades`; Student 1 sees only own grades (Part G) | Denied or 0 rows; visible = own | Not run yet | NOT RUN |
+| TC-28 | Regression: anonymous read of `grades` / `v_grades`; Student 1 sees only own grades (Part G) | Denied or 0 rows; visible = own | anon_grades: denied: permission denied for table grades; anon_v_grades: denied: permission denied for view v_grades; student1_visible_grades 3 = student1_own_grades 3 (2026-10-10, PM ran section C and clicked Run, Claude loaded and read the result) | Pass |
 
 ## Step 7: Fix what failed (before closing the issue)
 
@@ -587,3 +587,15 @@ Read-only checks, run in the Supabase SQL editor and the dashboard (Integrations
 - Data API exposed schemas: `graphql_public` and `public`. `private` is NOT exposed, so the `private` functions cannot be reached through the API.
 - Data API exposed tables: "1 of 27 tables exposed". This matches the grants export: only `profiles` allows writes for `authenticated`. When the app starts writing data, the needed tables must be exposed and given targeted GRANTs on purpose.
 - Table triggers found: one app trigger, `trg_clearances_create_items` on `clearances` (calls `private.create_clearance_items()`), plus Supabase's own `realtime` and `storage` triggers. No audit triggers (REQ-ADM-03) exist yet.
+
+## Regression after hardening2.sql sections A, B and C (2026-10-10)
+
+TC-12 to TC-23 were run again as one rolled-back script (PM clicked Run in the Supabase SQL editor, Claude loaded the script and read the result; temporary grant inside the rolled-back transaction):
+
+- TC-18, TC-20, TC-22 (the three attacks) are still blocked: RLS on `clearances`, the column lock on `charges.student_id`, RLS on `clearance_items`.
+- TC-19, TC-21, TC-23 (normal updates) still work: `clearance 1, grade 1`; `rows 1`; `clear 1, lift 1, place 1`. The Cashier's department lookup returned 1.
+- TC-17: a student changing their own role: `rows 0`.
+- TC-12 to TC-15: `own_profile` 1; every Student 2 count (grades, charges, payments, clearances, holds, enrollments, document_requests) 0; `v_grades` 3 = `grades` 3; `v_clearance_items` 4 = `clearance_items` 4.
+- The audit trigger wrote 6 audit rows for the writes in that script (rolled back afterwards).
+- TC-16 now ends in "permission denied" for `anon` (accepted result), see TC-28.
+

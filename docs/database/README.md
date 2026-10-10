@@ -39,7 +39,10 @@ Run in the Supabase **SQL Editor** (or `psql`), in exactly this order:
 `triggers.sql` is a record of the triggers, **not** a step: do not run it (it stops itself
 and rolls back if run by mistake).
 
-`hardening2.sql` has **not** been run on the live database yet (as of 2026-10-10).
+`hardening2.sql` sections A, B and C were run on the live database on 2026-10-10, one at a time, and tested
+(TC-24 to TC-28 and the regression TC-12 to TC-23 in `docs/issue-12-testing-guide.md`). The grants before
+section C are saved in `grants_snapshot_2026-10-10.txt`. Tables exposed later in the Supabase Data API get
+full default rights again, so repeat the anon part of section C afterwards.
 
 `hardening.sql` was run on the live database on 2026-10-10 and tested (TC-18 to TC-23 and the
 regression TC-12 to TC-17 in `docs/issue-12-testing-guide.md`). It is a change on top of the live
@@ -65,8 +68,8 @@ Views, `private` functions and policies now match the live database (export of
 - **Grants.** No `GRANT` / `REVOKE` statements were exported (schema `private`, functions,
   tables, views). `private_functions.sql` keeps the old draft grants as a comment only;
   verify them against the live database.
-- **Audit triggers.** `audit_logs` is empty until `hardening2.sql` section B (REQ-ADM-03)
-  is run; it does not back-fill older changes.
+- **Audit triggers.** `hardening2.sql` section B (REQ-ADM-03) is live; `audit_logs` only holds
+  changes made after 2026-10-10 (no back-fill).
 - **`types/database.types.ts`** lists more view columns than the live views have; regenerate
   the types or update the views.
 
