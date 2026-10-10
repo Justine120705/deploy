@@ -8,12 +8,18 @@ const CY = 80
 export function GaugeChart({
   value,
   label,
+  color = 'var(--lilac)',
+  trackColor = 'var(--track)',
   ariaLabel,
   className,
 }: {
   value: number
   /** Text inside the arc; defaults to "75%". */
   label?: React.ReactNode
+  /** Filled part of the arc (a CSS color, for example var(--hue-teal-solid)). */
+  color?: string
+  /** Unfilled part of the arc. */
+  trackColor?: string
   ariaLabel?: string
   className?: string
 }) {
@@ -31,14 +37,14 @@ export function GaugeChart({
       <svg aria-hidden="true" viewBox="0 0 160 92" fill="none" className="absolute inset-0 size-full">
         <path
           d={`M ${CX - R} ${CY} A ${R} ${R} 0 0 1 ${CX + R} ${CY}`}
-          stroke="var(--track)"
+          stroke={trackColor}
           strokeWidth="14"
           strokeLinecap="round"
         />
         {fraction > 0 && (
           <path
             d={`M ${CX - R} ${CY} A ${R} ${R} 0 0 1 ${x.toFixed(3)} ${y.toFixed(3)}`}
-            stroke="var(--lilac)"
+            stroke={color}
             strokeWidth="14"
           />
         )}

@@ -22,8 +22,8 @@ export const GWA_PROGRESS_X_LABELS = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6']
 export const GWA_PROGRESS_Y_TICKS = [1, 1.5, 2, 2.5, 3]
 
 export const PENDING_ITEMS = [
-  { title: 'CCS Department', value: 'Pending', note: 'Awaiting department review' },
-  { title: 'Active holds', value: '0', note: 'No academic holds' },
+  { title: 'CCS Department', value: 'Pending', note: 'Awaiting department review', attention: true },
+  { title: 'Active holds', value: '0', note: 'No academic holds', attention: false },
 ]
 
 export const CURRENT_GRADES = [
@@ -43,14 +43,15 @@ export const CLEARANCE_OFFICES = [
 export const CALENDAR_VIEW = { year: 2026, month: 9, today: '2026-10-05' } // month is 0-based
 export const CALENDAR_EVENTS = [
   { id: 'exam', title: 'Midterm examinations', tone: 'rose', dates: ['2026-10-09', '2026-10-30'] },
-  { id: 'enroll', title: 'Enrollment advising', tone: 'green', dates: ['2026-10-16'] },
+  { id: 'enroll', title: 'Enrollment advising', tone: 'sky', dates: ['2026-10-16'] },
   { id: 'fees', title: 'Fee payment deadline', tone: 'amber', dates: ['2026-10-23'] },
 ] as const
 
 export const SCHEDULE = [
-  { time: 'MWF 8–9 AM', title: 'Intro to Computing', code: 'CS101', tone: 'ink' },
-  { time: 'TTh 9–10:30', title: 'Programming 1', code: 'CS102', tone: 'lilac' },
-  { time: 'MWF 10–11 AM', title: 'Understanding Self', code: 'GE101', tone: 'green' },
+  // One hue per course (violet, sky, teal only; amber and rose mean attention and problems).
+  { time: 'MWF 8–9 AM', title: 'Intro to Computing', code: 'CS101', tone: 'violet' },
+  { time: 'TTh 9–10:30', title: 'Programming 1', code: 'CS102', tone: 'sky' },
+  { time: 'MWF 10–11 AM', title: 'Understanding Self', code: 'GE101', tone: 'teal' },
 ] as const
 
 /** Seconds until the next class, shown as 00:42:18. */

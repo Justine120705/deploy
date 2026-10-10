@@ -1,4 +1,15 @@
 import { cn } from '@/lib/utils'
+import type { Hue } from '@/components/ui/hue'
+
+// Every bar is drawn in the hue's solid tier (>= 3:1 on the card); the highlighted bar uses the
+// deeper strong tier and carries the tooltip chip, so it stands out without a second hue.
+const BAR: Record<Hue, { base: string; highlight: string }> = {
+  violet: { base: 'bg-hue-violet-solid', highlight: 'bg-hue-violet-strong' },
+  sky: { base: 'bg-hue-sky-solid', highlight: 'bg-hue-sky-strong' },
+  teal: { base: 'bg-hue-teal-solid', highlight: 'bg-hue-teal-strong' },
+  amber: { base: 'bg-hue-amber-solid', highlight: 'bg-hue-amber-strong' },
+  rose: { base: 'bg-hue-rose-solid', highlight: 'bg-hue-rose-strong' },
+}
 
 export type BarDatum = {
   label: string
@@ -15,12 +26,15 @@ export function BarChart({
   data,
   max,
   barHeight = 88,
+  hue = 'teal',
   ariaLabel,
   className,
 }: {
   data: BarDatum[]
   max?: number
   barHeight?: number
+  /** Topic hue of the chart (components/ui/hue.ts). */
+  hue?: Hue
   ariaLabel: string
   className?: string
 }) {
@@ -38,7 +52,7 @@ export function BarChart({
               </span>
             )}
             <div
-              className={cn('w-3.5 rounded-[5px]', d.highlight ? 'bg-chart-green' : 'bg-chart-green-soft')}
+              className={cn('w-3.5 rounded-[5px]', d.highlight ? BAR[hue].highlight : BAR[hue].base)}
               style={{ height: `${(Math.max(d.value, 0) / top) * barHeight}px` }}
             />
           </div>

@@ -9,3 +9,4 @@ export { ThemeToggle } from "./ThemeToggle";
 export { CardMenuButton } from "./CardMenuButton";
 export { EventCalendar, type CalendarEvent, type CalendarTone } from "./EventCalendar";
 export { ScheduleList, type ScheduleEntry, type ScheduleTone } from "./ScheduleList";
+export { HUE_SOFT, HUE_SOLID, HUE_TEXT, hueVar, type Hue } from "./hue";

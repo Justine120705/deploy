@@ -1,7 +1,7 @@
 import Image from 'next/image'
 
-// Soft lilac card at the bottom of the sidebar: a big number, what it counts and an encouraging
-// line. Pass it to DashboardShell's `promo` prop; roles without one simply leave it out.
+// Sidebar card: a big number, what it counts and an encouraging line, on a soft violet-to-sky wash
+// (the only gradient in the shell; both ends are soft tints, so text keeps its contrast). Pass it to DashboardShell's `promo` prop; roles without one simply leave it out.
 export default function PromoCard({
   value,
   label,
@@ -12,7 +12,7 @@ export default function PromoCard({
   note?: string
 }) {
   return (
-    <div className="flex flex-col items-center gap-2 rounded-lg bg-accent p-4 text-center">
+    <div className="flex flex-col items-center gap-2 rounded-lg bg-linear-160 from-hue-violet-soft to-hue-sky-soft p-4 text-center">
       <div className="flex size-24 items-center justify-center bg-card">
         <Image
           src="/figma/art/promo-cu.svg"
@@ -33,9 +33,9 @@ export default function PromoCard({
           className="hidden h-auto w-16 dark:block"
         />
       </div>
-      <p className="text-[28px] font-extrabold leading-tight">{value}</p>
-      <p className="text-sm font-medium text-muted">{label}</p>
-      {note && <p className="text-sm font-semibold text-accent-foreground">{note}</p>}
+      <p className="text-[28px] font-extrabold leading-tight text-hue-violet-strong">{value}</p>
+      <p className="text-sm font-medium text-foreground">{label}</p>
+      {note && <p className="text-sm font-semibold text-hue-sky-strong">{note}</p>}
     </div>
   )
 }

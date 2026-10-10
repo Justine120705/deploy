@@ -2,20 +2,13 @@
 
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
+import { HUE_SOFT, HUE_SOLID, HUE_TEXT, type Hue } from './hue'
 
-export type CalendarTone = 'rose' | 'green' | 'amber'
+/** Event type color: a hue of the color system ('green' is kept as an alias of teal). */
+export type CalendarTone = Hue | 'green'
 export type CalendarEvent = { id: string; title: string; tone: CalendarTone; dates: readonly string[] }
 
-const TINT: Record<CalendarTone, string> = {
-  rose: 'bg-tint-rose',
-  green: 'bg-tint-green',
-  amber: 'bg-tint-amber',
-}
-const DOT: Record<CalendarTone, string> = {
-  rose: 'bg-dot-rose',
-  green: 'bg-dot-green',
-  amber: 'bg-dot-amber',
-}
+const hueOf = (tone: CalendarTone): Hue => (tone === 'green' ? 'teal' : tone)
 
 const WEEKDAYS = [
   { letter: 'S', name: 'Sunday' },
@@ -61,7 +54,7 @@ export function EventCalendar({
   const byDate = new Map<string, CalendarEvent>()
   const inMonth = events.filter((e) => e.dates.some((d) => d.startsWith(prefix)))
   for (const e of events) for (const d of e.dates) byDate.set(d, e)
-  const tones = [...new Set(inMonth.map((e) => e.tone))]
+  const legend = [...new Map(inMonth.map((e) => [hueOf(e.tone), e])).values()]
 
   const cells: (number | null)[] = [
     ...Array<null>(offset).fill(null),
@@ -69,7 +62,7 @@ export function EventCalendar({
   ]
 
   const navButton =
-    'flex size-[26px] items-center justify-center rounded-full bg-chip text-sm font-bold text-accent-foreground transition-colors hover:bg-lilac-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lilac'
+    'flex size-[26px] items-center justify-center rounded-full bg-chip text-sm font-bold text-accent-foreground transition-colors hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring'
 
   return (
     <div className={cn('flex flex-col gap-3', className)}>
@@ -104,6 +97,7 @@ export function EventCalendar({
           const iso = `${prefix}${pad(day)}`
           const event = byDate.get(iso)
           const isToday = iso === today
+          const hue = event ? hueOf(event.tone) : undefined
           return (
             <div
               key={iso}
@@ -112,21 +106,33 @@ export function EventCalendar({
               aria-label={event ? `${day}, ${event.title}` : undefined}
               title={event?.title}
               className={cn(
-                'flex size-[34px] items-center justify-center rounded-md text-sm font-medium',
+                'relative flex size-[34px] items-center justify-center rounded-md text-sm font-medium',
                 i % 7 === 0 ? 'text-danger' : 'text-foreground',
-                event && !isToday && cn(TINT[event.tone], 'font-semibold text-foreground'),
+                hue && !isToday && cn(HUE_SOFT[hue], HUE_TEXT[hue], 'font-bold'),
                 isToday && 'bg-ink font-semibold text-ink-foreground'
               )}
             >
               {day}
+              {hue && (
+                // Solid dot under the number: the event mark keeps 3:1 even where the tint is faint.
+                <span
+                  aria-hidden="true"
+                  className={cn('absolute bottom-1 left-1/2 size-1 -translate-x-1/2 rounded-full', HUE_SOLID[hue])}
+                />
+              )}
             </div>
           )
         })}
       </div>
 
       <p className="flex items-center justify-center gap-1.5 text-[13px] font-medium text-muted">
-        {tones.map((t) => (
-          <span key={t} aria-hidden="true" className={cn('size-1.5 rounded-full', DOT[t])} />
+        {legend.map((e) => (
+          <span
+            key={e.id}
+            aria-hidden="true"
+            title={e.title}
+            className={cn('size-1.5 rounded-full', HUE_SOLID[hueOf(e.tone)])}
+          />
         ))}
         {inMonth.length} {inMonth.length === 1 ? 'event' : 'events'} this month
       </p>

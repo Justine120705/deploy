@@ -18,6 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui'
+import { cn } from '@/lib/utils'
 import { requireRole } from '@/lib/auth/session'
 import { MOCK_STUDENT_ID, students } from '@/lib/mock-data'
 import {
@@ -37,7 +38,7 @@ import {
   SCHEDULE,
 } from '@/lib/mock/student-dashboard'
 
-const SEE_ALL = 'text-sm font-semibold text-accent-foreground hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lilac'
+const SEE_ALL = 'text-sm font-semibold text-accent-foreground hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring'
 const TH = 'text-sm'
 
 export default async function StudentDashboardPage() {
@@ -46,6 +47,9 @@ export default async function StudentDashboardPage() {
   const clearedPercent = Math.round((CLEARANCE_SUMMARY.cleared / CLEARANCE_SUMMARY.total) * 100)
 
   // Lower GWA is better, so the bar height is the distance below 3.25 (T5, 1.75, is the tallest).
+  // Best (lowest) point of the progress line, pinned on the chart.
+  const best = GWA_PROGRESS.indexOf(Math.min(...GWA_PROGRESS))
+
   const bars = GWA_BY_TERM.map((t) => ({
     label: t.term,
     value: 3.25 - t.gwa,
@@ -64,31 +68,36 @@ export default async function StudentDashboardPage() {
         <div className="flex min-w-0 flex-col gap-4">
           <div className="grid gap-4 md:grid-cols-3">
             <Card className="flex min-h-[214px] flex-col gap-3 p-5">
-              <CardHeader title="Clearance" action={<CardMenuButton />} />
+              <CardHeader title="Clearance" icon="clearance" hue="teal" action={<CardMenuButton />} />
               <div className="flex h-28 items-center justify-center">
                 <GaugeChart
                   value={clearedPercent}
+                  color="var(--hue-teal-solid)"
+                  trackColor="var(--hue-amber-solid)"
                   ariaLabel={`Clearance ${clearedPercent} percent complete, ${CLEARANCE_SUMMARY.cleared} of ${CLEARANCE_SUMMARY.total} offices cleared`}
                 />
               </div>
               <div className="flex justify-center gap-4">
-                <LegendItem color="var(--lilac)">Cleared</LegendItem>
-                <LegendItem color="var(--track)">Pending</LegendItem>
+                <LegendItem color="var(--hue-teal-solid)">Cleared</LegendItem>
+                <LegendItem color="var(--hue-amber-solid)">Pending</LegendItem>
               </div>
             </Card>
 
             <Card className="flex min-h-[214px] flex-col gap-3 p-5">
-              <CardHeader title="GWA by term" action={<CardMenuButton />} />
-              <BarChart data={bars} max={1.5} ariaLabel="GWA by term" />
+              <CardHeader title="GWA by term" icon="grades" hue="violet" action={<CardMenuButton />} />
+              <BarChart data={bars} max={1.5} hue="violet" ariaLabel="GWA by term" />
             </Card>
 
             <Card className="flex min-h-[214px] flex-col gap-3 p-5">
-              <CardHeader title="Pending items" action={<CardMenuButton />} />
+              <CardHeader title="Pending items" icon="clock" hue="amber" action={<CardMenuButton />} />
               {PENDING_ITEMS.map((p) => (
                 <div key={p.title} className="flex flex-col gap-1.5 text-sm">
                   <div className="flex items-center justify-between gap-2">
                     <p className="font-bold">{p.title}</p>
-                    <p className="font-semibold text-muted">{p.value}</p>
+                    {/* The value word itself says the state; the hue only repeats it. */}
+                    <p className={cn('font-semibold', p.attention ? 'text-hue-amber-strong' : 'text-hue-teal-strong')}>
+                      {p.value}
+                    </p>
                   </div>
                   <p className="text-muted">{p.note}</p>
                 </div>
@@ -100,12 +109,12 @@ export default async function StudentDashboardPage() {
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 className="text-base font-bold leading-[22px]">Progress</h2>
               <div className="flex items-center gap-3">
-                <LegendItem color="var(--dot-amber)">GWA</LegendItem>
+                <LegendItem color="var(--hue-violet-strong)">GWA</LegendItem>
                 <div className="relative">
                   <select
                     aria-label="Term range"
                     defaultValue="all"
-                    className="appearance-none rounded-lg border border-border-subtle bg-lilac-soft py-1.5 pl-3 pr-8 text-sm font-medium text-neutral focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lilac"
+                    className="appearance-none rounded-lg border border-border-subtle bg-lilac-soft py-1.5 pl-3 pr-8 text-sm font-medium text-neutral focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                   >
                     <option value="all">All terms</option>
                   </select>
@@ -120,6 +129,8 @@ export default async function StudentDashboardPage() {
               values={GWA_PROGRESS}
               yTicks={GWA_PROGRESS_Y_TICKS}
               xLabels={GWA_PROGRESS_X_LABELS}
+              hue="violet"
+              mark={{ index: best, label: `Best ${GWA_PROGRESS[best].toFixed(2)}` }}
               ariaLabel="GWA progress across all terms"
             />
           </Card>
@@ -128,6 +139,8 @@ export default async function StudentDashboardPage() {
             <Card className="flex flex-col overflow-hidden">
               <CardHeader
                 title="Current grades"
+                icon="grades"
+                hue="violet"
                 className="px-[18px] py-4"
                 action={
                   <Link href="/student/grades" className={SEE_ALL}>
@@ -166,6 +179,8 @@ export default async function StudentDashboardPage() {
             <Card className="flex flex-col pb-2">
               <CardHeader
                 title="Clearance offices"
+                icon="clearance"
+                hue="teal"
                 className="px-[18px] py-4"
                 action={
                   <Link href="/student/clearance" className={SEE_ALL}>
@@ -192,6 +207,8 @@ export default async function StudentDashboardPage() {
           <Card className="flex flex-col gap-3 p-5">
             <CardHeader
               title="My schedule"
+              icon="enrollment"
+              hue="sky"
               action={
                 <Link href="/student/enrollment" className={SEE_ALL}>
                   See all

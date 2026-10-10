@@ -8,6 +8,26 @@
    bg-success-soft ...) instead of hard-coded colors so light and dark stay in sync. */
 :root {
   color-scheme: light;
+
+  /* Hue family (docs/design/colors.md). Five hues built in OKLCH with one lightness and chroma per
+     tier, so they read as one family with the brand purple. soft = tinted background, strong = text
+     and icons (>= 4.5:1 on soft, card and page), solid = chart marks, dots, bars (>= 3:1 on card). */
+  --hue-violet-soft: #f4ecff;
+  --hue-violet-strong: #7e4fb0;  /* = brand purple */
+  --hue-violet-solid: #976ec6;
+  --hue-sky-soft: #e2f3fe;
+  --hue-sky-strong: #03709e;
+  --hue-sky-solid: #078fc8;
+  --hue-teal-soft: #dbf8eb;
+  --hue-teal-strong: #037a59;
+  --hue-teal-solid: #049c73;
+  --hue-amber-soft: #feefdd;
+  --hue-amber-strong: #8d5b04;
+  --hue-amber-solid: #bc7b00;
+  --hue-rose-soft: #ffebec;
+  --hue-rose-strong: #a44250;
+  --hue-rose-solid: #c85e6c;
+  --ring: #976ec6;               /* focus outline, 3.9:1 on card (lilac was 2.2:1) */
   --background: #f5f3fa;
   --foreground: #232430;
   --muted: #6e6c85;
@@ -17,18 +37,20 @@
 
   --primary: #1b1c26;            /* ink: primary buttons, selected day */
   --primary-foreground: #ffffff;
-  --accent: #f3eeff;             /* active nav, soft panels */
-  --accent-foreground: #7e4fb0;
+  --accent: var(--hue-violet-soft);             /* active nav, soft panels (was #f3eeff) */
+  --accent-foreground: var(--hue-violet-strong);
   --lilac: #c9a0e3;
   --lilac-soft: #ebddf6;         /* table header, select */
   --sky: #cde8f7;
 
-  --success: #197c4e;
-  --success-soft: #ddf6e8;
-  --warning: #9d600e;
-  --warning-soft: #fff0d6;
-  --danger: #d73d3d;
-  --danger-soft: #fde4e4;
+  /* Status colors are the teal, amber and rose of the hue family: green = good, amber = attention,
+     rose = problem. */
+  --success: var(--hue-teal-strong);
+  --success-soft: var(--hue-teal-soft);
+  --warning: var(--hue-amber-strong);
+  --warning-soft: var(--hue-amber-soft);
+  --danger: var(--hue-rose-strong);
+  --danger-soft: var(--hue-rose-soft);
   --neutral: #646278;
   --neutral-soft: #ececf1;
 
@@ -43,21 +65,39 @@
   --ink-foreground: #ffffff;
   --track: #ebddf6;              /* unfilled gauge track */
   --chip: rgba(27, 28, 38, 0.14); /* small round buttons (calendar arrows) */
-  --chart-green: #4cb782;
-  --chart-green-soft: #b7e4cb;
+  --chart-green: var(--hue-teal-solid);
+  --chart-green-soft: #a5e0c7;
   --chart-area: rgba(201, 160, 227, 0.12);
   --tooltip: #232430;
   --tooltip-foreground: #ffffff;
-  --dot-rose: #f43f5e;
-  --dot-green: #22c55e;
-  --dot-amber: #f59e0b;
-  --tint-rose: rgba(244, 63, 94, 0.16);
-  --tint-green: rgba(34, 197, 94, 0.16);
-  --tint-amber: rgba(245, 158, 11, 0.2);
+  --dot-rose: var(--hue-rose-solid);
+  --dot-green: var(--hue-teal-solid);
+  --dot-amber: var(--hue-amber-solid);
+  --tint-rose: var(--hue-rose-soft);
+  --tint-green: var(--hue-teal-soft);
+  --tint-amber: var(--hue-amber-soft);
 }
 
 :root[data-theme='dark'] {
   color-scheme: dark;
+
+  /* Hue family, dark: deep tinted surfaces, light tinted text, slightly calmer solids. */
+  --hue-violet-soft: #271b35;
+  --hue-violet-strong: #dac0fe;
+  --hue-violet-solid: #b492df;
+  --hue-sky-soft: #032536;
+  --hue-sky-strong: #96d7ff;
+  --hue-sky-solid: #53afe3;
+  --hue-teal-soft: #02291c;
+  --hue-teal-strong: #93e1c0;
+  --hue-teal-solid: #51bb94;
+  --hue-amber-soft: #331f04;
+  --hue-amber-strong: #f3c58c;
+  --hue-amber-solid: #e0a454;
+  --hue-rose-soft: #36171a;
+  --hue-rose-strong: #ffb8bd;
+  --hue-rose-solid: #e3858f;
+  --ring: #c9a0e3;
 
   /* Black page; cards are near-black with a violet tint so the lilac accent still belongs. */
   --background: #000000;
@@ -69,16 +109,16 @@
 
   --primary: #c9a0e3;          /* lilac pill buttons with dark text */
   --primary-foreground: #0d0b14;
-  --accent: #17132a;
-  --accent-foreground: #dcc2f2;
+  --accent: var(--hue-violet-soft);
+  --accent-foreground: var(--hue-violet-strong);
   --lilac-soft: #17132a;
 
-  --success: #6fd9a3;
-  --success-soft: #0f2a20;
-  --warning: #f3c06b;
-  --warning-soft: #2f2410;
-  --danger: #ff8f8f;
-  --danger-soft: #301822;
+  --success: var(--hue-teal-strong);
+  --success-soft: var(--hue-teal-soft);
+  --warning: var(--hue-amber-strong);
+  --warning-soft: var(--hue-amber-soft);
+  --danger: var(--hue-rose-strong);
+  --danger-soft: var(--hue-rose-soft);
   --neutral: #b9b4d3;
   --neutral-soft: #1f1a33;
 
@@ -92,14 +132,17 @@
   --ink-foreground: #f5f2ff;
   --track: #2a2245;
   --chip: rgba(255, 255, 255, 0.12);
-  --chart-green: #4cb782;
-  --chart-green-soft: #1f4636;
+  --chart-green: var(--hue-teal-solid);
+  --chart-green-soft: #0e3f2e;
   --chart-area: rgba(201, 160, 227, 0.1);
   --tooltip: #f5f2ff;
   --tooltip-foreground: #0d0b14;
-  --tint-rose: rgba(244, 63, 94, 0.28);
-  --tint-green: rgba(34, 197, 94, 0.26);
-  --tint-amber: rgba(245, 158, 11, 0.28);
+  --dot-rose: var(--hue-rose-solid);
+  --dot-green: var(--hue-teal-solid);
+  --dot-amber: var(--hue-amber-solid);
+  --tint-rose: var(--hue-rose-soft);
+  --tint-green: var(--hue-teal-soft);
+  --tint-amber: var(--hue-amber-soft);
 }
 
 @theme inline {
@@ -140,6 +183,22 @@
   --color-tint-rose: var(--tint-rose);
   --color-tint-green: var(--tint-green);
   --color-tint-amber: var(--tint-amber);
+  --color-hue-violet-soft: var(--hue-violet-soft);
+  --color-hue-violet-strong: var(--hue-violet-strong);
+  --color-hue-violet-solid: var(--hue-violet-solid);
+  --color-hue-sky-soft: var(--hue-sky-soft);
+  --color-hue-sky-strong: var(--hue-sky-strong);
+  --color-hue-sky-solid: var(--hue-sky-solid);
+  --color-hue-teal-soft: var(--hue-teal-soft);
+  --color-hue-teal-strong: var(--hue-teal-strong);
+  --color-hue-teal-solid: var(--hue-teal-solid);
+  --color-hue-amber-soft: var(--hue-amber-soft);
+  --color-hue-amber-strong: var(--hue-amber-strong);
+  --color-hue-amber-solid: var(--hue-amber-solid);
+  --color-hue-rose-soft: var(--hue-rose-soft);
+  --color-hue-rose-strong: var(--hue-rose-strong);
+  --color-hue-rose-solid: var(--hue-rose-solid);
+  --color-ring: var(--ring);
 }
 
 body {

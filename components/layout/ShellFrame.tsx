@@ -13,7 +13,7 @@ const NAV_ITEM = 'flex h-11 w-full items-center gap-3 rounded-lg px-3 text-sm tr
 const NAV_ACTIVE = 'rounded-[10px] bg-accent font-bold text-accent-foreground'
 const NAV_IDLE = 'font-medium text-muted hover:bg-accent/60 hover:text-accent-foreground'
 const ICON_BUTTON =
-  'inline-flex size-8 items-center justify-center rounded-lg text-muted transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lilac'
+  'inline-flex size-8 items-center justify-center rounded-lg text-muted transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring'
 
 // Client half of the shell: sidebar with the active link, mobile drawer and top bar.
 // The server half (DashboardShell) passes plain data plus the sign-out form.
@@ -132,7 +132,7 @@ export default function ShellFrame({
             <div className="flex items-center gap-2.5">
               <span
                 aria-hidden="true"
-                className="flex size-9 shrink-0 items-center justify-center rounded-full bg-neutral-soft text-sm font-bold text-accent-foreground"
+                className="flex size-9 shrink-0 items-center justify-center rounded-full bg-hue-violet-soft text-sm font-bold text-hue-violet-strong"
               >
                 {userName.charAt(0)}
               </span>

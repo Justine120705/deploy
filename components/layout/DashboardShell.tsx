@@ -38,7 +38,7 @@ export default function DashboardShell({
       settingsHref={settingsHref}
       signOut={
         <form action={logout}>
-          <button className="flex h-11 w-full items-center gap-3 rounded-lg px-3 text-sm font-medium text-muted transition-colors hover:bg-accent/60 hover:text-accent-foreground focus-visible:outline-2 focus-visible:outline-lilac">
+          <button className="flex h-11 w-full items-center gap-3 rounded-lg px-3 text-sm font-medium text-muted transition-colors hover:bg-accent/60 hover:text-accent-foreground focus-visible:outline-2 focus-visible:outline-ring">
             <Icon name="logout" />
             Sign out
           </button>
