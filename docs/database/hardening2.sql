@@ -388,8 +388,8 @@ COMMIT;
 -- Requires section B (it changes the grants of private.audit_log() and
 -- private.audit_logs_readonly()). Run diagnostic (a) first and save its output.
 --
--- 1. TRUNCATE, REFERENCES, TRIGGER on every table and view in schema public, from
---    anon and authenticated. TRUNCATE ignores RLS and row triggers; nobody needs
+-- 1. TRUNCATE, REFERENCES, TRIGGER (and MAINTAIN) on every table and view in schema
+--    public, from anon and authenticated. TRUNCATE ignores RLS and row triggers; nobody needs
 --    REFERENCES (create FKs) or TRIGGER (create triggers).
 -- 2. INSERT, UPDATE, DELETE on public.profiles from anon (RLS was the only thing
 --    stopping anon; all profiles policies are TO authenticated).
@@ -417,6 +417,10 @@ COMMIT;
 BEGIN;
 
 REVOKE TRUNCATE, REFERENCES, TRIGGER ON ALL TABLES IN SCHEMA public FROM authenticated, anon;
+
+-- MAINTAIN (PostgreSQL 17: VACUUM, ANALYZE, REINDEX, CLUSTER, LOCK) is not shown by
+-- information_schema but is in the live ACLs (letter m, see grants_snapshot_2026-10-10.txt).
+REVOKE MAINTAIN ON ALL TABLES IN SCHEMA public FROM authenticated, anon;
 
 REVOKE INSERT, UPDATE, DELETE ON public.profiles FROM anon;
 
@@ -451,6 +455,7 @@ COMMIT;
 -- BEGIN;
 --
 -- GRANT TRUNCATE, REFERENCES, TRIGGER ON ALL TABLES IN SCHEMA public TO authenticated, anon;
+-- GRANT MAINTAIN ON ALL TABLES IN SCHEMA public TO authenticated, anon;
 -- -- Keep section B's protection while B is still in place (B revoked this):
 -- REVOKE TRUNCATE ON public.audit_logs FROM authenticated, anon;
 --
@@ -513,3 +518,11 @@ COMMIT;
 -- - Supabase default privileges (diagnostic b) will grant anon SELECT and TRUNCATE etc.
 --   again on new tables in public; either change them (ALTER DEFAULT PRIVILEGES, a
 --   persistent setting) or repeat section C after adding tables.
+- Exposing a table in the Supabase dashboard (Integrations, Data API, Settings) restores
+  full default rights on it for anon, authenticated and the server role (this is how
+  profiles got anon INSERT/UPDATE/DELETE). Whenever tables are exposed for the app,
+  repeat the anon part of section C right afterwards.
+- The server role currently has no SELECT/INSERT/UPDATE/DELETE on the 26 tables that are
+  not exposed (snapshot: Dxtm only). Server-side code with the server key (for example
+  the SEC-03 lockout) will need those tables exposed first.
+
