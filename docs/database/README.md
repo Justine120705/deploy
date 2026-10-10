@@ -14,6 +14,7 @@ team** (see Project Charter, section 5: "ERD and 3NF Tables").
 | `hardening.sql`        | Issue #50 fixes: 3 policies, `my_department_id()`, immutable-column triggers; rollback and grant/trigger diagnostics as comments |
 | `hardening2.sql`       | Issue #50, part 2, three sections run separately: A `holds_dept_place` checks the student's program department; B audit-log triggers (REQ-ADM-03) and append-only `audit_logs`; C grants cleanup. A rollback block per section |
 | `triggers.sql`         | Record (not a script) of the app's table triggers after `hardening.sql` and `hardening2.sql` |
+| `views_extend.sql`     | Issue #49: extends `v_grades`, `v_clearance_items`, `v_clearances` to the columns of `types/database.types.ts` (`CREATE OR REPLACE`, still `security_invoker = true`); safety checks, rollback and diagnostics as comments. **Not run yet** |
 
 `views.sql`, `private_functions.sql` and the policies in `rls.sql` were exported from the
 live Supabase project on 2026-10-10 (`pg_views`, `pg_get_functiondef`, `pg_policies`);
@@ -35,6 +36,11 @@ Run in the Supabase **SQL Editor** (or `psql`), in exactly this order:
    **section B**, then **section C** (C needs B; save diagnostic (a) before C). Then the
    tests in Part G of `docs/issue-12-testing-guide.md` (TC-24 to TC-28) and Parts C and F
    again. Undo with each section's ROLLBACK block, in reverse order (C, B, A).
+9. **`views_extend.sql`** (issue #49; after `hardening2.sql` section C, because its
+   checks expect authenticated SELECT and no anon access on the views). Run as a whole;
+   save its diagnostics (a) to (c) first. Then the tests in Part H of
+   `docs/issue-12-testing-guide.md` (TC-29 to TC-33) and TC-15, TC-16, TC-28 again. Undo
+   with its ROLLBACK block (DROP + CREATE, then the grants again).
 
 `triggers.sql` is a record of the triggers, **not** a step: do not run it (it stops itself
 and rolls back if run by mistake).
@@ -49,6 +55,22 @@ regression TC-12 to TC-17 in `docs/issue-12-testing-guide.md`). It is a change o
 export: `rls.sql` and `private_functions.sql` still show the policies and function as exported
 BEFORE it, so the live versions of `clearance_items_dept_update`, `holds_dept_lift`,
 `clearances_registrar_approve` and `private.my_department_id()` are the ones in `hardening.sql`.
+
+## Views (issue #49)
+
+`types/database.types.ts` and `lib/mock-data.ts` expect more view columns than the live
+views have. `views_extend.sql` adds them (option A: change the views, not the app):
+`v_grades` gets the enrollment, term, section and subject columns; `v_clearance_items`
+gets `student_id`, `term_id`, `department_name`, `department_type`; `v_clearances` gets
+`total_items` and `cleared_items`. `v_active_holds` already matches. All new joins are
+LEFT JOINs, so with `security_invoker` every role keeps exactly the rows it saw before.
+For Cashier and Department, `total_items` / `cleared_items` count only their own
+department's items (RLS on `clearance_items`).
+
+**`views.sql` still shows the OLD definitions** (the live export of 2026-10-10). It is
+updated to the new definitions (export from `pg_views`) only AFTER the PM has run
+`views_extend.sql` on the live database and Part H has passed. Until then, a database
+built from this folder needs step 9 to match the types.
 
 These files were run end to end against an in-memory PostgreSQL (with a stand-in for
 `auth.users`/`auth.uid()`): the seed gives 3 students, charges of 45,000 with 20,000
@@ -71,7 +93,7 @@ Views, `private` functions and policies now match the live database (export of
 - **Audit triggers.** `hardening2.sql` section B (REQ-ADM-03) is live; `audit_logs` only holds
   changes made after 2026-10-10 (no back-fill).
 - **`types/database.types.ts`** lists more view columns than the live views have; regenerate
-  the types or update the views.
+  the types or update the views. Fix prepared in `views_extend.sql` (issue #49, not run yet).
 
 ## Read before running
 

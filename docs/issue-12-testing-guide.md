@@ -471,6 +471,184 @@ rollback;
 
 Expected: `anon_grades` and `anon_v_grades` are `denied: permission denied for ...` (after section C) or `rows: 0` (both accepted; any other number is a Fail); `student1_visible_grades` = `student1_own_grades` (3 with the seed).
 
+## Part H: tests for views_extend.sql (issue #49)
+
+Run after `docs/database/views_extend.sql` (it extends `v_grades`, `v_clearance_items` and `v_clearances` with the columns of `types/database.types.ts`; `v_active_holds` is unchanged). Same rules as Part G: run each block on its own, as a whole (never a selection); each block ends with `rollback`, so nothing is changed; if a block stops at an unexpected error, run `rollback;` as its own query. Each block ends with ONE result row. None of these blocks writes, so none needs a temporary `grant`.
+
+After Part H, run TC-15, TC-16 and TC-28 again (they must still pass).
+
+Columns and view options (TC-29). Read-only, run as `postgres` (no role switch), no transaction needed. The expected list is every column `types/database.types.ts` gives the 4 views (41 columns):
+
+```sql
+with expected(view_name, column_name) as (values
+  ('v_active_holds', 'hold_id'), ('v_active_holds', 'student_id'), ('v_active_holds', 'department_id'),
+  ('v_active_holds', 'reason'), ('v_active_holds', 'placed_by'), ('v_active_holds', 'placed_at'),
+  ('v_clearance_items', 'clearance_item_id'), ('v_clearance_items', 'clearance_id'),
+  ('v_clearance_items', 'student_id'), ('v_clearance_items', 'term_id'),
+  ('v_clearance_items', 'department_id'), ('v_clearance_items', 'department_name'),
+  ('v_clearance_items', 'department_type'), ('v_clearance_items', 'cleared_at'),
+  ('v_clearance_items', 'cleared_by'), ('v_clearance_items', 'remarks'), ('v_clearance_items', 'status'),
+  ('v_clearances', 'clearance_id'), ('v_clearances', 'student_id'), ('v_clearances', 'term_id'),
+  ('v_clearances', 'created_at'), ('v_clearances', 'approved_by'), ('v_clearances', 'approved_at'),
+  ('v_clearances', 'total_items'), ('v_clearances', 'cleared_items'), ('v_clearances', 'status'),
+  ('v_grades', 'grade_id'), ('v_grades', 'enrollment_item_id'), ('v_grades', 'enrollment_id'),
+  ('v_grades', 'student_id'), ('v_grades', 'term_id'), ('v_grades', 'section_id'),
+  ('v_grades', 'subject_id'), ('v_grades', 'subject_code'), ('v_grades', 'subject_title'),
+  ('v_grades', 'units'), ('v_grades', 'grade_code'), ('v_grades', 'numeric_value'),
+  ('v_grades', 'is_passing'), ('v_grades', 'encoded_by'), ('v_grades', 'encoded_at')),
+missing as (
+  select e.view_name || '.' || e.column_name as col
+  from expected e
+  where not exists (select 1 from information_schema.columns c
+                    where c.table_schema = 'public' and c.table_name = e.view_name
+                      and c.column_name = e.column_name))
+select (select count(*) from expected) as expected_columns,
+  (select count(*) from missing) as missing_count,
+  coalesce((select string_agg(col, ', ' order by col) from missing), '') as missing_columns,
+  (select count(*) from pg_class c
+     where c.relnamespace = 'public'::regnamespace and c.relkind = 'v'
+       and c.relname in ('v_active_holds', 'v_clearance_items', 'v_clearances', 'v_grades')
+       and c.reloptions @> array['security_invoker=true']) as views_security_invoker;
+```
+
+Expected: `expected_columns` 41, `missing_count` 0, `missing_columns` empty, `views_security_invoker` 4. Before `views_extend.sql` the missing count is 14.
+
+Student 1 isolation through the views (TC-30). Each view is compared with the base-table rows Student 1 can see; `*_not_own` counts rows whose `student_id` is not Student 1 (a NULL also counts, which would mean a join was hidden):
+
+```sql
+begin;
+select set_config('app.s1', (select id::text from auth.users where email = 'student1@pnc.test'), true);
+select set_config('app.s2', (select id::text from auth.users where email = 'student2@pnc.test'), true);
+set local role authenticated;
+select set_config('request.jwt.claims',
+  json_build_object('sub', current_setting('app.s1'), 'role', 'authenticated')::text, true);
+select
+  (select count(*) from public.v_grades) as v_grades_rows,
+  (select count(*) from public.grades) as grades_rows,
+  (select count(distinct student_id) from public.v_grades) as v_grades_students,
+  (select count(*) from public.v_grades where student_id is distinct from auth.uid()) as v_grades_not_own,
+  (select count(*) from public.v_clearance_items) as v_items_rows,
+  (select count(*) from public.clearance_items) as items_rows,
+  (select count(distinct student_id) from public.v_clearance_items) as v_items_students,
+  (select count(*) from public.v_clearance_items where student_id is distinct from auth.uid()) as v_items_not_own,
+  (select count(*) from public.v_clearances) as v_clearances_rows,
+  (select count(*) from public.clearances) as clearances_rows,
+  (select count(distinct student_id) from public.v_clearances) as v_clearances_students,
+  (select bool_and(v.total_items = (select count(*) from public.clearance_items i where i.clearance_id = v.clearance_id)
+               and v.cleared_items = (select count(*) from public.clearance_items i where i.clearance_id = v.clearance_id and i.cleared_at is not null))
+     from public.v_clearances v) as counts_match,
+  (select count(*) from public.v_active_holds) as v_holds_rows,
+  (select count(*) from public.academic_holds where lifted_at is null) as active_holds_rows,
+  (select count(distinct student_id) from public.v_active_holds) as v_holds_students,
+  (select count(*) from public.v_grades where student_id = current_setting('app.s2')::uuid)
+  + (select count(*) from public.v_clearance_items where student_id = current_setting('app.s2')::uuid)
+  + (select count(*) from public.v_clearances where student_id = current_setting('app.s2')::uuid)
+  + (select count(*) from public.v_active_holds where student_id = current_setting('app.s2')::uuid) as student2_rows_all_views;
+rollback;
+```
+
+Expected: each `v_*_rows` equals the base-table count next to it (`v_grades_rows` 3 = `grades_rows` 3 and `v_items_rows` 4 = `items_rows` 4 with the seed); every `*_students` is 1 (or 0 when there are no rows); `v_grades_not_own` and `v_items_not_own` 0; `counts_match` true (or null with no clearance); `student2_rows_all_views` 0. A `*_students` of 2 or more, or any Student 2 row, is a Fail (leak).
+
+Registrar sees all rows through the 3 extended views (TC-31). The real counts are read as `postgres` first, then compared as the Registrar. `missing_*` count rows whose new columns are NULL (a join that the Registrar cannot read). The single clearance checked is the lowest `clearance_id` that has items:
+
+```sql
+begin;
+select set_config('app.reg', (select id::text from auth.users where email = 'registrar@pnc.test'), true);
+select set_config('app.n_grades', (select count(*)::text from public.grades), true);
+select set_config('app.n_items', (select count(*)::text from public.clearance_items), true);
+select set_config('app.n_clearances', (select count(*)::text from public.clearances), true);
+select set_config('app.cid', coalesce((select min(clearance_id)::text from public.clearance_items), ''), true);
+select set_config('app.cid_total', (select count(*)::text from public.clearance_items
+  where clearance_id::text = current_setting('app.cid')), true);
+select set_config('app.cid_cleared', (select count(*)::text from public.clearance_items
+  where clearance_id::text = current_setting('app.cid') and cleared_at is not null), true);
+set local role authenticated;
+select set_config('request.jwt.claims',
+  json_build_object('sub', current_setting('app.reg'), 'role', 'authenticated')::text, true);
+select
+  (select count(*) from public.v_grades) || ' / ' || current_setting('app.n_grades') as v_grades_vs_real,
+  (select count(*) from public.v_grades where student_id is null or subject_code is null) as v_grades_missing_join,
+  (select count(*) from public.v_clearance_items) || ' / ' || current_setting('app.n_items') as v_items_vs_real,
+  (select count(*) from public.v_clearance_items where student_id is null or department_name is null) as v_items_missing_join,
+  (select count(*) from public.v_clearances) || ' / ' || current_setting('app.n_clearances') as v_clearances_vs_real,
+  current_setting('app.cid') as clearance_id,
+  (select total_items || ' / ' || current_setting('app.cid_total') from public.v_clearances
+     where clearance_id::text = current_setting('app.cid')) as total_items_vs_real,
+  (select cleared_items || ' / ' || current_setting('app.cid_cleared') from public.v_clearances
+     where clearance_id::text = current_setting('app.cid')) as cleared_items_vs_real;
+rollback;
+```
+
+Expected: each `x / y` pair is equal on both sides (with the seed: clearances `3 / 3`, items `12 / 12`; for the first clearance `total_items` `4 / 4`); both `missing_join` counts 0. An empty `clearance_id` means there are no clearance items (record as not run for that part).
+
+Cashier and Department see through the views no more than through the base tables (TC-32). Each role compares every view with the matching base table (`view / table`); `OK` means every view count is at most the table count. `item_depts` is the number of different departments in `v_clearance_items` (1 or 0 for these roles). `max_total_items` is information only: for these two roles the counts in `v_clearances` include only their own department's items (by design, see `views_extend.sql`):
+
+```sql
+begin;
+select set_config('app.cashier', (select id::text from auth.users where email = 'cashier@pnc.test'), true);
+select set_config('app.dept', (select id::text from auth.users where email = 'dept@pnc.test'), true);
+set local role authenticated;
+do $$
+declare
+  v_who text;
+  vg bigint; g bigint; vi bigint; i bigint; vc bigint; c bigint; vh bigint; h bigint;
+  v_depts bigint; v_max int;
+begin
+  foreach v_who in array array['cashier', 'dept'] loop
+    perform set_config('request.jwt.claims',
+      json_build_object('sub', current_setting('app.' || v_who), 'role', 'authenticated')::text, true);
+    select count(*) into vg from public.v_grades;
+    select count(*) into g from public.grades;
+    select count(*) into vi from public.v_clearance_items;
+    select count(*) into i from public.clearance_items;
+    select count(*) into vc from public.v_clearances;
+    select count(*) into c from public.clearances;
+    select count(*) into vh from public.v_active_holds;
+    select count(*) into h from public.academic_holds where lifted_at is null;
+    select count(distinct department_id) into v_depts from public.v_clearance_items;
+    select max(total_items) into v_max from public.v_clearances;
+    perform set_config('app.r_' || v_who,
+      format('grades %s/%s, items %s/%s, clearances %s/%s, holds %s/%s, item_depts %s, max_total_items %s -> %s',
+        vg, g, vi, i, vc, c, vh, h, v_depts, coalesce(v_max::text, '-'),
+        case when vg <= g and vi <= i and vc <= c and vh <= h then 'OK' else 'MORE THAN BASE TABLES' end),
+      true);
+  end loop;
+end $$;
+select current_setting('app.r_cashier') as cashier, current_setting('app.r_dept') as department;
+rollback;
+```
+
+Expected: both columns end in `-> OK`; `grades 0/0` for both roles (they cannot read grades); in practice each `view/table` pair is equal; `item_depts` 1 (or 0). `MORE THAN BASE TABLES` is a Fail (leak).
+
+Anonymous access to the 4 views (TC-33, repeats TC-16 for every view):
+
+```sql
+begin;
+set local role anon;
+do $$
+declare
+  v_name text;
+  n bigint;
+begin
+  foreach v_name in array array['v_active_holds', 'v_clearance_items', 'v_clearances', 'v_grades'] loop
+    begin
+      execute format('select count(*) from public.%I', v_name) into n;
+      perform set_config('app.r_' || v_name, 'rows: ' || n, true);
+    exception when others then
+      perform set_config('app.r_' || v_name, 'denied: ' || sqlerrm, true);
+    end;
+  end loop;
+end $$;
+reset role;
+select current_setting('app.r_v_active_holds') as anon_v_active_holds,
+  current_setting('app.r_v_clearance_items') as anon_v_clearance_items,
+  current_setting('app.r_v_clearances') as anon_v_clearances,
+  current_setting('app.r_v_grades') as anon_v_grades;
+rollback;
+```
+
+Expected: all four `denied: permission denied for view ...` (`CREATE OR REPLACE VIEW` keeps the grants of hardening2.sql section C). `rows: 0` is no leak but means anon got SELECT back: check the grants (diagnostic (c) in `views_extend.sql`). Any number above 0 is a Fail.
+
 ## Part D (optional, later): test through the real Supabase client
 
 When the student pages use real data instead of mock data, repeat Part C by signing in as Student 1 and loading `/student/grades` while logged in. The page must show only Student 1's rows. Until then Part C is the real evidence.
@@ -509,6 +687,11 @@ Fill in this table (copy into `docs/testing-plan.md` for Sprint 4). Actual = wha
 | TC-26 | Department places a hold for an own-department student and for another department's student (Part G, section A) | `inserted`; RLS error | own_department_student = inserted; other_department_student = ERROR: new row violates row-level security policy for table "academic_holds" (2026-10-10, PM ran section A and clicked Run, Claude loaded and read the test; temporary grant in a rolled-back transaction) | Pass |
 | TC-27 | Grants after section C (Part G) | no TRUNCATE/REFERENCES/TRIGGER/MAINTAIN, anon cannot read or write, authenticated still reads and updates profiles | any_truncate_refs_trigger false, any_maintain false, anon_select_any false, anon_profiles_insert false, auth_profiles_update true, auth_select_all true, auth_audit_insert false, all four anon_exec_* false, auth_exec_all_4 true (2026-10-10, PM ran section C and clicked Run, Claude loaded and read the check) | Pass |
 | TC-28 | Regression: anonymous read of `grades` / `v_grades`; Student 1 sees only own grades (Part G) | Denied or 0 rows; visible = own | anon_grades: denied: permission denied for table grades; anon_v_grades: denied: permission denied for view v_grades; student1_visible_grades 3 = student1_own_grades 3 (2026-10-10, PM ran section C and clicked Run, Claude loaded and read the result) | Pass |
+| TC-29 | All columns of `types/database.types.ts` exist in the 4 views; all 4 still `security_invoker` (Part H, after `views_extend.sql`) | expected 41, missing 0, security_invoker 4 | NOT RUN | NOT RUN |
+| TC-30 | Student 1 through the 4 views: same counts as the base tables, only own rows, no Student 2 rows (Part H) | counts equal (3 grades, 4 items with the seed), students 1, not_own 0, counts_match true, student2 0 | NOT RUN | NOT RUN |
+| TC-31 | Registrar sees all rows through the 3 extended views; `total_items` / `cleared_items` match the real counts (Part H) | every pair equal, missing_join 0 | NOT RUN | NOT RUN |
+| TC-32 | Cashier and Department see no more through the views than through the base tables (Part H) | both `-> OK`, grades 0/0 | NOT RUN | NOT RUN |
+| TC-33 | Anonymous role reads the 4 views (Part H) | denied on all 4 | NOT RUN | NOT RUN |
 
 ## Step 7: Fix what failed (before closing the issue)
 
