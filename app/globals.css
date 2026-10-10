@@ -1,32 +1,86 @@
 @import "tailwindcss";
 
+/* Design tokens from the Figma file Cabuyao_Uni. Use these (bg-card, text-muted,
+   bg-success-soft ...) instead of hard-coded colors so light and dark stay in sync. */
 :root {
-  --background: #f6f5f8;
-  --foreground: #1b1c26;
+  --background: #f5f3fa;
+  --foreground: #232430;
+  --muted: #6e6c85;
   --card: #ffffff;
-  --border: #e4e1ea;
-  --primary: #e5bff0;      /* lilac */
-  --primary-strong: #c9a0e3;
-  --ink: #1b1c26;          /* near-black buttons and text */
-  --sky: #cde8f7;          /* light blue accent card */
+  --border: #e5e7eb;
+  --border-subtle: #f2f2f4;
+
+  --primary: #1b1c26;            /* ink: primary buttons, selected day */
+  --primary-foreground: #ffffff;
+  --accent: #f3eeff;             /* active nav, soft panels */
+  --accent-foreground: #7e4fb0;
+  --lilac: #c9a0e3;
+  --lilac-soft: #ebddf6;         /* table header, select */
+  --sky: #cde8f7;
+
+  --success: #197c4e;
+  --success-soft: #ddf6e8;
+  --warning: #9d600e;
+  --warning-soft: #fff0d6;
+  --danger: #d73d3d;
+  --danger-soft: #fde4e4;
+  --neutral: #646278;
+  --neutral-soft: #ececf1;
 }
+
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #12141d;
     --foreground: #ffffff;
-    --card: #1f2333;
+    --muted: #a1a1b5;
+    --card: #181b27;
     --border: #2c3144;
+    --border-subtle: #232738;
+
+    --primary: #c9a0e3;          /* lilac pill buttons with dark text */
+    --primary-foreground: #1b1c26;
+    --accent: #1f2333;
+    --accent-foreground: #d9b8ee;
+    --lilac-soft: #1f2333;
+
+    --success: #6fd9a3;
+    --success-soft: #16342a;
+    --warning: #f3c06b;
+    --warning-soft: #3a2d14;
+    --danger: #ff8f8f;
+    --danger-soft: #3c1f24;
+    --neutral: #b4b3c6;
+    --neutral-soft: #262a3b;
   }
 }
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
   --color-card: var(--card);
   --color-border: var(--border);
+  --color-border-subtle: var(--border-subtle);
   --color-primary: var(--primary);
-  --color-primary-strong: var(--primary-strong);
-  --color-ink: var(--ink);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-lilac: var(--lilac);
+  --color-lilac-soft: var(--lilac-soft);
   --color-sky: var(--sky);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-neutral: var(--neutral);
+  --color-neutral-soft: var(--neutral-soft);
   --font-sans: var(--font-jakarta);
 }
-body { background: var(--background); color: var(--foreground); font-family: var(--font-sans), sans-serif; }
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), sans-serif;
+}

@@ -1,13 +1,15 @@
-import DashboardShell from '@/components/layout/DashboardShell'
-import RlsCheck from '@/components/layout/RlsCheck'
-import { requireRole } from '@/lib/auth/session'
+import ModulePage from '@/components/layout/ModulePage'
 
-export default async function AdminPage() {
-  const profile = await requireRole('Admin')
-
+export default function AdminDashboardPage() {
   return (
-    <DashboardShell profile={profile} title="Admin Dashboard">
-      <RlsCheck table="profiles" expected="The Admin should see every profile (7 with the test data)." />
-    </DashboardShell>
+    <ModulePage
+      role="Admin"
+      title="Admin Dashboard"
+      subtitle="System overview."
+      planned={[
+      "Users by role",
+      "Recent audit log entries",
+      ]}
+    />
   )
 }

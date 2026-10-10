@@ -1,36 +1,46 @@
 import { logout } from '@/app/(auth)/login/actions'
 import type { CurrentProfile } from '@/lib/auth/session'
+import { NAV_ITEMS } from '@/lib/nav'
+import { Icon } from './Icon'
+import ShellFrame from './ShellFrame'
 
-// Shared frame for every module page: header with the user's name, role and sign-out.
-// Frontend team: build each module's real UI inside {children}.
+// Shared frame for every module page: role-based sidebar, top bar, page title and sign-out.
+// Build each module's real UI inside {children}.
 export default function DashboardShell({
   profile,
   title,
+  subtitle,
+  actions,
   children,
 }: {
   profile: CurrentProfile
   title: string
+  subtitle?: string
+  actions?: React.ReactNode
   children: React.ReactNode
 }) {
   return (
-    <div className="flex min-h-screen flex-1 flex-col bg-zinc-50">
-      <header className="flex items-center justify-between border-b border-zinc-200 bg-white px-6 py-4">
+    <ShellFrame
+      items={NAV_ITEMS[profile.role]}
+      roleLabel={profile.role}
+      userName={`${profile.firstName} ${profile.lastName}`}
+      signOut={
+        <form action={logout}>
+          <button className="flex h-11 w-full items-center gap-3 rounded-lg px-3 text-sm font-medium text-muted transition-colors hover:bg-accent/60 hover:text-accent-foreground">
+            <Icon name="logout" />
+            Sign out
+          </button>
+        </form>
+      }
+    >
+      <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-xs uppercase tracking-wide text-zinc-500">{profile.role}</p>
-          <h1 className="text-lg font-semibold text-zinc-900">{title}</h1>
+          <h1 className="text-2xl font-extrabold">{title}</h1>
+          {subtitle && <p className="mt-1 text-sm text-muted">{subtitle}</p>}
         </div>
-        <div className="flex items-center gap-4">
-          <span className="text-sm text-zinc-700">
-            {profile.firstName} {profile.lastName}
-          </span>
-          <form action={logout}>
-            <button className="rounded-md border border-zinc-300 px-3 py-1.5 text-sm text-zinc-800 hover:bg-zinc-100">
-              Sign out
-            </button>
-          </form>
-        </div>
-      </header>
-      <main className="mx-auto w-full max-w-5xl flex-1 p-6">{children}</main>
-    </div>
+        {actions}
+      </div>
+      {children}
+    </ShellFrame>
   )
 }

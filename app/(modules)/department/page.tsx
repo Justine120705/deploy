@@ -1,13 +1,15 @@
-import DashboardShell from '@/components/layout/DashboardShell'
-import RlsCheck from '@/components/layout/RlsCheck'
-import { requireRole } from '@/lib/auth/session'
+import ModulePage from '@/components/layout/ModulePage'
 
-export default async function DepartmentPage() {
-  const profile = await requireRole('Department')
-
+export default function DepartmentDashboardPage() {
   return (
-    <DashboardShell profile={profile} title="Department Dashboard">
-      <RlsCheck table="clearance_items" expected="A Department user should see only their own department's items (3 with the test data)." />
-    </DashboardShell>
+    <ModulePage
+      role="Department"
+      title="Department Dashboard"
+      subtitle="Your department clearance overview."
+      planned={[
+      "Pending clearance items",
+      "Active academic holds",
+      ]}
+    />
   )
 }
