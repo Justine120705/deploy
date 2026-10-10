@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation'
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
 import type { NavItem } from '@/lib/nav'
+import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { Icon } from './Icon'
 
 // Client half of the shell: sidebar with the active link, mobile drawer and top bar.
@@ -92,13 +93,16 @@ export default function ShellFrame({
             <Icon name="menu" className="size-5" />
           </button>
           <span className="hidden text-sm font-semibold text-muted lg:block">{roleLabel}</span>
-          <div className="flex items-center gap-2.5">
-            <span className="flex size-9 items-center justify-center rounded-full bg-lilac-soft text-sm font-bold text-accent-foreground">
-              {userName.charAt(0)}
-            </span>
-            <div className="text-sm leading-tight">
-              <p className="font-bold">{userName}</p>
-              <p className="text-muted">{roleLabel}</p>
+          <div className="flex items-center gap-4">
+            <ThemeToggle />
+            <div className="flex items-center gap-2.5">
+              <span className="flex size-9 items-center justify-center rounded-full bg-lilac-soft text-sm font-bold text-accent-foreground">
+                {userName.charAt(0)}
+              </span>
+              <div className="text-sm leading-tight">
+                <p className="font-bold">{userName}</p>
+                <p className="text-muted">{roleLabel}</p>
+              </div>
             </div>
           </div>
         </header>

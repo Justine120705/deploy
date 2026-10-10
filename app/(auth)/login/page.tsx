@@ -16,6 +16,7 @@ import { LoginHero } from '@/components/auth/LoginHero'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
+import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { login, type LoginState } from './actions'
 
 const INITIAL_STATE: LoginState = { error: null }
@@ -32,6 +33,7 @@ export default function LoginPage() {
   return (
     <main className="relative flex min-h-screen overflow-hidden bg-background p-3 sm:p-4 lg:gap-12 lg:p-6">
       <LoginBackdrop />
+      <ThemeToggle className="absolute right-4 top-4 z-10 lg:right-6 lg:top-6" />
 
       <Card className="relative flex w-full flex-col justify-between gap-10 p-6 shadow-xl shadow-black/5 sm:p-10 lg:w-[560px] lg:shrink-0">
         <CabuyaoLogo size="lg" className="max-w-full" />
