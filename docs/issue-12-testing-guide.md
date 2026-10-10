@@ -161,7 +161,7 @@ Fill in this table (copy into `docs/testing-plan.md` for Sprint 4). Actual = wha
 | TC-04 | Student, open `/cashier/charges` | Redirect to `/student` | Redirect (2026-10-10, Claude, localhost dev server, student1) | Pass |
 | TC-05 | Student, open `/department/holds` | Redirect to `/student` | Redirect (2026-10-10, Claude, localhost dev server, student1) | Pass |
 | TC-06 | Student, open `/admin` and `/admin/audit-log` | Redirect to `/student` | Both redirect, end at /student (2026-10-10, Claude, localhost dev server, student1) | Pass |
-| TC-07 | Cashier, open `/registrar/enrollments` and `/student` | Redirect to `/cashier` | | |
+| TC-07 | Cashier, open `/registrar/enrollments` and `/student` | Redirect to `/cashier` | `/student`, `/registrar/enrollments`, `/department/holds`, `/admin` all end at /cashier (2026-10-10, Claude, localhost, signed in as the Cashier account) | Pass |
 | TC-08 | Registrar, open `/admin/users` and `/cashier/payments` | Redirect to `/registrar` | | |
 | TC-09 | Department, open `/cashier/clearance` and `/registrar/clearance` | Redirect to `/department` | | |
 | TC-10 | Admin, open `/student/grades` and `/department` | Redirect to `/admin` | | |
