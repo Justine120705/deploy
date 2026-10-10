@@ -197,7 +197,24 @@ Fill in this table (copy into `docs/testing-plan.md` for Sprint 4). Actual = wha
 ## Findings from the live checks (2026-10-10)
 
 - All 4 views have `security_invoker=true`. The RLS-bypass risk from the code review does not apply.
-- The live `v_grades` column list starts `grade_id, enrollment_item_id, grade_code, numeric_value, is_passing, encoded...` and has no `student_id` or `term_id`, but `types/database.types.ts` lists both. The generated types are out of date. When the student Grades page switches from mock data to Supabase it cannot filter `v_grades` by `student_id`: regenerate the types, then either add the columns to the view or query through `grades` and its joins.
-- Still not in the repo: the SQL definitions of the 4 views. Export them with the `pg_views` query in Part B and save to `docs/database/`.
+- The live views have far fewer columns than `types/database.types.ts` and `lib/mock-data.ts` assume, so the generated types are out of date or the views were never finished:
+  - `v_grades` (live): grade_id, enrollment_item_id, grade_code, numeric_value, is_passing, encoded_by, encoded_at. Missing: student_id, term_id, enrollment_id, section_id, subject_id, subject_code, subject_title, units.
+  - `v_clearance_items` (live): clearance_item_id, clearance_id, department_id, cleared_by, cleared_at, remarks, status. Missing: student_id, term_id, department_name, department_type.
+  - `v_clearances` (live): clearance_id, student_id, term_id, created_at, approved_by, approved_at, status. Missing: total_items, cleared_items.
+  - `v_active_holds` matches.
+  - Effect: the student Grades and Clearance pages cannot read these views as written once they use real data. Decision needed (separate issue): extend the views, or change the app to join the base tables. Types are not regenerated in this PR for that reason.
+- The definitions of the 4 views, the 6 `private` helper functions and all 49 live policies were exported on 2026-10-10 and saved in `docs/database/` (`views.sql`, `private_functions.sql`, `rls.sql`). The repo's old `rls.sql` had only 41 policies; the live database has 49 (the 8 missing ones are all INSERT policies).
+- Not exported yet: table triggers (for example the trigger that calls `private.create_clearance_items`) and grants.
 - TC-16 (anonymous) and TC-17 (a student cannot change their own role) pass.
-- Not yet compared: the 41 of 49 policies and the draft helper functions in the repo still need to be exported from Supabase and compared.
+
+
+## Policy observations from the live export (not fixed here, for the backend owner)
+
+Read from the exported policies; none of these was exploited or tested live.
+
+1. The "who did it" checks accept NULL: `clearance_items_dept_update` (`cleared_by IS NULL`), `holds_dept_lift` (`lifted_by IS NULL`) and `clearances_registrar_approve` (`approved_by IS NULL`) let a change be saved without recording who made it.
+2. UPDATE policies check the role only, not which columns change: Cashier on `charges` (student_id, amount); Registrar on `enrollments`, `grades`, `document_requests`, `clearances`; Department and Cashier on `clearance_items` and Department on `academic_holds`. There are no audit triggers yet (REQ-ADM-03).
+3. `clearance_items_dept_update` checks the role in USING but not in WITH CHECK (the department test still covers it in practice).
+4. `private.my_department_id()`: for a Cashier it uses `LIMIT 1` with no ORDER BY on Financial departments, and for Department staff a scalar subquery that errors if a profile has two `department_staff` rows.
+5. `holds_dept_place` does not check that the student belongs to the Department user's department.
+6. Grants on the 6 `SECURITY DEFINER` functions and on the `private` schema were not exported; check that `private` is not exposed through the API.

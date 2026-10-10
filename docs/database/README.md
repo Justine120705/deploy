@@ -7,19 +7,25 @@ team** (see Project Charter, section 5: "ERD and 3NF Tables").
 | File                   | Contents                                                                 |
 | ---------------------- | ------------------------------------------------------------------------ |
 | `schema.sql`           | 23 tables (3NF) in dependency order, plus `document_ticket_seq`          |
+| `views.sql`            | The 4 views (`security_invoker = true`), exported from live              |
 | `seed.sql`             | Fictional test data: 7 accounts' profiles, 3 students, one full term     |
-| `private_functions.sql`| Helper functions used by the policies (schema `private`) - **draft**     |
-| `rls.sql`              | `ENABLE ROW LEVEL SECURITY` on all 23 tables and the policies (41)       |
+| `private_functions.sql`| The 6 functions in schema `private`, exported from live                  |
+| `rls.sql`              | `ENABLE ROW LEVEL SECURITY` on all 23 tables and all 49 live policies    |
+
+`views.sql`, `private_functions.sql` and the policies in `rls.sql` were exported from the
+live Supabase project on 2026-10-10 (`pg_views`, `pg_get_functiondef`, `pg_policies`);
+their SQL text is verbatim from the export.
 
 ## Execution order
 
 Run in the Supabase **SQL Editor** (or `psql`), in exactly this order:
 
 1. **`schema.sql`**
-2. Create the 7 test accounts in Supabase Auth (see below)
-3. **`seed.sql`**
-4. **`private_functions.sql`**
-5. **`rls.sql`**
+2. **`views.sql`**
+3. Create the 7 test accounts in Supabase Auth (see below)
+4. **`seed.sql`**
+5. **`private_functions.sql`**
+6. **`rls.sql`**
 
 These files were run end to end against an in-memory PostgreSQL (with a stand-in for
 `auth.users`/`auth.uid()`): the seed gives 3 students, charges of 45,000 with 20,000
@@ -29,27 +35,26 @@ Admin: everything).
 
 ## Known gaps (Backend team)
 
-The files above were rebuilt from the exported schema and the policies, so a few things
-still need to be copied from the live Supabase project. Run these in the SQL Editor and
-paste the output into the matching file:
+Views, `private` functions and policies now match the live database (export of
+2026-10-10). These are still **not exported** and are therefore not in this folder:
 
-- **Views.** `v_active_holds`, `v_clearance_items`, `v_clearances` and `v_grades` are used
-  by `types/database.types.ts` but are not in `schema.sql`:
-  `select viewname, definition from pg_views where schemaname = 'public';`
-- **Helper functions.** `private_functions.sql` is a reconstruction. Replace it with:
-  `select pg_get_functiondef(p.oid) from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'private';`
-- **Policies.** The project notes count 49 policies; `rls.sql` has 41. List the live ones with:
-  `select tablename, policyname from pg_policies where schemaname = 'public' order by 1, 2;`
-  and add the missing ones (likely the INSERT and UPDATE policies of the Student, Cashier and
-  Registrar modules).
+- **Triggers.** For example the trigger on `clearances` that calls
+  `private.create_clearance_items()` (the function is in `private_functions.sql`, the
+  `CREATE TRIGGER` is not). List them with:
+  `select event_object_table, trigger_name, action_timing, event_manipulation, action_statement from information_schema.triggers where trigger_schema = 'public';`
+- **Grants.** No `GRANT` / `REVOKE` statements were exported (schema `private`, functions,
+  tables, views). `private_functions.sql` keeps the old draft grants as a comment only;
+  verify them against the live database.
 - **Audit triggers.** `audit_logs` is empty until the Sprint 3 triggers (REQ-ADM-03) exist.
+- **`types/database.types.ts`** lists more view columns than the live views have; regenerate
+  the types or update the views.
 
 ## Read before running
 
 - **Create the 7 test accounts in Supabase Auth first.** `seed.sql` links its
   `profiles` rows to existing `auth.users` ids (`profiles.profile_id` ->
   `auth.users.id`). Create the users in the Supabase Dashboard
-  (Authentication -> Users) *before* step 2, otherwise the seed will fail.
+  (Authentication -> Users) *before* step 4, otherwise the seed will fail.
   Accounts are provisioned by the Admin through Supabase Auth, as stated in the
   SRS, section 2.2. Share test credentials with teammates privately, never in
   this repo.

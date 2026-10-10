@@ -5,7 +5,7 @@
 -- Supabase SQL Editor. profiles.profile_id references auth.users(id), which
 -- Supabase Auth provides.
 -- NOTE: the 4 views (v_active_holds, v_clearance_items, v_clearances, v_grades)
--- are not in this file yet. See docs/database/README.md ("Known gaps").
+-- are in views.sql (run after this file). See docs/database/README.md.
 
 CREATE SEQUENCE IF NOT EXISTS public.document_ticket_seq;
 
