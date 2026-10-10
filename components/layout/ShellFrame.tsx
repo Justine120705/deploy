@@ -14,6 +14,8 @@ const NAV_ITEM = `flex h-11 w-full items-center gap-3 rounded-lg px-3 text-sm tr
 // The active pill gets a lit top edge (shadow-pill), so it reads as pressed into the rail, not painted on.
 const NAV_ACTIVE = 'rounded-[10px] bg-accent font-bold text-accent-foreground shadow-pill'
 const NAV_IDLE = 'font-medium text-muted hover:bg-accent/60 hover:text-accent-foreground'
+// Staff shell (Figma Registrar frame): the active item is a solid ink pill, not the soft violet one.
+const NAV_ACTIVE_STAFF = 'rounded-[10px] bg-primary font-bold text-primary-foreground shadow-elev-xs'
 // 44px: the menu button only exists below lg, where it is a touch target.
 const ICON_BUTTON = `inline-flex size-11 items-center justify-center rounded-lg text-muted transition-colors hover:text-foreground ${FOCUS}`
 
@@ -27,6 +29,7 @@ export default function ShellFrame({
   signOut,
   promo,
   settingsHref,
+  variant = 'student',
   children,
 }: {
   items: NavItem[]
@@ -39,8 +42,11 @@ export default function ShellFrame({
   promo?: React.ReactNode
   /** Where Settings goes. Without it the item is shown but disabled (there is no settings page yet). */
   settingsHref?: string
+  /** `student`: floating topbar and promo card. `staff`: no topbar on desktop, role label, user card with sign-out. */
+  variant?: 'student' | 'staff'
   children: React.ReactNode
 }) {
+  const staff = variant === 'staff'
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
   const homeHref = items[0].href
@@ -93,8 +99,9 @@ export default function ShellFrame({
       <aside
         ref={drawerRef}
         className={cn(
-          'fixed inset-y-3 left-3 z-40 flex w-[232px] flex-col gap-2 overflow-y-auto rounded-2xl border border-edge bg-card px-[18px] py-6 surface',
+          'fixed inset-y-3 left-3 z-40 flex flex-col gap-2 overflow-y-auto rounded-2xl border border-edge bg-card px-[18px] py-6 surface',
           // Level 1 on desktop (chrome sits low so content floats above it); level 3 as the mobile drawer.
+          staff ? 'w-[248px]' : 'w-[232px]',
           'shadow-elev-lg lg:shadow-elev-xs',
           'transition-[transform,visibility] lg:sticky lg:inset-y-auto lg:top-4 lg:h-[calc(100vh-2rem)] lg:shrink-0 lg:translate-x-0',
           // Closed on a phone: off screen and out of the Tab order (visibility switches after the slide).
@@ -109,7 +116,14 @@ export default function ShellFrame({
           </p>
         </div>
 
-        <nav aria-label="Main" className="mt-[13px] flex flex-col gap-2">
+        {staff && (
+          <div className="mt-2 flex items-center justify-between px-2">
+            <p className="text-xs font-semibold uppercase tracking-widest text-muted">{roleLabel}</p>
+            <ThemeToggle />
+          </div>
+        )}
+
+        <nav aria-label="Main" className={cn('flex flex-col gap-2', staff ? 'mt-1' : 'mt-[13px]')}>
           {items.map((item) => {
             const active = isActive(item.href)
             return (
@@ -118,7 +132,7 @@ export default function ShellFrame({
                 href={item.href}
                 onClick={() => setOpen(false)}
                 aria-current={active ? 'page' : undefined}
-                className={cn(NAV_ITEM, active ? NAV_ACTIVE : NAV_IDLE)}
+                className={cn(NAV_ITEM, active ? (staff ? NAV_ACTIVE_STAFF : NAV_ACTIVE) : NAV_IDLE)}
               >
                 <Icon name={item.icon} />
                 {item.label}
@@ -128,8 +142,8 @@ export default function ShellFrame({
         </nav>
 
         <div className="mt-auto flex flex-col gap-2 pt-4">
-          {promo}
-          {settingsHref ? (
+          {!staff && promo}
+          {!staff && (settingsHref ? (
             <Link href={settingsHref} className={cn(NAV_ITEM, NAV_IDLE)}>
               <Icon name="settings" />
               Settings
@@ -144,13 +158,33 @@ export default function ShellFrame({
               Settings
               <span className="ml-auto text-xs font-medium">Soon</span>
             </button>
+          ))}
+          {staff && (
+            <div className="flex items-center gap-3 rounded-xl bg-accent/60 px-3 py-2.5">
+              <span
+                aria-hidden="true"
+                className="flex size-9 shrink-0 items-center justify-center rounded-full bg-hue-violet-soft text-sm font-bold text-hue-violet-strong"
+              >
+                {userName.charAt(0)}
+              </span>
+              <div className="min-w-0 flex-1 text-sm leading-tight">
+                <p className="truncate font-bold">{userName}</p>
+                <p className="truncate text-muted">{roleLabel}</p>
+              </div>
+              {signOut}
+            </div>
           )}
-          {signOut}
+          {!staff && signOut}
         </div>
       </aside>
 
       <div inert={open} className="flex min-w-0 flex-1 flex-col gap-4">
-        <header className="flex h-[60px] shrink-0 items-center justify-between gap-3 rounded-2xl border border-edge bg-card px-5 shadow-elev-xs surface">
+        <header
+          className={cn(
+            'flex h-[60px] shrink-0 items-center justify-between gap-3 rounded-2xl border border-edge bg-card px-5 shadow-elev-xs surface',
+            staff && 'lg:hidden'
+          )}
+        >
           <button
             type="button"
             ref={menuRef}
@@ -160,7 +194,7 @@ export default function ShellFrame({
           >
             <Icon name="menu" className="size-5" />
           </button>
-          <div className="ml-auto flex items-center gap-3 sm:gap-[18px]">
+          <div className={cn('ml-auto flex items-center gap-3 sm:gap-[18px]', staff && 'hidden')}>
             <ThemeToggle />
             <div className="flex items-center gap-2.5">
               <span

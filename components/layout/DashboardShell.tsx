@@ -14,6 +14,7 @@ export default function DashboardShell({
   userMeta,
   promo,
   settingsHref,
+  variant,
   children,
 }: {
   profile: CurrentProfile
@@ -26,8 +27,11 @@ export default function DashboardShell({
   /** Optional sidebar card above Settings, for example <PromoCard />. */
   promo?: React.ReactNode
   settingsHref?: string
+  /** Defaults to `student` for the Student role and `staff` for every other role. */
+  variant?: 'student' | 'staff'
   children: React.ReactNode
 }) {
+  const shell = variant ?? (profile.role === 'Student' ? 'student' : 'staff')
   return (
     <ShellFrame
       items={NAV_ITEMS[profile.role]}
@@ -36,12 +40,22 @@ export default function DashboardShell({
       userMeta={userMeta}
       promo={promo}
       settingsHref={settingsHref}
+      variant={shell}
       signOut={
         <form action={logout}>
+          {shell === 'staff' ? (
+            <button
+              aria-label="Sign out"
+              className="flex size-9 items-center justify-center rounded-lg text-muted transition-colors max-lg:size-11 hover:bg-accent hover:text-accent-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+            >
+              <Icon name="logout" />
+            </button>
+          ) : (
           <button className="flex h-11 w-full items-center gap-3 rounded-lg px-3 text-sm font-medium text-muted transition-colors hover:bg-accent/60 hover:text-accent-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
             <Icon name="logout" />
             Sign out
           </button>
+          )}
         </form>
       }
     >
