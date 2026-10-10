@@ -164,7 +164,7 @@ Fill in this table (copy into `docs/testing-plan.md` for Sprint 4). Actual = wha
 | TC-07 | Cashier, open `/registrar/enrollments` and `/student` | Redirect to `/cashier` | `/student`, `/registrar/enrollments`, `/department/holds`, `/admin` all end at /cashier (2026-10-10, Claude, localhost, signed in as the Cashier account) | Pass |
 | TC-08 | Registrar, open `/admin/users` and `/cashier/payments` | Redirect to `/registrar` | `/admin/users`, `/cashier/payments`, `/student`, `/department` all end at /registrar (2026-10-10, Claude, localhost, signed in as the Registrar account) | Pass |
 | TC-09 | Department, open `/cashier/clearance` and `/registrar/clearance` | Redirect to `/department` | `/cashier/clearance`, `/registrar/clearance`, `/student`, `/admin` all end at /department (2026-10-10, Claude, localhost, signed in as the Department account) | Pass |
-| TC-10 | Admin, open `/student/grades` and `/department` | Redirect to `/admin` | | |
+| TC-10 | Admin, open `/student/grades` and `/department` | Redirect to `/admin` | `/student/grades`, `/registrar`, `/cashier`, `/department` all end at /admin (2026-10-10, Claude, localhost, signed in as the Admin account) | Pass |
 | TC-11 | Deactivated user with a valid session opens their module | Signed out, sent to `/login` | | |
 | TC-12 | Student 1 reads Student 2's grades (Part C) | 0 rows | | |
 | TC-13 | Student 1 reads Student 2's charges and payments | 0 rows | | |
