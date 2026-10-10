@@ -1,16 +1,19 @@
-import ModulePage from '@/components/layout/ModulePage'
+import { requireRole } from '@/lib/auth/session'
+import DashboardShell from '@/components/layout/DashboardShell'
+import { GradesActions, GradesBody, GradesProvider } from '@/components/registrar/GradesEncoder'
 
-export default function RegistrarGradesPage() {
+export default async function RegistrarGradesPage() {
+  const profile = await requireRole('Registrar')
   return (
-    <ModulePage
-      role="Registrar"
-      title="Encode Grades"
-      subtitle="Encode and save grades per section."
-      planned={[
-      "Section and subject picker",
-      "Grade entry table with remarks",
-      "Save and mark as saved or unsaved",
-      ]}
-    />
+    <GradesProvider>
+      <DashboardShell
+        profile={profile}
+        title="Encode grades"
+        subtitle="CS101 · Introduction to Computing · 1st Sem 2026-2027"
+        actions={<GradesActions />}
+      >
+        <GradesBody />
+      </DashboardShell>
+    </GradesProvider>
   )
 }
