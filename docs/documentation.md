@@ -24,6 +24,8 @@ This revision aligns the document with the database design files (`schema.sql`, 
 | 6 | Edits outside the requested sections, listed in full below the table. | Charter, SRS, Part 4 |
 | 7 | Review fixes: SEC-02 `users` replaced by `profiles`; "ERD v2" changed to "ERD v3" (Phase 2 row, `types/` note); Financial Tracking objective reworded; Phase 1 date marked with a TODO comment (date unchanged). | Charter, SRS 4.1, Part 4 |
 | 8 | Development methodology changed from Rapid Application Development (RAD) to Agile. RAD wording replaced in the header, team roles and SRS 2.2; new Charter section 7 describes the Agile process. | Header, Charter 4 and 7, SRS 2.2 |
+| 9 | Charter section 7 replaced by the full SDLC plan (7.1 to 7.7). Sprint 2 ended Oct 10 instead of Oct 5; carry-over is recorded in 7.3. Phase 1 TODO comment removed (Sprint 1 end date is Oct 2). | Charter 6 and 7 |
+| 10 | Added the Activity Diagram (term clearance) and the Class Diagram (generated from `schema.sql`) as Part 3, Sections 4 and 5. | Part 3 |
 
 
 **Row 6 details (edits outside the sections I was asked to edit):**
@@ -109,26 +111,79 @@ This project delivers a comprehensive, web-based university portal designed to e
 
 | Phase | Description | Target Date |
 | --- | --- | --- |
-| **Sprint 1** | System modeling (DFD, Use Case, Activity, Class), ERD/3NF design, UI/UX wireframes, database initialization. | Oct 2 <!-- TODO: update Phase 1 date --> |
-| **Sprint 2** | ERD v3 finalized and migrated (see Revision Log), Auth setup, Role-Based Access Control (RLS), Admin/Student UI layouts, SDLC plan draft. | Oct 5 |
+| **Sprint 1** | System modeling (DFD, Use Case, Activity, Class), ERD/3NF design, UI/UX wireframes, database initialization. | Oct 2 |
+| **Sprint 2** | ERD v3 finalized and migrated (see Revision Log), Auth setup, Role-Based Access Control (RLS), Admin/Student UI layouts, SDLC plan draft. | Oct 5 (completed Oct 10) |
 | **Sprint 3** | Registrar (Grades/Docs/Enrollment), Cashier, and Department (Clearance) modules connected; Admin audit log implemented. Clearance logic (holds, department approval, final clearance) is started first because the modules depend on it. | Oct 8 |
 | **Sprint 4 ** | Integration, QA testing, security hardening (SQL injection checks, login lockout, rate limiting, vulnerability patching), software testing plan and ethical analysis finalized. | Oct 10 |
 | **Sprint 5** | Live deployment to Vercel (dev merged into main by the PM), IEEE final paper compilation, plagiarism check, AI/anti-AI detector report, Team Monitoring Sheet (peer evaluation), final review. | Oct 12 |
 
 ### 7. Development Methodology (Agile)
 
-The project follows an Agile (Scrum-style) approach: the work is delivered in five short sprints, and each milestone phase in the schedule above is one sprint.
+The project follows an Agile (Scrum-style) approach: the work is delivered in five short sprints, and each milestone phase in the schedule above is one sprint. Section 7 is the SDLC plan of the project.
 
-| Agile practice | How it is applied in this project |
+#### 7.1 Why Agile
+
+The project has a fixed final deadline (Oct 12) and a 12-day window, and several parts depend on each other (authentication, then clearance, then the modules). Short sprints let the team show working software from the `dev` branch at the end of every phase, find integration problems early, and re-prioritize when a sprint runs late. A plan-driven (waterfall or RAD) approach would find those problems only at the end.
+
+#### 7.2 Phases
+
+| Phase | Activities | Output |
+| --- | --- | --- |
+| Planning and requirements | Project Charter, SRS, requirement IDs (REQ, SEC, PER, ETH) | This document |
+| Design | DFD, Use Case diagram, ERD/3NF, UI/UX wireframes in Figma | `docs/diagrams`, Figma file `Cabuyao_Uni` |
+| Implementation | Next.js 16 (App Router, TypeScript), Tailwind CSS 4, Supabase (PostgreSQL, Auth, Row Level Security) | `main` and `dev` branches |
+| Testing | Role-routing and data-isolation tests, security tests (SQL injection, brute force, rate limiting, RLS), integration testing | `docs/testing-plan.md` |
+| Deployment | Vercel deploys every change to `main` | Live prototype |
+| Documentation and review | IEEE paper, plagiarism and AI-detector reports, Team Monitoring Sheet | Final deliverables |
+
+#### 7.3 Sprints
+
+| Sprint | Goal | Planned end |
+| --- | --- | --- |
+| Sprint 1 | System modeling, ERD/3NF design, UI/UX wireframes, database initialization | Oct 2 |
+| Sprint 2 | ERD v3 migrated, authentication and role routing, shared UI and dashboard shell, SQL files committed, SDLC plan | Oct 5 (completed Oct 10) |
+| Sprint 3 | Clearance logic first (holds, department approval, Cashier auto-clear, final approval; database triggers), then the Registrar, Cashier and Department modules and the Admin audit log | Oct 8 |
+| Sprint 4 | Integration, QA, login lockout and rate limiting (SEC-03, SEC-04), testing plan and security tests | Oct 10 |
+| Sprint 5 | Vercel deployment from `main`, IEEE paper, verification reports, Team Monitoring Sheet | Oct 12 |
+
+Sprint 2 ended later than planned. The unfinished work and the shifted dates are recorded in the Revision Log, and the work of Sprints 3 and 4 overlaps in the remaining days.
+
+#### 7.4 Roles
+
+| Role | Members | Responsibility |
+| --- | --- | --- |
+| Product Owner and Scrum Master | Abarquez, Justinbril | Backlog order, sprint reviews, merges `dev` into `main` |
+| Backend team | Cruzante, Aaron; Canayong, Ron | Database, RLS, authentication, triggers, security |
+| Frontend team | Esgana, Justine; Espedilon, Arvien; Dominado, Byrone | UI from the Figma design, module screens |
+
+#### 7.5 Backlog by dependency
+
+1. Authentication and role-based access (SEC-01, SEC-02, REQ-ADM-02)
+2. Shared UI, navigation and dashboard shell
+3. Clearance chain: holds, department approval, Cashier auto-clear, final approval (REQ-CSH-03, REQ-REG-03) and audit logging (REQ-ADM-03)
+4. Module screens: Student, Registrar, Cashier, Department, Admin (REQ-STU, REQ-REG, REQ-CSH, REQ-DPT, REQ-ADM, REQ-DOC)
+5. Security hardening: lockout, rate limiting, injection checks (SEC-03 to SEC-05)
+6. Deployment and final documents
+
+#### 7.6 Branching and deployment flow
+
+1. Nobody codes directly on `main` or `dev`.
+2. Each task gets a branch from `dev` named `feature/<task>` (or `chore/<task>`, `docs/<task>`).
+3. The author opens a pull request with base `dev`; at least one teammate reviews it.
+4. At the end of a sprint, after the team confirms `dev` is tested, only the Project Manager merges `dev` into `main`.
+5. Vercel deploys automatically on every change to `main`. The `service_role` key is kept server-side only (SEC-06).
+
+#### 7.7 Testing approach and risks
+
+Testing is done per sprint on `dev` with the seeded test accounts (one per role, fictional data only, ETH-01 and ETH-02). The full testing plan, including the security tests, is a Sprint 4 deliverable in `docs/testing-plan.md`.
+
+| Risk | Mitigation |
 | --- | --- |
-| Product backlog | The SRS requirements (REQ-xxx) are the backlog items. They are ordered by dependency: authentication and roles first, then clearance, then the individual modules. |
-| Sprint | Each phase of the milestone schedule (Phase 1 to Phase 5) is a sprint with its own goal and end date. |
-| Sprint planning | At the start of each sprint, the team picks the backlog items for that phase and puts them on the Kanban board. |
-| Daily stand-up | A short daily check-in: what was done, what is next, and what is blocking. |
-| Sprint review | At the end of each sprint, the team shows working software from the `dev` branch. After the team confirms `dev` is tested, the Project Manager merges `dev` into `main` for deployment. |
-| Retrospective | After each sprint, the team notes what to keep and what to change in the next one. |
-| Roles | The Project Manager acts as Product Owner and Scrum Master. The Frontend and Backend developers form the development team. |
-| Handling change | Requirements can be re-prioritized between sprints, and every change is recorded in the Revision Log. The database design (ERD v3, `schema.sql`) is the blueprint and is changed only when the Backend team and the Project Manager both agree. |
+| A sprint runs late and squeezes the next one | Order the backlog by dependency; record carry-over in the Revision Log |
+| A pull request is merged into the wrong branch | Check the base branch of every pull request; only the Project Manager merges into `main` |
+| Rules between tables are not enforced (clearance chain) | Implement them as database triggers early in Sprint 3 and test each one |
+| Keys leak into the repository | `.env.local` is git-ignored; `service_role` never reaches the browser |
+| Design and code drift apart | Build screens from the Figma design using the shared design tokens |
 
 ## Part 2: Software Requirements Specification (SRS)
 
@@ -355,6 +410,22 @@ The diagram has 5 actors: Admin, Department Head, Cashier, Registrar, and Studen
 | Cashier | View Financial Balances; Log Payments and Tag Charges Cleared («include» Update Finance Clearance, automatic, REQ-CSH-03) |
 | Registrar | Review Enrollments (Approve or Reject); Encode and Update Grades; Process Document Requests (extended by Reject Document Request when the request cannot be fulfilled); Issue Final Clearance («include» Verify All Departments and Finance Cleared) |
 | Student | View Enrollment Status; Submit Online Enrollment; View Academic Grades; Request Clearance; Check Clearance Status; Submit Document Request; Track Document Request |
+
+### 4. Activity Diagram (Term Clearance)
+
+![Figure 4. Activity Diagram: Term Clearance](diagrams/ActivityDiagram_Clearance.svg)
+
+*Figure 4. Activity Diagram of the term clearance process (`ActivityDiagram_Clearance.svg`).*
+
+The diagram shows the clearance process in five swimlanes (Student, Department, Cashier, Registrar, System). The Student requests the term clearance (REQ-STU-06) and the system creates one clearance item per department, including Finance. The Department and Cashier work in parallel: a department approves its item once all of its holds are lifted (REQ-DPT-03), and the Finance item is cleared automatically when every charge is Cleared or Waived (REQ-CSH-03, database trigger). When all items are cleared, the Registrar issues the final clearance approval (REQ-REG-03), the system sets the clearance to Approved and writes the audit log (REQ-ADM-03), and the Student sees the result.
+
+### 5. Class Diagram
+
+![Figure 5. Class Diagram](diagrams/ClassDiagram.svg)
+
+*Figure 5. Class Diagram (`ClassDiagram.svg`), generated from `docs/database/schema.sql`.*
+
+The diagram has one class for each of the 23 tables, with all columns, primary keys (PK) and foreign keys (FK). Associations are drawn for every foreign key except the actor columns that point to `profiles` (`approved_by`, `cleared_by`, `recorded_by`, `actor_id` and similar), which stay as FK attributes to keep the diagram readable. The classes are grouped as Accounts, Academic catalog, Enrollment and grades, Finance, and Clearance, documents and audit.
 
 ## Part 4: Developer Onboarding & Workflow Guide
 

@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 1200" width="1500" height="1200" font-family="'Plus Jakarta Sans', Arial, sans-serif">
+<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" fill="#1b1c26"/></marker></defs>
+<rect width="1500" height="1200" fill="#faf9fc"/>
+<text x="20" y="26" font-size="20" font-weight="800" fill="#1b1c26">Activity Diagram: Term Clearance</text>
+<text x="20" y="46" font-size="12" fill="#6e6c85">Swimlanes are the roles of the portal. Dashed box = automatic (database trigger). Based on REQ-STU-06, REQ-DPT-02/03, REQ-CSH-03, REQ-REG-03 and REQ-ADM-03.</text>
+<rect x="0" y="60" width="300" height="1130" fill="#fff" stroke="#d9d4e3"/>
+<rect x="0" y="60" width="300" height="34" fill="#ebddf6" stroke="#d9d4e3"/>
+<text x="150.0" y="82" font-size="14" font-weight="800" fill="#1b1c26" text-anchor="middle">Student</text>
+<rect x="300" y="60" width="300" height="1130" fill="#f6f3fb" stroke="#d9d4e3"/>
+<rect x="300" y="60" width="300" height="34" fill="#ebddf6" stroke="#d9d4e3"/>
+<text x="450.0" y="82" font-size="14" font-weight="800" fill="#1b1c26" text-anchor="middle">Department</text>
+<rect x="600" y="60" width="300" height="1130" fill="#fff" stroke="#d9d4e3"/>
+<rect x="600" y="60" width="300" height="34" fill="#ebddf6" stroke="#d9d4e3"/>
+<text x="750.0" y="82" font-size="14" font-weight="800" fill="#1b1c26" text-anchor="middle">Cashier</text>
+<rect x="900" y="60" width="300" height="1130" fill="#f6f3fb" stroke="#d9d4e3"/>
+<rect x="900" y="60" width="300" height="34" fill="#ebddf6" stroke="#d9d4e3"/>
+<text x="1050.0" y="82" font-size="14" font-weight="800" fill="#1b1c26" text-anchor="middle">Registrar</text>
+<rect x="1200" y="60" width="300" height="1130" fill="#fff" stroke="#d9d4e3"/>
+<rect x="1200" y="60" width="300" height="34" fill="#ebddf6" stroke="#d9d4e3"/>
+<text x="1350.0" y="82" font-size="14" font-weight="800" fill="#1b1c26" text-anchor="middle">System</text>
+<circle cx="150" cy="140" r="10" fill="#1b1c26"/>
+<path d="M150 150 L150 178" fill="none" stroke="#1b1c26" stroke-width="1.3" marker-end="url(#ah)"/>
+<rect x="40.0" y="178.0" width="220" height="44" rx="10" fill="#fff" stroke="#1b1c26" stroke-width="1.3"/>
+<text x="150" y="204.0" font-size="11.5" fill="#1b1c26" text-anchor="middle">Log in (Supabase Auth)</text>
+<path d="M150 222 L150 253" fill="none" stroke="#1b1c26" stroke-width="1.3" marker-end="url(#ah)"/>
+<rect x="40.0" y="253.0" width="220" height="44" rx="10" fill="#fff" stroke="#1b1c26" stroke-width="1.3"/>
+<text x="150" y="271.5" font-size="11.5" fill="#1b1c26" text-anchor="middle">Request term clearance</text>
+<text x="150" y="286.5" font-size="11.5" fill="#1b1c26" text-anchor="middle">(REQ-STU-06)</text>
+<path d="M260 275 L1240 275" fill="none" stroke="#1b1c26" stroke-width="1.3" marker-end="url(#ah)"/>
+<rect x="1235.0" y="251.0" width="230" height="48" rx="10" fill="#fff" stroke="#1b1c26" stroke-width="1.3" stroke-dasharray="5 4"/>
+<text x="1350" y="271.5" font-size="11.5" fill="#1b1c26" text-anchor="middle">Create clearance and one item</text>
+<text x="1350" y="286.5" font-size="11.5" fill="#1b1c26" text-anchor="middle">per department, incl. Finance</text>
+<path d="M1350 299 L1350 400 L802 400" fill="none" stroke="#1b1c26" stroke-width="1.3" marker-end="url(#ah)"/>
+<rect x="400" y="396" width="400" height="8" rx="2" fill="#1b1c26"/>
+<path d="M450 404 L450 448" fill="none" stroke="#1b1c26" stroke-width="1.3" marker-end="url(#ah)"/>
+<rect x="340.0" y="448.0" width="220" height="44" rx="10" fill="#fff" stroke="#1b1c26" stroke-width="1.3"/>
+<text x="450" y="466.5" font-size="11.5" fill="#1b1c26" text-anchor="middle">Review students pending</text>
+<text x="450" y="481.5" font-size="11.5" fill="#1b1c26" text-anchor="middle">clearance (own department)</text>
+<path d="M450 492 L450 524" fill="none" stroke="#1b1c26" stroke-width="1.3" marker-end="url(#ah)"/>
+<polygon points="450,524 540,560 450,596 360,560" fill="#ebddf6" stroke="#1b1c26" stroke-width="1.3"/>
+<text x="450" y="557.5" font-size="10.5" fill="#1b1c26" text-anchor="middle">All department</text>
+<text x="450" y="570.5" font-size="10.5" fill="#1b1c26" text-anchor="middle">holds lifted?</text>
+<path d="M360 560 L325 560 L325 470 L338 470" fill="none" stroke="#1b1c26" stroke-width="1.3" marker-end="url(#ah)"/>
+<text x="305" y="596" font-size="11" font-weight="700" fill="#1b1c26">No: hold stays</text>
+<path d="M450 596 L450 628" fill="none" stroke="#1b1c26" stroke-width="1.3" marker-end="url(#ah)"/>
+<text x="458" y="616" font-size="11" font-weight="700" fill="#1b1c26">Yes</text>
+<rect x="340.0" y="628.0" width="220" height="44" rx="10" fill="#fff" stroke="#1b1c26" stroke-width="1.3"/>
+<text x="450" y="646.5" font-size="11.5" fill="#1b1c26" text-anchor="middle">Approve department item</text>
+<text x="450" y="661.5" font-size="11.5" fill="#1b1c26" text-anchor="middle">(cleared_at, cleared_by)</text>
+<path d="M750 404 L750 448" fill="none" stroke="#1b1c26" stroke-width="1.3" marker-end="url(#ah)"/>
+<rect x="640.0" y="448.0" width="220" height="44" rx="10" fill="#fff" stroke="#1b1c26" stroke-width="1.3"/>
+<text x="750" y="466.5" font-size="11.5" fill="#1b1c26" text-anchor="middle">Log payment or</text>
+<text x="750" y="481.5" font-size="11.5" fill="#1b1c26" text-anchor="middle">waive charge</text>
+<path d="M750 492 L750 524" fill="none" stroke="#1b1c26" stroke-width="1.3" marker-end="url(#ah)"/>
+<polygon points="750,524 840,560 750,596 660,560" fill="#ebddf6" stroke="#1b1c26" stroke-width="1.3"/>
+<text x="750" y="557.5" font-size="10.5" fill="#1b1c26" text-anchor="middle">All charges Cleared</text>
+<text x="750" y="570.5" font-size="10.5" fill="#1b1c26" text-anchor="middle">or Waived?</text>
+<path d="M660 560 L625 560 L625 470 L638 470" fill="none" stroke="#1b1c26" stroke-width="1.3" marker-end="url(#ah)"/>
+<text x="605" y="596" font-size="11" font-weight="700" fill="#1b1c26">No: still unpaid</text>
+<path d="M750 596 L750 628" fill="none" stroke="#1b1c26" stroke-width="1.3" marker-end="url(#ah)"/>
+<text x="758" y="616" font-size="11" font-weight="700" fill="#1b1c26">Yes</text>
+<rect x="640.0" y="628.0" width="220" height="44" rx="10" fill="#fff" stroke="#1b1c26" stroke-width="1.3" stroke-dasharray="5 4"/>
+<text x="750" y="646.5" font-size="11.5" fill="#1b1c26" text-anchor="middle">Finance item cleared</text>
+<text x="750" y="661.5" font-size="11.5" fill="#1b1c26" text-anchor="middle">automatically (REQ-CSH-03)</text>
+<path d="M450 672 L450 716" fill="none" stroke="#1b1c26" stroke-width="1.3" marker-end="url(#ah)"/>
+<path d="M750 672 L750 716" fill="none" stroke="#1b1c26" stroke-width="1.3" marker-end="url(#ah)"/>
+<rect x="400" y="716" width="400" height="8" rx="2" fill="#1b1c26"/>
+<path d="M800 720 L1050 720 L1050 766" fill="none" stroke="#1b1c26" stroke-width="1.3" marker-end="url(#ah)"/>
+<rect x="940.0" y="768.0" width="220" height="44" rx="10" fill="#fff" stroke="#1b1c26" stroke-width="1.3"/>
+<text x="1050" y="786.5" font-size="11.5" fill="#1b1c26" text-anchor="middle">Review clearances</text>
+<text x="1050" y="801.5" font-size="11.5" fill="#1b1c26" text-anchor="middle">ready for final approval</text>
+<path d="M1050 812 L1050 854" fill="none" stroke="#1b1c26" stroke-width="1.3" marker-end="url(#ah)"/>
+<polygon points="1050,854 1140,890 1050,926 960,890" fill="#ebddf6" stroke="#1b1c26" stroke-width="1.3"/>
+<text x="1050" y="887.5" font-size="10.5" fill="#1b1c26" text-anchor="middle">Every item incl.</text>
+<text x="1050" y="900.5" font-size="10.5" fill="#1b1c26" text-anchor="middle">Finance cleared?</text>
+<path d="M960 890 L925 890 L925 790 L938 790" fill="none" stroke="#1b1c26" stroke-width="1.3" marker-end="url(#ah)"/>
+<text x="905" y="926" font-size="11" font-weight="700" fill="#1b1c26">No: wait</text>
+<path d="M1050 926 L1050 968" fill="none" stroke="#1b1c26" stroke-width="1.3" marker-end="url(#ah)"/>
+<text x="1058" y="948" font-size="11" font-weight="700" fill="#1b1c26">Yes</text>
+<rect x="940.0" y="968.0" width="220" height="44" rx="10" fill="#fff" stroke="#1b1c26" stroke-width="1.3"/>
+<text x="1050" y="986.5" font-size="11.5" fill="#1b1c26" text-anchor="middle">Issue final clearance</text>
+<text x="1050" y="1001.5" font-size="11.5" fill="#1b1c26" text-anchor="middle">approval (REQ-REG-03)</text>
+<path d="M1160 990 L1235 990" fill="none" stroke="#1b1c26" stroke-width="1.3" marker-end="url(#ah)"/>
+<rect x="1235.0" y="966.0" width="230" height="48" rx="10" fill="#fff" stroke="#1b1c26" stroke-width="1.3" stroke-dasharray="5 4"/>
+<text x="1350" y="986.5" font-size="11.5" fill="#1b1c26" text-anchor="middle">Set clearance to Approved;</text>
+<text x="1350" y="1001.5" font-size="11.5" fill="#1b1c26" text-anchor="middle">write audit log (REQ-ADM-03)</text>
+<path d="M1350 1014 L1350 1090 L262 1090" fill="none" stroke="#1b1c26" stroke-width="1.3" marker-end="url(#ah)"/>
+<rect x="40.0" y="1068.0" width="220" height="44" rx="10" fill="#fff" stroke="#1b1c26" stroke-width="1.3"/>
+<text x="150" y="1086.5" font-size="11.5" fill="#1b1c26" text-anchor="middle">Check clearance status:</text>
+<text x="150" y="1101.5" font-size="11.5" fill="#1b1c26" text-anchor="middle">Approved</text>
+<path d="M150 1112 L150 1146" fill="none" stroke="#1b1c26" stroke-width="1.3" marker-end="url(#ah)"/>
+<circle cx="150" cy="1160" r="13" fill="#fff" stroke="#1b1c26" stroke-width="1.5"/><circle cx="150" cy="1160" r="8" fill="#1b1c26"/>
+</svg>

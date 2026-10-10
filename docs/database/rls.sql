@@ -1,6 +1,32 @@
 -- ==========================================
 -- ROW LEVEL SECURITY (RLS) POLICIES
 -- ==========================================
+-- Run LAST (after schema.sql, seed.sql and private_functions.sql).
+-- RLS is enabled on every table first; a table without a policy is then closed to all users.
+
+ALTER TABLE public.academic_holds ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.charges ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.clearance_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.clearances ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.department_staff ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.departments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.document_requests ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.document_types ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.enrollment_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.enrollments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.fee_types ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.grade_scale ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.grades ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.login_attempts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.payments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.programs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.roles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.sections ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.students ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.subjects ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.terms ENABLE ROW LEVEL SECURITY;
 
 -- 1. Roles & System Setup
 CREATE POLICY roles_read ON public.roles 
