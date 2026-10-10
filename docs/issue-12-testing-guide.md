@@ -145,6 +145,147 @@ Expected: `UPDATE 0`. If it says `UPDATE 1`, a student can make themselves Admin
 
 Repeat the first block with the roles of the two students swapped (Student 2 reading Student 1) to test the other direction.
 
+## Part F: Hardening tests (issue #50, after running `docs/database/hardening.sql`)
+
+Same style as Part C. Run each block on its own, as a whole (never a selection: a partial run can commit). Each block ends with `rollback`, or stops at its expected error, which also leaves nothing committed. The expected results assume the seed data; if live rows differ (for example Ben's hold is already lifted), a count can be 0 instead of 1: check the row first.
+
+Registrar approves a clearance with `approved_by` NULL (TC-18, fix 1):
+
+```sql
+begin;
+select set_config('app.reg', (select id::text from auth.users where email = 'registrar@pnc.test'), true);
+select set_config('app.s1', (select id::text from auth.users where email = 'student1@pnc.test'), true);
+set local role authenticated;
+select set_config('request.jwt.claims',
+  json_build_object('sub', current_setting('app.reg'), 'role', 'authenticated')::text, true);
+update public.clearances set approved_at = now(), approved_by = null
+  where student_id = current_setting('app.s1')::uuid;
+rollback;
+```
+
+Expected: `ERROR: new row violates row-level security policy for table "clearances"`. (Before hardening: `UPDATE 1`.)
+
+Registrar normal updates still work (TC-19, fixes 1 and 2):
+
+```sql
+begin;
+select set_config('app.reg', (select id::text from auth.users where email = 'registrar@pnc.test'), true);
+select set_config('app.s1', (select id::text from auth.users where email = 'student1@pnc.test'), true);
+set local role authenticated;
+select set_config('request.jwt.claims',
+  json_build_object('sub', current_setting('app.reg'), 'role', 'authenticated')::text, true);
+with u as (
+  update public.clearances set approved_at = now(), approved_by = auth.uid()
+  where student_id = current_setting('app.s1')::uuid returning 1)
+select 'approve clearance' as test, count(*) as rows_changed from u;
+with u as (
+  update public.grades set grade_code = '1.25', encoded_by = auth.uid(), encoded_at = now()
+  where grade_id = (select min(grade_id) from public.grades) returning 1)
+select 'correct a grade' as test, count(*) as rows_changed from u;
+rollback;
+```
+
+Expected: both `rows_changed` are 1.
+
+Cashier changes `charges.student_id` (TC-20, fix 2):
+
+```sql
+begin;
+select set_config('app.cash', (select id::text from auth.users where email = 'cashier@pnc.test'), true);
+select set_config('app.s1', (select id::text from auth.users where email = 'student1@pnc.test'), true);
+select set_config('app.s2', (select id::text from auth.users where email = 'student2@pnc.test'), true);
+set local role authenticated;
+select set_config('request.jwt.claims',
+  json_build_object('sub', current_setting('app.cash'), 'role', 'authenticated')::text, true);
+update public.charges set student_id = current_setting('app.s1')::uuid
+  where student_id = current_setting('app.s2')::uuid;
+rollback;
+```
+
+Expected: `ERROR: column charges.student_id cannot be changed`. (Before hardening: `UPDATE 1`.)
+
+Cashier normal update and department lookup (TC-21, fixes 2 and 4). The first select runs as `postgres` with the Cashier's claims, so it does not depend on grants on schema `private`:
+
+```sql
+begin;
+select set_config('app.cash', (select id::text from auth.users where email = 'cashier@pnc.test'), true);
+select set_config('app.s2', (select id::text from auth.users where email = 'student2@pnc.test'), true);
+select set_config('request.jwt.claims',
+  json_build_object('sub', current_setting('app.cash'), 'role', 'authenticated')::text, true);
+select 'cashier department' as test, private.my_department_id() as dept_id,
+  (select min(department_id) from public.departments where department_type = 'Financial') as expected;
+set local role authenticated;
+with u as (
+  update public.charges set status = 'Cleared'
+  where student_id = current_setting('app.s2')::uuid returning 1)
+select 'cashier marks charge cleared' as test, count(*) as rows_changed from u;
+rollback;
+```
+
+Expected: `dept_id` equals `expected`; `rows_changed` is 1.
+
+Department clears an item with `cleared_by` NULL (TC-22, fixes 1, 3 and 4):
+
+```sql
+begin;
+select set_config('app.dept', (select id::text from auth.users where email = 'dept@pnc.test'), true);
+select set_config('app.s1', (select id::text from auth.users where email = 'student1@pnc.test'), true);
+select set_config('request.jwt.claims',
+  json_build_object('sub', current_setting('app.dept'), 'role', 'authenticated')::text, true);
+select 'dept department' as test, private.my_department_id() as dept_id,
+  (select department_id from public.departments where code = 'CCS') as expected;
+set local role authenticated;
+update public.clearance_items set cleared_at = now(), cleared_by = null
+  where department_id = private.my_department_id()
+    and clearance_id in (select clearance_id from public.clearances where student_id = current_setting('app.s1')::uuid);
+rollback;
+```
+
+Expected: `dept_id` equals `expected`, then `ERROR: new row violates row-level security policy for table "clearance_items"`. (Before hardening: `UPDATE 1`.) If the update fails with "permission denied for schema private", replace `private.my_department_id()` in the `where` with `(select department_id from public.departments where code = 'CCS')` and run again.
+
+Department valid updates, then a hold for a student with no CCS clearance item (TC-23, fixes 1, 2 and 5). The student is looked up as `postgres`; if every student has a CCS item (the seed case), a random UUID is used, which also has no item:
+
+```sql
+begin;
+select set_config('app.dept', (select id::text from auth.users where email = 'dept@pnc.test'), true);
+select set_config('app.s1', (select id::text from auth.users where email = 'student1@pnc.test'), true);
+select set_config('app.s2', (select id::text from auth.users where email = 'student2@pnc.test'), true);
+select set_config('app.ccs', (select department_id::text from public.departments where code = 'CCS'), true);
+select set_config('app.noitem', coalesce(
+  (select s.student_id::text from public.students s
+   where not exists (select 1 from public.clearance_items ci
+                     join public.clearances c on c.clearance_id = ci.clearance_id
+                     where c.student_id = s.student_id
+                       and ci.department_id = current_setting('app.ccs')::bigint)
+   limit 1),
+  gen_random_uuid()::text), true);
+set local role authenticated;
+select set_config('request.jwt.claims',
+  json_build_object('sub', current_setting('app.dept'), 'role', 'authenticated')::text, true);
+with u as (
+  update public.clearance_items set cleared_at = now(), cleared_by = auth.uid()
+  where department_id = current_setting('app.ccs')::bigint
+    and clearance_id in (select clearance_id from public.clearances where student_id = current_setting('app.s1')::uuid)
+  returning 1)
+select 'clear item as self' as test, count(*) as rows_changed from u;
+with u as (
+  update public.academic_holds set lifted_at = now(), lifted_by = auth.uid()
+  where student_id = current_setting('app.s2')::uuid and lifted_at is null returning 1)
+select 'lift hold as self' as test, count(*) as rows_changed from u;
+with u as (
+  insert into public.academic_holds (student_id, department_id, reason, placed_by)
+  values (current_setting('app.s1')::uuid, current_setting('app.ccs')::bigint, 'Hardening test', auth.uid())
+  returning 1)
+select 'place hold, student has CCS item' as test, count(*) as rows_changed from u;
+insert into public.academic_holds (student_id, department_id, reason, placed_by)
+  values (current_setting('app.noitem')::uuid, current_setting('app.ccs')::bigint, 'Hardening test', auth.uid());
+rollback;
+```
+
+Expected: the three `rows_changed` are 1, then the last insert fails with `ERROR: new row violates row-level security policy for table "academic_holds"`. A foreign key error instead means the policy let the row through: Fail.
+
+After Part F, run Part C again: TC-12 to TC-17 must still pass.
+
 ## Part D (optional, later): test through the real Supabase client
 
 When the student pages use real data instead of mock data, repeat Part C by signing in as Student 1 and loading `/student/grades` while logged in. The page must show only Student 1's rows. Until then Part C is the real evidence.
@@ -172,6 +313,12 @@ Fill in this table (copy into `docs/testing-plan.md` for Sprint 4). Actual = wha
 | TC-15 | Student 1 reads the 4 views (Part B and C) | Only Student 1's rows | All 4 views (v_active_holds, v_clearance_items, v_clearances, v_grades) have reloptions security_invoker=true, so RLS applies. Row test as student1: v_grades 3 = grades table 3, v_clearance_items 4 = clearance_items table 4, no extra rows (2026-10-10, PM, Supabase SQL editor) | Pass |
 | TC-16 | Anonymous role reads `grades` and `v_grades` | 0 rows or denied | set local role anon: grades 0 rows, v_grades 0 rows (2026-10-10, PM, Supabase SQL editor) | Pass |
 | TC-17 | Student 1 updates own `role_id` | `UPDATE 0` | UPDATE inside a CTE as student1 (set role_id to Admin): rows_changed = 0 (2026-10-10, PM, Supabase SQL editor) | Pass |
+| TC-18 | Registrar approves a clearance with `approved_by` NULL (Part F, after `hardening.sql`) | RLS error | | NOT RUN |
+| TC-19 | Registrar approves a clearance as self and corrects a grade (Part F) | 1 row each | | NOT RUN |
+| TC-20 | Cashier changes `charges.student_id` (Part F) | Error: column cannot be changed | | NOT RUN |
+| TC-21 | Cashier marks a charge Cleared; `my_department_id()` is the Financial department (Part F) | 1 row; ids match | | NOT RUN |
+| TC-22 | Department clears an item with `cleared_by` NULL (Part F) | RLS error | | NOT RUN |
+| TC-23 | Department clears an item and lifts a hold as self, places a valid hold; then a hold for a student with no CCS clearance item (Part F) | 1, 1, 1, then RLS error | | NOT RUN |
 
 ## Step 7: Fix what failed (before closing the issue)
 
@@ -211,6 +358,7 @@ Fill in this table (copy into `docs/testing-plan.md` for Sprint 4). Actual = wha
 ## Policy observations from the live export (not fixed here, for the backend owner)
 
 Read from the exported policies; none of these was exploited or tested live.
+Issue #50: `docs/database/hardening.sql` addresses 1 to 5 and adds read-only diagnostic queries for 6 (not run yet; tests TC-18 to TC-23 in Part F).
 
 1. The "who did it" checks accept NULL: `clearance_items_dept_update` (`cleared_by IS NULL`), `holds_dept_lift` (`lifted_by IS NULL`) and `clearances_registrar_approve` (`approved_by IS NULL`) let a change be saved without recording who made it.
 2. UPDATE policies check the role only, not which columns change: Cashier on `charges` (student_id, amount); Registrar on `enrollments`, `grades`, `document_requests`, `clearances`; Department and Cashier on `clearance_items` and Department on `academic_holds`. There are no audit triggers yet (REQ-ADM-03).

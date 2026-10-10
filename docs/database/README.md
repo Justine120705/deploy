@@ -11,6 +11,7 @@ team** (see Project Charter, section 5: "ERD and 3NF Tables").
 | `seed.sql`             | Fictional test data: 7 accounts' profiles, 3 students, one full term     |
 | `private_functions.sql`| The 6 functions in schema `private`, exported from live                  |
 | `rls.sql`              | `ENABLE ROW LEVEL SECURITY` on all 23 tables and all 49 live policies    |
+| `hardening.sql`        | Issue #50 fixes: 4 policies, `my_department_id()`, immutable-column triggers; rollback and grant/trigger diagnostics as comments |
 
 `views.sql`, `private_functions.sql` and the policies in `rls.sql` were exported from the
 live Supabase project on 2026-10-10 (`pg_views`, `pg_get_functiondef`, `pg_policies`);
@@ -26,6 +27,11 @@ Run in the Supabase **SQL Editor** (or `psql`), in exactly this order:
 4. **`seed.sql`**
 5. **`private_functions.sql`**
 6. **`rls.sql`**
+7. **`hardening.sql`** (issue #50; run as a whole, then the tests in
+   `docs/issue-12-testing-guide.md` Part C and Part F. Undo with its ROLLBACK section.)
+
+`hardening.sql` is not an export of the live database: until it has been run there,
+`rls.sql` and `private_functions.sql` describe live, and `hardening.sql` describes the change.
 
 These files were run end to end against an in-memory PostgreSQL (with a stand-in for
 `auth.users`/`auth.uid()`): the seed gives 3 students, charges of 45,000 with 20,000
