@@ -37,3 +37,14 @@ export function TableHead({ className, ...props }: React.ThHTMLAttributes<HTMLTa
 export function TableCell({ className, ...props }: React.TdHTMLAttributes<HTMLTableCellElement>) {
   return <td className={cn("h-14 px-3.5 py-3 align-middle font-medium", className)} {...props} />;
 }
+
+// Row for a table with nothing to show. `colSpan` is the number of columns.
+export function EmptyRow({ colSpan, children }: { colSpan: number; children: React.ReactNode }) {
+  return (
+    <tr>
+      <td colSpan={colSpan} className="px-3.5 py-8 text-center text-sm font-medium text-muted">
+        {children}
+      </td>
+    </tr>
+  );
+}

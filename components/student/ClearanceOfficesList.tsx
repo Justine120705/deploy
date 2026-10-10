@@ -6,6 +6,9 @@ export type OfficeRow = { name: string; note: string; status: 'Cleared' | 'Pendi
 
 // One row per clearance office: round status icon, name and note, status pill.
 export function ClearanceOfficesList({ offices }: { offices: readonly OfficeRow[] }) {
+  if (offices.length === 0) {
+    return <p className="px-[18px] py-2 text-sm text-muted">No clearance items yet.</p>
+  }
   return (
     <ul>
       {offices.map((o) => {

@@ -1,5 +1,6 @@
 import { cn } from '@/lib/utils'
 import type { Hue } from '@/components/ui/hue'
+import { EmptyChart } from './EmptyChart'
 
 // Every bar is drawn in the hue's solid tier (>= 3:1 on the card); the highlighted bar uses the
 // deeper strong tier and carries the tooltip chip, so it stands out without a second hue.
@@ -38,6 +39,8 @@ export function BarChart({
   ariaLabel: string
   className?: string
 }) {
+  if (data.length === 0) return <EmptyChart ariaLabel={ariaLabel} className={className} />
+
   const top = max ?? Math.max(...data.map((d) => d.value), 1)
   const summary = `${ariaLabel}: ${data.map((d) => `${d.label} ${d.display ?? d.value}`).join(', ')}`
 

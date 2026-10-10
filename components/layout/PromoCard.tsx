@@ -41,7 +41,7 @@ export default function PromoCard({
           style={{ background: `linear-gradient(180deg, ${mix(15)} 0%, ${mix(88)} 48%, ${veil} 100%)` }}
         />
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 rounded-xl shadow-[inset_0_1px_0_rgb(255_255_255/0.14)]" />
-        <p className="text-[28px] font-extrabold leading-tight text-on-veil">{value}</p>
+        <p className="text-3xl font-extrabold leading-tight text-on-veil">{value}</p>
         <p className="text-sm font-medium text-on-veil">{label}</p>
         {note && <p className="text-sm font-semibold text-on-veil-muted">{note}</p>}
       </div>
@@ -70,7 +70,7 @@ export default function PromoCard({
           className="hidden h-auto w-16 dark:block"
         />
       </div>
-      <p className="text-[28px] font-extrabold leading-tight text-hue-violet-strong">{value}</p>
+      <p className="text-3xl font-extrabold leading-tight text-hue-violet-strong">{value}</p>
       <p className="text-sm font-medium text-foreground">{label}</p>
       {note && <p className="text-sm font-semibold text-hue-sky-strong">{note}</p>}
     </div>

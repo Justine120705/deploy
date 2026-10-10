@@ -3,18 +3,19 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
 import type { NavItem } from '@/lib/nav'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { Icon } from './Icon'
 
-const NAV_ITEM = 'flex h-11 w-full items-center gap-3 rounded-lg px-3 text-sm transition-colors'
+const FOCUS = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring'
+const NAV_ITEM = `flex h-11 w-full items-center gap-3 rounded-lg px-3 text-sm transition-colors ${FOCUS}`
 // The active pill gets a lit top edge (shadow-pill), so it reads as pressed into the rail, not painted on.
 const NAV_ACTIVE = 'rounded-[10px] bg-accent font-bold text-accent-foreground shadow-pill'
 const NAV_IDLE = 'font-medium text-muted hover:bg-accent/60 hover:text-accent-foreground'
-const ICON_BUTTON =
-  'inline-flex size-8 items-center justify-center rounded-lg text-muted transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring'
+// 44px: the menu button only exists below lg, where it is a touch target.
+const ICON_BUTTON = `inline-flex size-11 items-center justify-center rounded-lg text-muted transition-colors hover:text-foreground ${FOCUS}`
 
 // Client half of the shell: sidebar with the active link, mobile drawer and top bar.
 // The server half (DashboardShell) passes plain data plus the sign-out form.
@@ -43,34 +44,68 @@ export default function ShellFrame({
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
   const homeHref = items[0].href
+  const menuRef = useRef<HTMLButtonElement>(null)
+  const drawerRef = useRef<HTMLElement>(null)
+  const wasOpen = useRef(false)
+
+  // Mobile drawer: Escape closes it, focus moves in when it opens and back to the menu button when it closes.
+  useEffect(() => {
+    if (open) {
+      wasOpen.current = true
+      drawerRef.current?.querySelector<HTMLElement>('a[href], button:not([aria-disabled])')?.focus()
+      const onKey = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') setOpen(false)
+      }
+      document.addEventListener('keydown', onKey)
+      return () => document.removeEventListener('keydown', onKey)
+    }
+    if (wasOpen.current) {
+      wasOpen.current = false
+      menuRef.current?.focus()
+    }
+  }, [open])
 
   const isActive = (href: string) =>
     href === homeHref ? pathname === href : pathname === href || pathname.startsWith(href + '/')
 
   return (
     <div className="flex min-h-screen gap-4 bg-background p-3 text-foreground lg:p-4">
+      <a
+        href="#main"
+        inert={open}
+        className={cn(
+          'sr-only rounded-lg bg-card px-4 py-2 text-sm font-semibold text-foreground focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:shadow-elev-lg',
+          'focus:outline-2 focus:outline-offset-2 focus:outline-ring'
+        )}
+      >
+        Skip to main content
+      </a>
       {open && (
         <button
           type="button"
           aria-label="Close menu"
+          tabIndex={-1}
           onClick={() => setOpen(false)}
           className="fixed inset-0 z-30 bg-black/40 lg:hidden"
         />
       )}
 
       <aside
+        ref={drawerRef}
         className={cn(
           'fixed inset-y-3 left-3 z-40 flex w-[232px] flex-col gap-2 overflow-y-auto rounded-2xl border border-edge bg-card px-[18px] py-6 surface',
           // Level 1 on desktop (chrome sits low so content floats above it); level 3 as the mobile drawer.
           'shadow-elev-lg lg:shadow-elev-xs',
-          'transition-transform lg:sticky lg:inset-y-auto lg:top-4 lg:h-[calc(100vh-2rem)] lg:shrink-0 lg:translate-x-0',
-          open ? 'translate-x-0' : '-translate-x-[110%]'
+          'transition-[transform,visibility] lg:sticky lg:inset-y-auto lg:top-4 lg:h-[calc(100vh-2rem)] lg:shrink-0 lg:translate-x-0',
+          // Closed on a phone: off screen and out of the Tab order (visibility switches after the slide).
+          // Opening skips the visibility transition so the first link can take focus at once.
+          open ? 'translate-x-0 transition-transform' : '-translate-x-[110%] max-lg:invisible'
         )}
       >
         <div className="flex h-14 shrink-0 items-center gap-3 px-2">
           <LogoMark />
           <p className="text-xl font-extrabold leading-tight">
-            <span className="text-accent-foreground">University</span> Portal
+            <span className="text-accent-foreground">Cabuyao</span> University
           </p>
         </div>
 
@@ -103,21 +138,22 @@ export default function ShellFrame({
             <button
               type="button"
               aria-disabled="true"
-              title="Settings are not available yet"
               className={cn(NAV_ITEM, 'cursor-not-allowed font-medium text-muted')}
             >
               <Icon name="settings" />
               Settings
+              <span className="ml-auto text-xs font-medium">Soon</span>
             </button>
           )}
           {signOut}
         </div>
       </aside>
 
-      <div className="flex min-w-0 flex-1 flex-col gap-4">
+      <div inert={open} className="flex min-w-0 flex-1 flex-col gap-4">
         <header className="flex h-[60px] shrink-0 items-center justify-between gap-3 rounded-2xl border border-edge bg-card px-5 shadow-elev-xs surface">
           <button
             type="button"
+            ref={menuRef}
             aria-label="Open menu"
             onClick={() => setOpen(true)}
             className={cn(ICON_BUTTON, 'lg:hidden')}
@@ -125,12 +161,6 @@ export default function ShellFrame({
             <Icon name="menu" className="size-5" />
           </button>
           <div className="ml-auto flex items-center gap-3 sm:gap-[18px]">
-            <button type="button" aria-label="Search" className={ICON_BUTTON}>
-              <Icon name="search" className="size-5" />
-            </button>
-            <button type="button" aria-label="Notifications" className={ICON_BUTTON}>
-              <Icon name="bell" className="size-5" />
-            </button>
             <ThemeToggle />
             <div className="flex items-center gap-2.5">
               <span
@@ -146,7 +176,7 @@ export default function ShellFrame({
             </div>
           </div>
         </header>
-        <main className="flex min-w-0 flex-1 flex-col">{children}</main>
+        <main id="main" tabIndex={-1} className="flex min-w-0 flex-1 flex-col outline-none">{children}</main>
       </div>
     </div>
   )

@@ -11,6 +11,9 @@ const isLegacy = (t: ScheduleTone): t is keyof typeof LEGACY_BAR => t in LEGACY_
 
 // Class list: meeting time, a colored bar, then the title and course code (the code in the bar's hue).
 export function ScheduleList({ items, className }: { items: readonly ScheduleEntry[]; className?: string }) {
+  if (items.length === 0) {
+    return <p className={cn('text-sm text-muted', className)}>No classes this term yet. They appear after you enroll.</p>
+  }
   return (
     <ul className={cn('flex flex-col gap-3', className)}>
       {items.map((item) => (

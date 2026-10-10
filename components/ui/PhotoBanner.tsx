@@ -63,7 +63,7 @@ export function PhotoBanner({
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 rounded-2xl shadow-[inset_0_1px_0_rgb(255_255_255/0.12)]" />
 
       <div className="flex max-w-full flex-col gap-1 sm:max-w-[50%]">
-        <h2 className="text-[26px] font-extrabold leading-tight tracking-tight text-on-veil">{title}</h2>
+        <h2 className="text-2xl font-extrabold leading-tight tracking-tight text-on-veil">{title}</h2>
         {subtitle && <p className="text-sm font-medium text-on-veil-muted">{subtitle}</p>}
       </div>
       {aside && <div className="relative shrink-0">{aside}</div>}

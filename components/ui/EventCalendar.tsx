@@ -54,39 +54,52 @@ export function EventCalendar({
   const byDate = new Map<string, CalendarEvent>()
   const inMonth = events.filter((e) => e.dates.some((d) => d.startsWith(prefix)))
   for (const e of events) for (const d of e.dates) byDate.set(d, e)
-  const legend = [...new Map(inMonth.map((e) => [hueOf(e.tone), e])).values()]
+  // Every dated event of this month as plain text (the colored cells alone are not readable by keyboard, touch or screen reader).
+  const listed = inMonth
+    .flatMap((e) => e.dates.filter((d) => d.startsWith(prefix)).map((d) => ({ e, day: Number(d.slice(8)), iso: d })))
+    .sort((a, b) => a.iso.localeCompare(b.iso))
+  const shown = listed.slice(0, 4)
+  const dayLabel = (day: number) =>
+    new Date(view.year, view.month, day).toLocaleString('en-US', { month: 'short', day: 'numeric' })
 
   const cells: (number | null)[] = [
     ...Array<null>(offset).fill(null),
     ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
   ]
 
+  // The button is a 44px touch target on small screens; the visible circle inside stays 26px.
   const navButton =
-    'flex size-[26px] items-center justify-center rounded-full bg-chip text-sm font-bold text-accent-foreground transition-colors hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring'
+    'group flex size-[26px] max-lg:-m-[9px] max-lg:size-11 items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring'
+  const navCircle =
+    'flex size-[26px] items-center justify-center rounded-full bg-chip text-sm font-bold text-accent-foreground transition-colors group-hover:bg-accent'
 
   return (
     <div className={cn('flex flex-col gap-3', className)}>
       <div className="flex items-center justify-between">
         <button type="button" aria-label="Previous month" onClick={() => shift(-1)} className={navButton}>
-          ‹
+          <span aria-hidden="true" className={navCircle}>
+            ‹
+          </span>
         </button>
         <p aria-live="polite" className="text-sm font-semibold">
           {title}
         </p>
         <button type="button" aria-label="Next month" onClick={() => shift(1)} className={navButton}>
-          ›
+          <span aria-hidden="true" className={navCircle}>
+            ›
+          </span>
         </button>
       </div>
 
       <div role="grid" aria-label={title} className="grid grid-cols-7 justify-items-center gap-y-3">
-        {WEEKDAYS.map((d, i) => (
+        {WEEKDAYS.map((d) => (
           <div
             key={d.name}
             role="columnheader"
             aria-label={d.name}
             className={cn(
               'flex size-[34px] items-center justify-center text-sm font-medium',
-              i === 0 ? 'text-danger' : 'text-muted'
+              'text-muted'
             )}
           >
             {d.letter}
@@ -107,9 +120,13 @@ export function EventCalendar({
               title={event?.title}
               className={cn(
                 'relative flex size-[34px] items-center justify-center rounded-md text-sm font-medium',
-                i % 7 === 0 ? 'text-danger' : 'text-foreground',
-                hue && !isToday && cn(HUE_SOFT[hue], HUE_TEXT[hue], 'font-bold'),
-                isToday && 'bg-ink font-semibold text-ink-foreground'
+                hue && !isToday
+                  ? cn(HUE_SOFT[hue], HUE_TEXT[hue], 'font-bold')
+                  : i % 7 === 0
+                    ? 'text-muted'
+                    : 'text-foreground',
+                // Today: a filled pill in the primary color (ink in light, lilac in dark), readable on the card in both themes.
+                isToday && 'rounded-full bg-primary font-bold text-primary-foreground'
               )}
             >
               {day}
@@ -125,17 +142,25 @@ export function EventCalendar({
         })}
       </div>
 
-      <p className="flex items-center justify-center gap-1.5 text-[13px] font-medium text-muted">
-        {legend.map((e) => (
-          <span
-            key={e.id}
-            aria-hidden="true"
-            title={e.title}
-            className={cn('size-1.5 rounded-full', HUE_SOLID[hueOf(e.tone)])}
-          />
-        ))}
-        {inMonth.length} {inMonth.length === 1 ? 'event' : 'events'} this month
-      </p>
+      <div className="flex flex-col gap-1.5">
+        <h3 className="text-sm font-semibold">This month</h3>
+        {shown.length === 0 ? (
+          <p className="text-sm text-muted">No events this month.</p>
+        ) : (
+          <ul className="flex flex-col gap-1.5">
+            {shown.map(({ e, day, iso }) => (
+              <li key={`${e.id}-${iso}`} className="flex items-center gap-2 text-sm">
+                <span aria-hidden="true" className={cn('size-2 shrink-0 rounded-full', HUE_SOLID[hueOf(e.tone)])} />
+                <span className="w-14 shrink-0 font-semibold text-muted">{dayLabel(day)}</span>
+                <span className="min-w-0 truncate font-medium">{e.title}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+        {listed.length > shown.length && (
+          <p className="text-sm text-muted">and {listed.length - shown.length} more</p>
+        )}
+      </div>
     </div>
   )
 }

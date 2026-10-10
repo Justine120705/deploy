@@ -1,14 +1,12 @@
 import Link from 'next/link'
 import DashboardShell from '@/components/layout/DashboardShell'
-import { Icon } from '@/components/layout/Icon'
 import PromoCard from '@/components/layout/PromoCard'
-import { BarChart, GaugeChart, LegendItem, LineChart } from '@/components/charts'
-import { ClearanceOfficesList } from '@/components/student/ClearanceOfficesList'
+import { BarChart, LegendItem, LineChart } from '@/components/charts'
+import { ClearanceChain } from '@/components/student/ClearanceChain'
 import { NextLesson } from '@/components/student/NextLesson'
 import {
   Card,
   CardHeader,
-  CardMenuButton,
   EventCalendar,
   PhotoBanner,
   ScheduleList,
@@ -19,23 +17,18 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui'
-import { cn } from '@/lib/utils'
 import { requireRole } from '@/lib/auth/session'
 import { MOCK_STUDENT_ID, students } from '@/lib/mock-data'
 import {
+  ACTIVE_HOLDS,
   CALENDAR_EVENTS,
   CALENDAR_VIEW,
   CLEARANCE_OFFICES,
-  CLEARANCE_SUMMARY,
   CURRENT_GRADES,
-  CURRENT_GWA_TERM,
   DASHBOARD_UNITS_THIS_TERM,
   GWA_BY_TERM,
-  GWA_PROGRESS,
-  GWA_PROGRESS_X_LABELS,
-  GWA_PROGRESS_Y_TICKS,
-  NEXT_LESSON,
-  PENDING_ITEMS,
+  GWA_Y_TICKS,
+  NEXT_CLASS,
   SCHEDULE,
 } from '@/lib/mock/student-dashboard'
 
@@ -55,21 +48,20 @@ function greeting() {
 export default async function StudentDashboardPage() {
   const profile = await requireRole('Student')
   const student = students.find((s) => s.student_id === MOCK_STUDENT_ID)
-  const clearedPercent = Math.round((CLEARANCE_SUMMARY.cleared / CLEARANCE_SUMMARY.total) * 100)
-  const waitingOn = CLEARANCE_OFFICES.filter((o) => o.status !== 'Cleared').map((o) => o.name)
-  const bannerNote =
-    `${CLEARANCE_SUMMARY.cleared} of ${CLEARANCE_SUMMARY.total} clearance offices cleared.` +
-    (waitingOn.length ? ` Waiting on ${waitingOn.join(', ')}.` : '')
 
-  // Lower GWA is better, so the bar height is the distance below 3.25 (T5, 1.75, is the tallest).
-  // Best (lowest) point of the progress line, pinned on the chart.
-  const best = GWA_PROGRESS.indexOf(Math.min(...GWA_PROGRESS))
+  // One GWA series drives both charts. Lower is better: the latest term is highlighted on the bars and
+  // the best (lowest) term is pinned on the line.
+  const latest = GWA_BY_TERM[GWA_BY_TERM.length - 1]
+  const bestIndex = GWA_BY_TERM.reduce((b, t, i) => (t.gwa < GWA_BY_TERM[b].gwa ? i : b), 0)
+  const best = GWA_BY_TERM[bestIndex]
+  const gwaSummary = GWA_BY_TERM.map((t) => `${t.full} ${t.gwa.toFixed(2)}`).join(', ')
 
+  // A bar's height is its distance below 3.25, so the best GWA is the tallest bar.
   const bars = GWA_BY_TERM.map((t) => ({
-    label: t.term,
+    label: t.short,
     value: 3.25 - t.gwa,
     display: t.gwa.toFixed(2),
-    highlight: t.term === CURRENT_GWA_TERM,
+    highlight: t === latest,
   }))
 
   return (
@@ -86,147 +78,118 @@ export default async function StudentDashboardPage() {
       }
     >
       <h1 className="sr-only">Student dashboard</h1>
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_304px]">
-        <div className="flex min-w-0 flex-col gap-4">
-          <PhotoBanner
-            image="study-desk"
-            title={`${greeting()}, ${profile.firstName}`}
-            subtitle={bannerNote}
-            aside={
-              <Link href="/student/clearance" className={ON_VEIL_LINK}>
-                Open clearance
-              </Link>
-            }
-          />
+      {/*
+        One grid so the phone reading order is: banner, clearance, next class, then the rest. On xl the
+        third column holds the calendar, schedule and next class; the 1fr last row soaks up the left
+        column's extra height so the right column never pushes the left one down.
+      */}
+      <div className="grid gap-4 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_304px] xl:grid-rows-[auto_auto_auto_auto_1fr]">
+        <PhotoBanner
+          className="md:col-span-2 xl:col-start-1 xl:row-start-1"
+          image="study-desk"
+          title={`${greeting()}, ${profile.firstName}`}
+          subtitle="Here is your clearance, your grades and today's classes."
+          aside={
+            <Link href="/student/clearance" className={ON_VEIL_LINK}>
+              Open clearance
+            </Link>
+          }
+        />
 
-          <div className="grid gap-4 md:grid-cols-3">
-            <Card className="flex min-h-[204px] flex-col gap-3 p-5">
-              <CardHeader title="Clearance" icon="clearance" hue="teal" action={<CardMenuButton />} />
-              <div className="flex h-28 items-center justify-center">
-                <GaugeChart
-                  value={clearedPercent}
-                  color="var(--hue-teal-solid)"
-                  trackColor="var(--hue-amber-solid)"
-                  ariaLabel={`Clearance ${clearedPercent} percent complete, ${CLEARANCE_SUMMARY.cleared} of ${CLEARANCE_SUMMARY.total} offices cleared`}
-                />
-              </div>
-              <div className="flex justify-center gap-4">
-                <LegendItem color="var(--hue-teal-solid)">Cleared</LegendItem>
-                <LegendItem color="var(--hue-amber-solid)">Pending</LegendItem>
-              </div>
-            </Card>
+        <ClearanceChain
+          className="md:col-start-1 md:row-start-2"
+          offices={CLEARANCE_OFFICES}
+          activeHolds={ACTIVE_HOLDS}
+        />
 
-            <Card className="flex min-h-[204px] flex-col gap-3 p-5">
-              <CardHeader title="GWA by term" icon="grades" hue="violet" action={<CardMenuButton />} />
-              <BarChart data={bars} max={1.5} hue="violet" ariaLabel="GWA by term" />
-            </Card>
+        <NextLesson
+          className="md:col-span-2 md:row-start-3 xl:col-span-1 xl:col-start-3 xl:row-start-4 xl:self-start"
+          seconds={NEXT_CLASS.seconds}
+          title={NEXT_CLASS.title}
+          code={NEXT_CLASS.code}
+          startsAt={NEXT_CLASS.startsAt}
+        />
 
-            <Card className="flex min-h-[204px] flex-col gap-3 p-5">
-              <CardHeader title="Pending items" icon="clock" hue="amber" action={<CardMenuButton />} />
-              {PENDING_ITEMS.map((p) => (
-                <div key={p.title} className="flex flex-col gap-1.5 text-sm">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="font-bold">{p.title}</p>
-                    {/* The value word itself says the state; the hue only repeats it. */}
-                    <p className={cn('font-semibold', p.attention ? 'text-hue-amber-strong' : 'text-hue-teal-strong')}>
-                      {p.value}
-                    </p>
-                  </div>
-                  <p className="text-muted">{p.note}</p>
-                </div>
-              ))}
-            </Card>
+        <Card className="flex flex-col gap-3 p-5 md:col-start-2 md:row-start-2">
+          <CardHeader title="GWA by term" icon="grades" hue="violet" />
+          <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+            <p className="flex flex-col">
+              <span className="text-3xl font-extrabold">{latest.gwa.toFixed(2)}</span>
+              <span className="text-sm text-muted">GWA, {latest.full}</span>
+            </p>
+            <p className="text-sm font-semibold text-muted">Lower is better</p>
           </div>
+          <p className="sr-only">GWA by term, oldest first: {gwaSummary}.</p>
+          <div aria-hidden="true" className="mt-auto">
+            <BarChart data={bars} max={1.5} hue="violet" ariaLabel="GWA by term" />
+          </div>
+        </Card>
 
+        <div className="flex min-w-0 flex-col gap-4 md:col-span-2 xl:col-start-1 xl:row-start-3 xl:row-span-3">
           <Card className="flex flex-col gap-2 px-6 py-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <h2 className="text-base font-bold leading-[22px]">Progress</h2>
-              <div className="flex items-center gap-3">
-                <LegendItem color="var(--hue-violet-strong)">GWA</LegendItem>
-                <div className="relative">
-                  <select
-                    aria-label="Term range"
-                    defaultValue="all"
-                    className="appearance-none rounded-lg border border-border-subtle bg-lilac-soft py-1.5 pl-3 pr-8 text-sm font-medium text-neutral focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-                  >
-                    <option value="all">All terms</option>
-                  </select>
-                  <Icon
-                    name="chevron-down"
-                    className="pointer-events-none absolute right-3 top-1/2 size-3.5 -translate-y-1/2 text-neutral"
-                  />
-                </div>
+              <div className="flex flex-wrap items-baseline gap-x-3">
+                <h2 className="text-base font-bold leading-[22px]">Progress</h2>
+                <p className="text-sm font-semibold text-muted">Lower is better</p>
               </div>
+              <LegendItem color="var(--hue-violet-strong)">GWA</LegendItem>
             </div>
-            <LineChart
-              values={GWA_PROGRESS}
-              yTicks={GWA_PROGRESS_Y_TICKS}
-              xLabels={GWA_PROGRESS_X_LABELS}
-              hue="violet"
-              mark={{ index: best, label: `Best ${GWA_PROGRESS[best].toFixed(2)}` }}
-              ariaLabel="GWA progress across all terms"
-            />
+            <p className="sr-only">GWA by term, oldest first: {gwaSummary}. Best: {best.full}, {best.gwa.toFixed(2)}.</p>
+            <div aria-hidden="true">
+              <LineChart
+                values={GWA_BY_TERM.map((t) => t.gwa)}
+                yTicks={GWA_Y_TICKS}
+                xLabels={GWA_BY_TERM.map((t) => t.short)}
+                hue="violet"
+                mark={{ index: bestIndex, label: `Best ${best.gwa.toFixed(2)}` }}
+                ariaLabel="GWA progress"
+              />
+            </div>
+            <p className="text-sm text-muted">Y1 S1 means Year 1, 1st semester.</p>
           </Card>
 
-          <div className="grid items-stretch gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
-            <Card className="flex flex-col overflow-hidden">
-              <CardHeader
-                title="Current grades"
-                icon="grades"
-                hue="violet"
-                className="px-[18px] py-4"
-                action={
-                  <Link href="/student/grades" className={SEE_ALL}>
-                    See all
-                  </Link>
-                }
-              />
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[480px] text-left text-sm">
-                  <TableHeader>
-                    <TableRow className="hover:bg-transparent">
-                      <TableHead className={`${TH} w-[76px] px-3.5`}>Code</TableHead>
-                      <TableHead className={TH}>Course</TableHead>
-                      <TableHead className={`${TH} w-14`}>Units</TableHead>
-                      <TableHead className={`${TH} w-[60px]`}>Grade</TableHead>
-                      <TableHead className={`${TH} w-28`}>Remarks</TableHead>
+          <Card className="flex flex-col overflow-hidden">
+            <CardHeader
+              title="Current grades"
+              icon="grades"
+              hue="violet"
+              className="px-[18px] py-4"
+              action={
+                <Link href="/student/grades" aria-label="See all grades" className={SEE_ALL}>
+                  See all
+                </Link>
+              }
+            />
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[480px] text-left text-sm">
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className={`${TH} w-[76px] px-3.5`}>Code</TableHead>
+                    <TableHead className={TH}>Course</TableHead>
+                    <TableHead className={`${TH} w-14`}>Units</TableHead>
+                    <TableHead className={`${TH} w-[60px]`}>Grade</TableHead>
+                    <TableHead className={`${TH} w-28`}>Remarks</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {CURRENT_GRADES.map((g) => (
+                    <TableRow key={g.code}>
+                      <TableCell>{g.code}</TableCell>
+                      <TableCell>{g.course}</TableCell>
+                      <TableCell>{g.units}</TableCell>
+                      <TableCell className="font-bold">{g.grade}</TableCell>
+                      <TableCell>
+                        <StatusBadge status={g.remarks} className="text-sm" />
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {CURRENT_GRADES.map((g) => (
-                      <TableRow key={g.code}>
-                        <TableCell>{g.code}</TableCell>
-                        <TableCell>{g.course}</TableCell>
-                        <TableCell>{g.units}</TableCell>
-                        <TableCell className="font-bold">{g.grade}</TableCell>
-                        <TableCell>
-                          <StatusBadge status={g.remarks} className="text-sm" />
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </table>
-              </div>
-            </Card>
-
-            <Card className="flex flex-col pb-2">
-              <CardHeader
-                title="Clearance offices"
-                icon="clearance"
-                hue="teal"
-                className="px-[18px] py-4"
-                action={
-                  <Link href="/student/clearance" className={SEE_ALL}>
-                    See all
-                  </Link>
-                }
-              />
-              <ClearanceOfficesList offices={CLEARANCE_OFFICES} />
-            </Card>
-          </div>
+                  ))}
+                </TableBody>
+              </table>
+            </div>
+          </Card>
         </div>
 
-        <div className="flex flex-col gap-4 xl:self-start">
+        <div className="flex flex-col gap-4 md:col-span-2 xl:col-span-1 xl:col-start-3 xl:row-start-1 xl:row-span-3 xl:self-start">
           <Card className="p-5">
             <CardHeader title="Event calendar" className="mb-3" />
             <EventCalendar
@@ -243,13 +206,12 @@ export default async function StudentDashboardPage() {
               icon="enrollment"
               hue="sky"
               action={
-                <Link href="/student/enrollment" className={SEE_ALL}>
+                <Link href="/student/enrollment" aria-label="See all classes" className={SEE_ALL}>
                   See all
                 </Link>
               }
             />
             <ScheduleList items={SCHEDULE} />
-            <NextLesson seconds={NEXT_LESSON.seconds} title={NEXT_LESSON.title} />
           </Card>
         </div>
       </div>

@@ -13,7 +13,7 @@ export function Select({ className, label, error, id, children, ...props }: Sele
       aria-invalid={error ? true : undefined}
       className={cn(
         "flex h-11 w-full rounded-xl border border-border bg-card px-3 text-sm text-foreground",
-        "focus:outline-2 focus:outline-offset-0 focus:outline-lilac disabled:cursor-not-allowed disabled:opacity-50",
+        "focus:outline-2 focus:outline-offset-0 focus:outline-ring disabled:cursor-not-allowed disabled:opacity-50",
         error && "border-danger",
         className
       )}

@@ -13,7 +13,7 @@ export function CardMenuButton({
       type="button"
       aria-label={label}
       className={cn(
-        'inline-flex size-[18px] items-center justify-center rounded text-muted transition-colors hover:text-foreground',
+        'inline-flex size-[18px] max-lg:-m-[13px] max-lg:size-11 items-center justify-center rounded text-muted transition-colors hover:text-foreground',
         'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
         className
       )}

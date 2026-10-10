@@ -1,5 +1,6 @@
 import { cn } from '@/lib/utils'
 import { hueVar, type Hue } from '@/components/ui/hue'
+import { EmptyChart } from './EmptyChart'
 
 const W = 740
 const H = 200
@@ -25,6 +26,8 @@ export function LineChart({
   mark?: { index: number; label: string }
   className?: string
 }) {
+  if (values.length === 0) return <EmptyChart ariaLabel={ariaLabel} className={className} />
+
   const first = yTicks[0]
   const last = yTicks[yTicks.length - 1]
   const toY = (v: number) => ((v - first) / (last - first)) * H

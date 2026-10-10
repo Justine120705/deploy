@@ -26,7 +26,7 @@ export function Tabs({ tabs, className }: { tabs: TabItem[]; className?: string 
               onClick={() => setActive(t.id)}
               className={cn(
                 "-mb-px whitespace-nowrap border-b-2 px-4 py-2.5 text-sm font-semibold transition-colors",
-                "focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-lilac",
+                "focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring",
                 selected
                   ? "border-primary text-foreground"
                   : "border-transparent text-muted hover:text-foreground"
