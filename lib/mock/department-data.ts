@@ -61,3 +61,13 @@ export function studentByNo(studentNo: string): DeptStudent {
     DEPT_STUDENTS.find((s) => s.studentNo === studentNo) ?? { studentNo, name: studentNo, program: '' }
   )
 }
+
+/** Today's date as "Oct 11, 2026" in Philippine time, read when an action happens (not at build time). */
+export function todayLabel(): string {
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: 'Asia/Manila',
+  }).format(new Date())
+}

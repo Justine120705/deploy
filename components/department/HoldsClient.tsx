@@ -5,9 +5,8 @@ import { Button, Card, CardHeader, EmptyRow, Input, Select, Table, TableBody, Ta
 import { DeptStats } from '@/components/department/DeptStats'
 import { HoldStatusBadge } from '@/components/department/DeptBadges'
 import { RecordList, type RecordItem } from '@/components/department/RecordList'
-import { DEPT_HOLDS, DEPT_STUDENTS, DEPT_USER, studentByNo, type DeptHold } from '@/lib/mock/department-data'
+import { DEPT_HOLDS, DEPT_STUDENTS, DEPT_USER, studentByNo, todayLabel, type DeptHold } from '@/lib/mock/department-data'
 
-const TODAY = 'Oct 10, 2026'
 
 // Mock-only hold state: nothing is saved. A hold always shows its reason and who placed it.
 export default function HoldsClient() {
@@ -30,7 +29,7 @@ export default function HoldsClient() {
         studentNo,
         reason: reason.trim(),
         placedBy: DEPT_USER,
-        placedOn: TODAY,
+        placedOn: todayLabel(),
         status: 'Active',
         liftedOn: null,
       },
@@ -41,7 +40,7 @@ export default function HoldsClient() {
   }
 
   function lift(id: string) {
-    setHolds((prev) => prev.map((h) => (h.id === id ? { ...h, status: 'Lifted', liftedOn: TODAY } : h)))
+    setHolds((prev) => prev.map((h) => (h.id === id ? { ...h, status: 'Lifted', liftedOn: todayLabel() } : h)))
   }
 
   const active = holds.filter((h) => h.status === 'Active')

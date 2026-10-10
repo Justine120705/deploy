@@ -10,10 +10,10 @@ import {
   DEPT_HOLDS,
   DEPT_STUDENTS,
   studentByNo,
+  todayLabel,
   type DeptClearanceItem,
 } from '@/lib/mock/department-data'
 
-const TODAY = 'Oct 10, 2026'
 
 // Mock-only review state: nothing is saved. Approval is blocked while the student has an active hold
 // from this department (REQ-DPT-03).
@@ -28,7 +28,7 @@ export default function ClearanceItemsClient() {
   const activeHolds = DEPT_HOLDS.filter((h) => h.status === 'Active').length
 
   function approve(no: string) {
-    setItems((prev) => prev.map((i) => (i.studentNo === no ? { ...i, status: 'Cleared', clearedOn: TODAY } : i)))
+    setItems((prev) => prev.map((i) => (i.studentNo === no ? { ...i, status: 'Cleared', clearedOn: todayLabel() } : i)))
   }
 
   function cancelReject() {
