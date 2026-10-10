@@ -28,7 +28,7 @@ export default async function AdminDashboardPage() {
   return (
     <DashboardShell profile={profile} title="Dashboard" subtitle="System overview: accounts and recent activity">
       <div className="flex flex-col gap-4">
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           <StatCard label="Total users" value={profiles.length} hint="accounts" />
           <StatCard
             label="Active"

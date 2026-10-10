@@ -59,7 +59,7 @@ export default async function AdminAcademicSetupPage() {
           Adding terms and programs is turned off until the database is connected.
         </p>
 
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           <StatCard label="Terms" value={setup.termCount} hint={`current: ${setup.currentLabel}`} />
           <StatCard label="Programs" value={setup.programCount} hint={setup.programRows.map((p) => p.code).join(', ')} />
           <StatCard label="Subjects" value={setup.subjectCount} hint="this term" />

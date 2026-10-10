@@ -8,7 +8,7 @@ export type CashierStat = { label: string; value: string; hint: string; hue?: Hu
 // (teal = collected, amber = still to collect); the label and hint say the same thing in words.
 export function StatRow({ stats }: { stats: CashierStat[] }) {
   return (
-    <div className="mb-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="mb-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
       {stats.map((s) => (
         <StatCard
           key={s.label}

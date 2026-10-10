@@ -60,7 +60,7 @@ export default function AuditLogView({ rows }: { rows: AuditRow[] }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard label="Entries" value={rows.length} hint="recorded so far" />
         <StatCard label="Inserts" value={<span className={HUE_TEXT.teal}>{count('Insert')}</span>} hint="new records" />
         <StatCard label="Updates" value={<span className={HUE_TEXT.amber}>{count('Update')}</span>} hint="changes" />
