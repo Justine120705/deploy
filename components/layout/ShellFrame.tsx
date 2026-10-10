@@ -9,19 +9,34 @@ import type { NavItem } from '@/lib/nav'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { Icon } from './Icon'
 
+const NAV_ITEM = 'flex h-11 w-full items-center gap-3 rounded-lg px-3 text-sm transition-colors'
+const NAV_ACTIVE = 'rounded-[10px] bg-accent font-bold text-accent-foreground'
+const NAV_IDLE = 'font-medium text-muted hover:bg-accent/60 hover:text-accent-foreground'
+const ICON_BUTTON =
+  'inline-flex size-8 items-center justify-center rounded-lg text-muted transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lilac'
+
 // Client half of the shell: sidebar with the active link, mobile drawer and top bar.
 // The server half (DashboardShell) passes plain data plus the sign-out form.
 export default function ShellFrame({
   items,
   roleLabel,
   userName,
+  userMeta,
   signOut,
+  promo,
+  settingsHref,
   children,
 }: {
   items: NavItem[]
   roleLabel: string
   userName: string
+  /** Second line under the name in the top bar (for example "ID 2026-0001"). Defaults to the role. */
+  userMeta?: string
   signOut: React.ReactNode
+  /** Optional card above Settings at the bottom of the sidebar (see PromoCard). */
+  promo?: React.ReactNode
+  /** Where Settings goes. Without it the item is shown but disabled (there is no settings page yet). */
+  settingsHref?: string
   children: React.ReactNode
 }) {
   const pathname = usePathname()
@@ -44,19 +59,19 @@ export default function ShellFrame({
 
       <aside
         className={cn(
-          'fixed inset-y-3 left-3 z-40 flex w-[232px] flex-col gap-2 rounded-xl border border-border bg-card px-[18px] py-6',
+          'fixed inset-y-3 left-3 z-40 flex w-[232px] flex-col gap-2 overflow-y-auto rounded-xl border border-border bg-card px-[18px] py-6',
           'transition-transform lg:sticky lg:inset-y-auto lg:top-4 lg:h-[calc(100vh-2rem)] lg:shrink-0 lg:translate-x-0',
           open ? 'translate-x-0' : '-translate-x-[110%]'
         )}
       >
-        <div className="flex h-14 items-center gap-3 px-2">
+        <div className="flex h-14 shrink-0 items-center gap-3 px-2">
           <LogoMark />
           <p className="text-xl font-extrabold leading-tight">
             <span className="text-accent-foreground">University</span> Portal
           </p>
         </div>
 
-        <nav aria-label="Main" className="mt-3 flex flex-col gap-2">
+        <nav aria-label="Main" className="mt-[13px] flex flex-col gap-2">
           {items.map((item) => {
             const active = isActive(item.href)
             return (
@@ -65,12 +80,7 @@ export default function ShellFrame({
                 href={item.href}
                 onClick={() => setOpen(false)}
                 aria-current={active ? 'page' : undefined}
-                className={cn(
-                  'flex h-11 items-center gap-3 rounded-lg px-3 text-sm transition-colors',
-                  active
-                    ? 'rounded-[10px] bg-accent font-bold text-accent-foreground'
-                    : 'font-medium text-muted hover:bg-accent/60 hover:text-accent-foreground'
-                )}
+                className={cn(NAV_ITEM, active ? NAV_ACTIVE : NAV_IDLE)}
               >
                 <Icon name={item.icon} />
                 {item.label}
@@ -79,34 +89,61 @@ export default function ShellFrame({
           })}
         </nav>
 
-        <div className="mt-auto">{signOut}</div>
+        <div className="mt-auto flex flex-col gap-2 pt-4">
+          {promo}
+          {settingsHref ? (
+            <Link href={settingsHref} className={cn(NAV_ITEM, NAV_IDLE)}>
+              <Icon name="settings" />
+              Settings
+            </Link>
+          ) : (
+            <button
+              type="button"
+              aria-disabled="true"
+              title="Settings are not available yet"
+              className={cn(NAV_ITEM, 'cursor-not-allowed font-medium text-muted')}
+            >
+              <Icon name="settings" />
+              Settings
+            </button>
+          )}
+          {signOut}
+        </div>
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col gap-4">
-        <header className="flex h-[60px] shrink-0 items-center justify-between rounded-xl border border-border bg-card px-5">
+        <header className="flex h-[60px] shrink-0 items-center justify-between gap-3 rounded-xl border border-border bg-card px-5">
           <button
             type="button"
             aria-label="Open menu"
             onClick={() => setOpen(true)}
-            className="text-muted hover:text-foreground lg:hidden"
+            className={cn(ICON_BUTTON, 'lg:hidden')}
           >
             <Icon name="menu" className="size-5" />
           </button>
-          <span className="hidden text-sm font-semibold text-muted lg:block">{roleLabel}</span>
-          <div className="flex items-center gap-4">
+          <div className="ml-auto flex items-center gap-3 sm:gap-[18px]">
+            <button type="button" aria-label="Search" className={ICON_BUTTON}>
+              <Icon name="search" className="size-5" />
+            </button>
+            <button type="button" aria-label="Notifications" className={ICON_BUTTON}>
+              <Icon name="bell" className="size-5" />
+            </button>
             <ThemeToggle />
             <div className="flex items-center gap-2.5">
-              <span className="flex size-9 items-center justify-center rounded-full bg-lilac-soft text-sm font-bold text-accent-foreground">
+              <span
+                aria-hidden="true"
+                className="flex size-9 shrink-0 items-center justify-center rounded-full bg-neutral-soft text-sm font-bold text-accent-foreground"
+              >
                 {userName.charAt(0)}
               </span>
-              <div className="text-sm leading-tight">
+              <div className="hidden text-sm leading-tight sm:block">
                 <p className="font-bold">{userName}</p>
-                <p className="text-muted">{roleLabel}</p>
+                <p className="text-muted">{userMeta ?? roleLabel}</p>
               </div>
             </div>
           </div>
         </header>
-        <main className="flex-1">{children}</main>
+        <main className="flex min-w-0 flex-1 flex-col">{children}</main>
       </div>
     </div>
   )

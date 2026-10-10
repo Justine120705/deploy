@@ -1,81 +1,208 @@
+import Link from 'next/link'
 import DashboardShell from '@/components/layout/DashboardShell'
-import { requireRole } from '@/lib/auth/session'
-import { Badge, Card, CardHeader, StatCard, StatusBadge } from '@/components/ui'
+import { Icon } from '@/components/layout/Icon'
+import PromoCard from '@/components/layout/PromoCard'
+import { BarChart, GaugeChart, LegendItem, LineChart } from '@/components/charts'
+import { ClearanceOfficesList } from '@/components/student/ClearanceOfficesList'
+import { NextLesson } from '@/components/student/NextLesson'
 import {
-  MOCK_CURRENT_TERM_ID,
-  MOCK_STUDENT_ID,
-  departments,
-  enrollments,
-  terms,
-  vActiveHolds,
-  vClearanceItems,
-} from '@/lib/mock-data'
+  Card,
+  CardHeader,
+  CardMenuButton,
+  EventCalendar,
+  ScheduleList,
+  StatusBadge,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui'
+import { requireRole } from '@/lib/auth/session'
+import { MOCK_STUDENT_ID, students } from '@/lib/mock-data'
+import {
+  CALENDAR_EVENTS,
+  CALENDAR_VIEW,
+  CLEARANCE_OFFICES,
+  CLEARANCE_SUMMARY,
+  CURRENT_GRADES,
+  CURRENT_GWA_TERM,
+  DASHBOARD_UNITS_THIS_TERM,
+  GWA_BY_TERM,
+  GWA_PROGRESS,
+  GWA_PROGRESS_X_LABELS,
+  GWA_PROGRESS_Y_TICKS,
+  NEXT_LESSON,
+  PENDING_ITEMS,
+  SCHEDULE,
+} from '@/lib/mock/student-dashboard'
+
+const SEE_ALL = 'text-sm font-semibold text-accent-foreground hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lilac'
+const TH = 'text-sm'
 
 export default async function StudentDashboardPage() {
   const profile = await requireRole('Student')
+  const student = students.find((s) => s.student_id === MOCK_STUDENT_ID)
+  const clearedPercent = Math.round((CLEARANCE_SUMMARY.cleared / CLEARANCE_SUMMARY.total) * 100)
 
-  const term = terms.find((t) => t.term_id === MOCK_CURRENT_TERM_ID)
-  const enrollment = enrollments.find(
-    (e) => e.student_id === MOCK_STUDENT_ID && e.term_id === MOCK_CURRENT_TERM_ID
-  )
-  const items = vClearanceItems.filter(
-    (i) => i.student_id === MOCK_STUDENT_ID && i.term_id === MOCK_CURRENT_TERM_ID
-  )
-  const cleared = items.filter((i) => i.status === 'Cleared').length
-  const holds = vActiveHolds.filter((h) => h.student_id === MOCK_STUDENT_ID)
+  // Lower GWA is better, so the bar height is the distance below 3.25 (T5, 1.75, is the tallest).
+  const bars = GWA_BY_TERM.map((t) => ({
+    label: t.term,
+    value: 3.25 - t.gwa,
+    display: t.gwa.toFixed(2),
+    highlight: t.term === CURRENT_GWA_TERM,
+  }))
 
   return (
     <DashboardShell
       profile={profile}
-      title="Student Dashboard"
-      subtitle="Your enrollment, clearance and holds at a glance."
+      userMeta={student ? `ID ${student.student_number}` : undefined}
+      promo={<PromoCard value={DASHBOARD_UNITS_THIS_TERM} label="Units this term" note="Keep it up!" />}
     >
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        <Card className="flex flex-col gap-2 p-5">
-          <p className="text-sm font-medium text-muted">Enrollment status</p>
-          <div>
-            <StatusBadge status={enrollment?.status ?? 'Pending'} />
-          </div>
-          <p className="text-sm text-muted">
-            {term ? `${term.semester}, ${term.school_year}` : 'Current term'}
-          </p>
-        </Card>
-        <StatCard
-          label="Clearance summary"
-          value={`${cleared} / ${items.length}`}
-          hint={`${cleared} cleared, ${items.length - cleared} pending`}
-        />
-        <StatCard
-          label="Active holds"
-          value={holds.length}
-          hint={holds.length ? 'Resolve holds to proceed' : 'No active holds'}
-          className="sm:col-span-2 xl:col-span-1"
-        />
-      </div>
+      <h1 className="sr-only">Student dashboard</h1>
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_304px]">
+        <div className="flex min-w-0 flex-col gap-4">
+          <div className="grid gap-4 md:grid-cols-3">
+            <Card className="flex min-h-[214px] flex-col gap-3 p-5">
+              <CardHeader title="Clearance" action={<CardMenuButton />} />
+              <div className="flex h-28 items-center justify-center">
+                <GaugeChart
+                  value={clearedPercent}
+                  ariaLabel={`Clearance ${clearedPercent} percent complete, ${CLEARANCE_SUMMARY.cleared} of ${CLEARANCE_SUMMARY.total} offices cleared`}
+                />
+              </div>
+              <div className="flex justify-center gap-4">
+                <LegendItem color="var(--lilac)">Cleared</LegendItem>
+                <LegendItem color="var(--track)">Pending</LegendItem>
+              </div>
+            </Card>
 
-      <Card className="mt-6 p-5">
-        <CardHeader title="Active holds" />
-        {holds.length === 0 ? (
-          <p className="mt-3 text-sm text-muted">You have no active holds.</p>
-        ) : (
-          <ul className="mt-3 divide-y divide-border-subtle">
-            {holds.map((hold) => (
-              <li
-                key={hold.hold_id}
-                className="flex flex-col gap-1 py-3 sm:flex-row sm:items-center sm:justify-between"
-              >
-                <div>
-                  <p className="text-sm font-semibold">{hold.reason}</p>
-                  <p className="text-sm text-muted">
-                    {departments.find((d) => d.department_id === hold.department_id)?.name}
-                  </p>
+            <Card className="flex min-h-[214px] flex-col gap-3 p-5">
+              <CardHeader title="GWA by term" action={<CardMenuButton />} />
+              <BarChart data={bars} max={1.5} ariaLabel="GWA by term" />
+            </Card>
+
+            <Card className="flex min-h-[214px] flex-col gap-3 p-5">
+              <CardHeader title="Pending items" action={<CardMenuButton />} />
+              {PENDING_ITEMS.map((p) => (
+                <div key={p.title} className="flex flex-col gap-1.5 text-sm">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="font-bold">{p.title}</p>
+                    <p className="font-semibold text-muted">{p.value}</p>
+                  </div>
+                  <p className="text-muted">{p.note}</p>
                 </div>
-                <Badge tone="danger" className="self-start">On hold</Badge>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Card>
+              ))}
+            </Card>
+          </div>
+
+          <Card className="flex flex-col gap-2 px-6 py-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="text-base font-bold leading-[22px]">Progress</h2>
+              <div className="flex items-center gap-3">
+                <LegendItem color="var(--dot-amber)">GWA</LegendItem>
+                <div className="relative">
+                  <select
+                    aria-label="Term range"
+                    defaultValue="all"
+                    className="appearance-none rounded-lg border border-border-subtle bg-lilac-soft py-1.5 pl-3 pr-8 text-sm font-medium text-neutral focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lilac"
+                  >
+                    <option value="all">All terms</option>
+                  </select>
+                  <Icon
+                    name="chevron-down"
+                    className="pointer-events-none absolute right-3 top-1/2 size-3.5 -translate-y-1/2 text-neutral"
+                  />
+                </div>
+              </div>
+            </div>
+            <LineChart
+              values={GWA_PROGRESS}
+              yTicks={GWA_PROGRESS_Y_TICKS}
+              xLabels={GWA_PROGRESS_X_LABELS}
+              ariaLabel="GWA progress across all terms"
+            />
+          </Card>
+
+          <div className="grid items-stretch gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+            <Card className="flex flex-col overflow-hidden">
+              <CardHeader
+                title="Current grades"
+                className="px-[18px] py-4"
+                action={
+                  <Link href="/student/grades" className={SEE_ALL}>
+                    See all
+                  </Link>
+                }
+              />
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[480px] text-left text-sm">
+                  <TableHeader>
+                    <TableRow className="hover:bg-transparent">
+                      <TableHead className={`${TH} w-[76px] px-3.5`}>Code</TableHead>
+                      <TableHead className={TH}>Course</TableHead>
+                      <TableHead className={`${TH} w-14`}>Units</TableHead>
+                      <TableHead className={`${TH} w-[60px]`}>Grade</TableHead>
+                      <TableHead className={`${TH} w-28`}>Remarks</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {CURRENT_GRADES.map((g) => (
+                      <TableRow key={g.code}>
+                        <TableCell>{g.code}</TableCell>
+                        <TableCell>{g.course}</TableCell>
+                        <TableCell>{g.units}</TableCell>
+                        <TableCell className="font-bold">{g.grade}</TableCell>
+                        <TableCell>
+                          <StatusBadge status={g.remarks} className="text-sm" />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </table>
+              </div>
+            </Card>
+
+            <Card className="flex flex-col pb-2">
+              <CardHeader
+                title="Clearance offices"
+                className="px-[18px] py-4"
+                action={
+                  <Link href="/student/clearance" className={SEE_ALL}>
+                    See all
+                  </Link>
+                }
+              />
+              <ClearanceOfficesList offices={CLEARANCE_OFFICES} />
+            </Card>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-4 xl:self-start">
+          <Card className="p-5">
+            <CardHeader title="Event calendar" className="mb-3" />
+            <EventCalendar
+              year={CALENDAR_VIEW.year}
+              month={CALENDAR_VIEW.month}
+              today={CALENDAR_VIEW.today}
+              events={CALENDAR_EVENTS}
+            />
+          </Card>
+
+          <Card className="flex flex-col gap-3 p-5">
+            <CardHeader
+              title="My schedule"
+              action={
+                <Link href="/student/enrollment" className={SEE_ALL}>
+                  See all
+                </Link>
+              }
+            />
+            <ScheduleList items={SCHEDULE} />
+            <NextLesson seconds={NEXT_LESSON.seconds} title={NEXT_LESSON.title} />
+          </Card>
+        </div>
+      </div>
     </DashboardShell>
   )
 }
