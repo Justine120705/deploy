@@ -5,3 +5,4 @@ export { Input } from "./Input";
 export { Select } from "./Select";
 export { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./Table";
 export { Tabs, type TabItem } from "./Tabs";
+export { ThemeToggle } from "./ThemeToggle";

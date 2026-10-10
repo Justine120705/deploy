@@ -1,10 +1,12 @@
 'use client'
 
+import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
 import type { NavItem } from '@/lib/nav'
+import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { Icon } from './Icon'
 
 // Client half of the shell: sidebar with the active link, mobile drawer and top bar.
@@ -91,13 +93,16 @@ export default function ShellFrame({
             <Icon name="menu" className="size-5" />
           </button>
           <span className="hidden text-sm font-semibold text-muted lg:block">{roleLabel}</span>
-          <div className="flex items-center gap-2.5">
-            <span className="flex size-9 items-center justify-center rounded-full bg-lilac-soft text-sm font-bold text-accent-foreground">
-              {userName.charAt(0)}
-            </span>
-            <div className="text-sm leading-tight">
-              <p className="font-bold">{userName}</p>
-              <p className="text-muted">{roleLabel}</p>
+          <div className="flex items-center gap-4">
+            <ThemeToggle />
+            <div className="flex items-center gap-2.5">
+              <span className="flex size-9 items-center justify-center rounded-full bg-lilac-soft text-sm font-bold text-accent-foreground">
+                {userName.charAt(0)}
+              </span>
+              <div className="text-sm leading-tight">
+                <p className="font-bold">{userName}</p>
+                <p className="text-muted">{roleLabel}</p>
+              </div>
             </div>
           </div>
         </header>
@@ -107,18 +112,30 @@ export default function ShellFrame({
   )
 }
 
-// Small version of the Cabuyao hexagon mark (same shapes as components/auth/CabuyaoLogo).
+// Cabuyao CU monogram: Figma's own vector (public/brand), same files as the login logo.
 function LogoMark() {
   return (
-    <svg aria-hidden="true" viewBox="0 0 80 92" fill="none" className="h-10 w-auto shrink-0">
-      <path d="M40 0 80 23v46L40 92 0 69V23z" className="fill-[#1b1c26] dark:fill-white" />
-      <path d="M40 0 80 23 40 46 0 23z" className="fill-[#b78ae6] dark:fill-[#c9a0e3]" />
-      <path
-        d="M24 40v22l16 10 16-10V40"
-        strokeWidth="8"
-        strokeLinejoin="round"
-        className="stroke-white dark:stroke-[#181b27]"
+    <>
+      <Image
+        src="/brand/cu-mark-light.svg"
+        alt=""
+        aria-hidden="true"
+        width={82}
+        height={77}
+        unoptimized
+        loading="eager"
+        className="h-auto w-11 shrink-0 dark:hidden"
       />
-    </svg>
+      <Image
+        src="/brand/cu-mark-dark.svg"
+        alt=""
+        aria-hidden="true"
+        width={82}
+        height={77}
+        unoptimized
+        loading="eager"
+        className="hidden h-auto w-11 shrink-0 dark:block"
+      />
+    </>
   )
 }

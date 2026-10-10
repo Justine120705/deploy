@@ -1,42 +1,65 @@
-// Inline logo (matches the Figma "Approved logo" light + dark variants).
-// No exported SVG files needed in /public — colors switch with the `dark:` variant.
-export function CabuyaoLogo({ className = '' }: { className?: string }) {
+import Image from 'next/image'
+
+// Cabuyao University lockup from the Figma file ("Approved logo / Light" and "/ Dark").
+// The CU monogram is Figma's own vector (public/brand), shown at the lockup's 82 x 76.6 size
+// and scaled up on the login page. Brand colors are fixed on purpose, as in the design.
+const SIZES = {
+  md: {
+    gap: 'gap-[18px]',
+    mark: 'w-[82px]',
+    name: 'text-[36px] leading-[38px] tracking-[-0.36px]',
+    university: 'text-[32.89px] leading-[30px] tracking-[-0.3289px]',
+    tagline: 'text-[10px] leading-4 tracking-[1.2px]',
+  },
+  lg: {
+    gap: 'gap-[18px] sm:gap-6',
+    mark: 'w-[82px] sm:w-[123px]',
+    name: 'text-[36px] leading-[38px] tracking-[-0.36px] sm:text-[54px] sm:leading-[57px] sm:tracking-[-0.54px]',
+    university:
+      'text-[32.89px] leading-[30px] tracking-[-0.3289px] sm:text-[49.3px] sm:leading-[45px] sm:tracking-[-0.49px]',
+    tagline: 'text-[10px] leading-4 tracking-[1.2px] sm:text-[13px] sm:leading-5 sm:tracking-[1.8px]',
+  },
+} as const
+
+export function CabuyaoLogo({
+  className = '',
+  size = 'md',
+}: {
+  className?: string
+  size?: keyof typeof SIZES
+}) {
+  const s = SIZES[size]
   return (
     <div
       role="img"
-      aria-label="Cabuyao University — Learn, grow, build tomorrow"
-      className={`flex items-center gap-3 ${className}`}
+      aria-label="Cabuyao University: Learn, grow, build tomorrow"
+      className={`flex items-center ${s.gap} ${className}`}
     >
-      <svg
-        aria-hidden="true"
-        viewBox="0 0 80 92"
-        className="h-[88px] w-auto shrink-0"
-        fill="none"
-      >
-        {/* hexagon body */}
-        <path
-          d="M40 0 80 23v46L40 92 0 69V23z"
-          className="fill-[#1b1c26] dark:fill-white"
-        />
-        {/* purple top face */}
-        <path d="M40 0 80 23 40 46 0 23z" className="fill-[#b78ae6] dark:fill-[#c9a0e3]" />
-        {/* U-shaped cut-out */}
-        <path
-          d="M24 40v22l16 10 16-10V40"
-          strokeWidth="8"
-          strokeLinejoin="round"
-          className="stroke-white dark:stroke-[#181b27]"
-        />
-      </svg>
+      <Image
+        src="/brand/cu-mark-light.svg"
+        alt=""
+        width={82}
+        height={77}
+        unoptimized
+        loading="eager"
+        className={`${s.mark} h-auto shrink-0 dark:hidden`}
+      />
+      <Image
+        src="/brand/cu-mark-dark.svg"
+        alt=""
+        width={82}
+        height={77}
+        unoptimized
+        loading="eager"
+        className={`${s.mark} hidden h-auto shrink-0 dark:block`}
+      />
 
-      <div aria-hidden="true" className="flex flex-col">
-        <span className="text-4xl font-extrabold leading-[1.05] tracking-tight text-[#121319] dark:text-white">
-          Cabuyao
-        </span>
-        <span className="text-4xl font-extrabold leading-[1.05] tracking-tight text-[#7e4fb0] dark:text-[#d9b8ee]">
+      <div aria-hidden="true" className="flex flex-col whitespace-nowrap">
+        <span className={`${s.name} font-extrabold text-[#121319] dark:text-white`}>Cabuyao</span>
+        <span className={`${s.university} font-extrabold text-[#7e4fb0] dark:text-[#d9b8ee]`}>
           University
         </span>
-        <span className="mt-1 text-[10px] font-medium uppercase tracking-[0.14em] text-[#6e6c85] dark:text-[#a1a1b5]">
+        <span className={`${s.tagline} font-medium uppercase text-[#6e6c85] dark:text-[#a1a1b5]`}>
           Learn · Grow · Build tomorrow
         </span>
       </div>
