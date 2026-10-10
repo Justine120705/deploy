@@ -171,7 +171,7 @@ Fill in this table (copy into `docs/testing-plan.md` for Sprint 4). Actual = wha
 | TC-14 | Student 1 reads Student 2's clearances, holds, enrollments, document requests | 0 rows | clearances: 0, holds: 0. enrollments and document_requests: not tested (2026-10-10, run by the PM in the Supabase SQL editor as student1 via request.jwt.claims) | Partial |
 | TC-15 | Student 1 reads the 4 views (Part B and C) | Only Student 1's rows | All 4 views (v_active_holds, v_clearance_items, v_clearances, v_grades) have reloptions security_invoker=true, so RLS applies. Row test as student1: v_grades 3 = grades table 3, v_clearance_items 4 = clearance_items table 4, no extra rows (2026-10-10, PM, Supabase SQL editor) | Pass |
 | TC-16 | Anonymous role reads `grades` and `v_grades` | 0 rows or denied | set local role anon: grades 0 rows, v_grades 0 rows (2026-10-10, PM, Supabase SQL editor) | Pass |
-| TC-17 | Student 1 updates own `role_id` | `UPDATE 0` | | |
+| TC-17 | Student 1 updates own `role_id` | `UPDATE 0` | UPDATE inside a CTE as student1 (set role_id to Admin): rows_changed = 0 (2026-10-10, PM, Supabase SQL editor) | Pass |
 
 ## Step 7: Fix what failed (before closing the issue)
 
@@ -199,4 +199,5 @@ Fill in this table (copy into `docs/testing-plan.md` for Sprint 4). Actual = wha
 - All 4 views have `security_invoker=true`. The RLS-bypass risk from the code review does not apply.
 - The live `v_grades` column list starts `grade_id, enrollment_item_id, grade_code, numeric_value, is_passing, encoded...` and has no `student_id` or `term_id`, but `types/database.types.ts` lists both. The generated types are out of date. When the student Grades page switches from mock data to Supabase it cannot filter `v_grades` by `student_id`: regenerate the types, then either add the columns to the view or query through `grades` and its joins.
 - Still not in the repo: the SQL definitions of the 4 views. Export them with the `pg_views` query in Part B and save to `docs/database/`.
-- Not tested yet: TC-16 (anonymous), TC-17 (role change), payments, enrollments and document_requests isolation.
+- TC-16 (anonymous) and TC-17 (a student cannot change their own role) pass.
+- Not tested yet: isolation of payments, enrollments and document_requests (TC-13 and TC-14 are Partial). The 41 of 49 policies and the draft helper functions in the repo still need to be exported from Supabase and compared.
