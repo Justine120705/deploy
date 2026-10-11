@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from 'react'
 import { EyeIcon, EyeOffIcon, LockIcon, MailIcon } from '@/components/auth/AuthIcons'
-import { CabuyaoLogo, CuMark } from '@/components/auth/CabuyaoLogo'
+import { CuMark } from '@/components/auth/CabuyaoLogo'
 import { LoginShowcase } from '@/components/auth/LoginShowcase'
 import { Button } from '@/components/ui/Button'
 import { FIELD, FIELD_LABEL } from '@/components/ui/Input'
@@ -21,16 +21,19 @@ export default function LoginPage() {
   return (
     <main className="grid min-h-dvh bg-background lg:grid-cols-2">
       <div className="flex min-h-dvh flex-col px-5 py-4 sm:px-10 lg:px-14">
-        <header className="flex items-center justify-between gap-3">
-          <CabuyaoLogo />
+        <header className="flex justify-end">
           <ThemeToggle />
         </header>
 
         <div className="flex flex-1 items-center">
           <div className="mx-auto w-full max-w-[360px] py-10">
-            <span aria-hidden="true" className="mb-5 flex size-11 items-center justify-center rounded-lg bg-accent">
-              <CuMark className="w-7" />
-            </span>
+            <div className="mb-8 flex items-center gap-3">
+              <CuMark className="w-12" />
+              <div className="leading-tight">
+                <p className="text-xl font-semibold text-foreground">Cabuyao University</p>
+                <p className="text-sm text-muted">Student Portal</p>
+              </div>
+            </div>
             <h1 className="text-2xl font-semibold tracking-[-0.01em] text-foreground">Welcome back</h1>
             <p className="mt-1 text-sm text-muted">Sign in to your portal account.</p>
 
