@@ -1,9 +1,10 @@
 -- ==========================================
 -- TABLE TRIGGERS (schema public) - RECORD ONLY, DO NOT RUN
 -- ==========================================
--- A record of the app's triggers as they should exist after hardening.sql and
--- hardening2.sql (section B). The real source of these triggers is those two files;
--- this file only lists them in one place so the repo shows the full picture.
+-- A record of the app's triggers as they should exist after hardening.sql,
+-- hardening2.sql (section B) and trigger_dept_approval.sql (section 5, run live 2026-10-11).
+-- The real source of these triggers is those files; this file only lists them in one
+-- place so the repo shows the full picture.
 -- Supabase's own triggers (schemas realtime, storage, auth) are not listed.
 --
 -- Verify against the live database with diagnostic (c) in hardening2.sql.
@@ -15,7 +16,7 @@
 -- and then rolled back, so running this file by mistake changes nothing.
 
 BEGIN;
-DO $$ BEGIN RAISE EXCEPTION 'docs/database/triggers.sql is a record, not a script; use hardening.sql / hardening2.sql'; END $$;
+DO $$ BEGIN RAISE EXCEPTION 'docs/database/triggers.sql is a record, not a script; use hardening.sql / hardening2.sql / trigger_dept_approval.sql'; END $$;
 
 -- ------------------------------------------
 -- 1. Clearance items (pre-existing, not created by this repo's SQL)
@@ -89,5 +90,20 @@ ALTER TABLE public.audit_logs ENABLE ALWAYS TRIGGER audit_logs_readonly;
 CREATE TRIGGER audit_logs_readonly_truncate BEFORE TRUNCATE ON public.audit_logs
   FOR EACH STATEMENT EXECUTE FUNCTION private.audit_logs_readonly();
 ALTER TABLE public.audit_logs ENABLE ALWAYS TRIGGER audit_logs_readonly_truncate;
+
+-- ------------------------------------------
+-- 5. Department approval requires no active hold (trigger_dept_approval.sql, issue #61,
+--    REQ-DPT-03). Status: live since 2026-10-11. Function private.require_no_active_hold()
+--    (SECURITY DEFINER, search_path ''): rejects cleared_at NULL -> NOT NULL while the
+--    student has an active hold (lifted_at IS NULL) of the item's department; SQLSTATE
+--    P0001, message "active hold: ...". Applies to every role.
+-- ------------------------------------------
+-- Firing order on clearance_items (BEFORE by name, then the write, then AFTER):
+--   guard_immutable_columns (BEFORE) -> require_no_active_hold (BEFORE)
+--   -> RLS WITH CHECK -> write -> audit_log (AFTER)
+CREATE TRIGGER require_no_active_hold BEFORE UPDATE ON public.clearance_items
+  FOR EACH ROW
+  WHEN (NEW.cleared_at IS NOT NULL AND OLD.cleared_at IS NULL)
+  EXECUTE FUNCTION private.require_no_active_hold();
 
 ROLLBACK;

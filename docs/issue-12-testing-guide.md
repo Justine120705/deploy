@@ -675,6 +675,34 @@ Granted columns, wrong role (TC-39): the grants go to every signed-in user, so R
 
 Through the real API (TC-40, after the live run). This checks the one thing SQL cannot: that the Data API serves the objects without the dashboard toggle. Until a screen reads these objects for real, add a temporary debug line in a client component on a local branch (never commit it), for example `createClient().from('v_clearances').select('*').then(console.log)` with `createClient` from `lib/supabase/client.ts`, and the same for `v_clearance_items` and `audit_logs`. Run `npm run dev`, sign in as `student1@pnc.test` and read the browser console. Expected for Student 1: `v_clearances` and `v_clearance_items` return only Student 1's rows, `audit_logs` returns `[]`, no error. Optionally, signed out (for example the same line on the `/login` page): expected an error with code `42501` (permission denied), never rows; TC-35 already covers anon in SQL. An error `PGRST205` ("Could not find the table ... in the schema cache") means the API does not serve the object: follow the header of `grants_clearance.sql` (expose only that object in the dashboard, then run the whole file again). Never paste the anon key, a JWT or a password into chat or a commit.
 
+## Part J: tests for trigger_dept_approval.sql (issue #61)
+
+`docs/database/trigger_dept_approval.sql` enforces REQ-DPT-03: a BEFORE UPDATE trigger `require_no_active_hold` on `clearance_items` rejects clearing an item (`cleared_at` NULL -> NOT NULL) while the student has an active hold (`lifted_at` NULL) of the same department as the item. The error is SQLSTATE `P0001` with a message that starts with `active hold:` (PostgREST: HTTP 400, code `P0001`). A hold of another department does not block; the Cashier's Financial item is only blocked by a Financial hold. Editing remarks of an already cleared item, correcting its `cleared_at` and un-clearing are not checked. The rule applies to every role, including postgres in the SQL editor. The SQL of every case is in `docs/database/trigger_dept_approval_test.sql`; status: **not run yet**.
+
+Same rules as Part I: run each block on its own, as a whole; every block ends with `rollback`; one result row with a `verdict` cell (`-> OK` or `-> FAIL`). No temporary `grant`. Each block creates its own data as postgres inside the transaction (a throwaway term, a clearance for Student 1 with one pending item per department, the holds it needs) and first lifts every active hold of Student 1, so no case depends on the live data and none can end as SKIPPED. If a seed account or department is missing, the block stops with `TC setup: ...`.
+
+Order:
+1. **Before the live run: `docs/database/trigger_dept_approval_rehearsal.sql`** (the change plus TC-41 to TC-48 in ONE rolled-back transaction, one result row). Expected: `all_ok` true and every cell ends in `-> OK`. A `trigger_dept_approval: ...` error means the live state differs from what the file assumes: do not run it live, send the error to the Backend team.
+2. Save diagnostics (a) and (c) of `trigger_dept_approval.sql`, then the PM runs the file live.
+3. TC-41 to TC-48 against the live database (blocks of `trigger_dept_approval_test.sql`).
+4. Regression: TC-37 (Part I) and `regression_after_grants.sql` (TC-12 to TC-33). Expected change: TC-37 `clear_item_dept` picks the lowest pending item of the Department's office; if that item belongs to a student with an active hold of that office (Student 2 has one in the seed), it now shows `ERROR: active hold: ...`. That is the new rule working, not a regression; check with diagnostic (c) of `trigger_dept_approval.sql`.
+
+Installed as intended (TC-41, catalog): trigger order `guard_immutable_columns (BEFORE) > require_no_active_hold (BEFORE) > audit_log (AFTER)`, trigger enabled (`O`), type 19 (BEFORE UPDATE FOR EACH ROW) with a WHEN clause, function SECURITY DEFINER with `search_path=""`, owned by postgres, owner bypasses RLS on `clearances` and `academic_holds`.
+
+Approval blocked by an active hold of the same department (TC-42, criterion a): the Department user clears its item while Student 1 has an active hold of that department. Expected: `department_approval` and `postgres_approval` both `blocked [P0001]: active hold: ...`, `item_still_pending` true, `audit_rows_for_item` 0.
+
+Approval after the lift (TC-43, criterion b): first blocked, then the Department user lifts the hold through `holds_dept_lift` (`rows 1`), then the approval gives `rows 1`.
+
+Another department's hold (TC-44, criterion c): Student 1 has an active hold of another academic department only. Expected: `department_approval` `rows 1`.
+
+Cashier's Financial item (TC-45, criterion d): with only a Department hold the Cashier's approval gives `rows 1`; after a Financial hold is placed (and the item reset to pending) it gives `blocked [P0001]: active hold: ...`. Note: today no API flow can place a Financial hold (`holds_dept_place` is Department only), so this case places it as postgres.
+
+Audit row (TC-46, criterion e): a successful approval by the Department user writes exactly one `audit_logs` row: `table_name` clearance_items, action `UPDATE`, actor = the Department user, old `cleared_at` null, new `cleared_by` = the Department user.
+
+Already-cleared item (TC-47, criterion f): with an active hold of the same department, the Department user edits the remarks, corrects `cleared_at`, un-clears (each `rows 1`), then tries to clear again: `blocked [P0001]: active hold: ...` (un-clear then re-clear cannot get around the rule).
+
+Privileges (TC-48, criterion g): `anon_execute` false, `authenticated_execute` true, `public_in_acl` false, `security_definer` true; anon calling the function gets `denied: permission denied for ...`; a signed-in user calling it directly gets an error (normally `trigger functions can only be called as triggers`).
+
 ## Part D (optional, later): test through the real Supabase client
 
 When the student pages use real data instead of mock data, repeat Part C by signing in as Student 1 and loading `/student/grades` while logged in. The page must show only Student 1's rows. Until then Part C is the real evidence.
@@ -726,6 +754,15 @@ Fill in this table (copy into `docs/testing-plan.md` for Sprint 4). Actual = wha
 | TC-38 | Writes outside the grants (DELETE, other columns, other tables, views) (Part I) | all denied | Pass live (rolled-back block, PM ran it, Claude read the result) and in rehearsal, 2026-10-11 |
 | TC-39 | Granted columns, wrong role (Part I) | rows 0 or RLS error, never rows 1 | Pass live (rolled-back block, PM ran it, Claude read the result) and in rehearsal, 2026-10-11 |
 | TC-40 | Signed-in app reads the exposed views through the Data API (Part I) | own rows only, no PGRST205 | Signed in as student1, a temporary server page (deleted, never committed) counted rows through the Data API: v_clearances 1, v_clearance_items 4, v_active_holds 0, charges 1, payments 1, audit_logs 0, profiles 1; no PGRST205 (2026-10-11, Claude, localhost dev server) | Pass |
+| TC-41R | Rehearsal: `trigger_dept_approval_rehearsal.sql` (the change plus TC-41 to TC-48 in one rolled-back transaction) (Part J, before the live run) | no `trigger_dept_approval:` error; `all_ok` true, every cell `-> OK` | Pass, 2026-10-11 (PM ran it, Claude read the result row) | - |
+| TC-41 | Trigger and function installed as intended (Part J) | order guard_immutable_columns > require_no_active_hold > audit_log; enabled; BEFORE UPDATE ROW with WHEN; SECURITY DEFINER, `search_path=""` | Pass (rehearsal, then live, 2026-10-11; PM ran it, Claude read the result row) | |
+| TC-42 | Department approves an item while the student has an active hold of the same department; postgres tries too (Part J) | both `blocked [P0001]: active hold: ...`; item still pending; no audit row | Pass (rehearsal, then live, 2026-10-11; PM ran it, Claude read the result row) | |
+| TC-43 | Approval after the Department user lifts the hold (Part J) | blocked, then lift `rows 1`, then approval `rows 1` | Pass (rehearsal, then live, 2026-10-11; PM ran it, Claude read the result row) | |
+| TC-44 | Approval while only another department has an active hold (Part J) | `rows 1` | Pass (rehearsal, then live, 2026-10-11; PM ran it, Claude read the result row) | |
+| TC-45 | Cashier approves the Financial item with a Department hold, then with a Financial hold (Part J) | `rows 1`, then `blocked [P0001]: active hold: ...` | Pass (rehearsal, then live, 2026-10-11; PM ran it, Claude read the result row) | |
+| TC-46 | A successful approval writes an audit row (Part J) | 1 row, UPDATE, actor = Department user | Pass (rehearsal, then live, 2026-10-11; PM ran it, Claude read the result row) | |
+| TC-47 | Already-cleared item with an active hold: remarks, `cleared_at` correction, un-clear, re-clear (Part J) | `rows 1` x 3, then `blocked [P0001]: active hold: ...` | Pass (rehearsal, then live, 2026-10-11; PM ran it, Claude read the result row) | |
+| TC-48 | Function privileges; anon calls the function (Part J) | anon no EXECUTE and denied; authenticated EXECUTE; no PUBLIC; SECURITY DEFINER | Pass (rehearsal, then live, 2026-10-11; PM ran it, Claude read the result row) | |
 
 ## Step 7: Fix what failed (before closing the issue)
 
@@ -833,3 +870,9 @@ TC-12 to TC-33 were run again as one rolled-back script, `docs/database/regressi
 - TC-27: no TRUNCATE/REFERENCES/TRIGGER, no anon SELECT, `auth_profiles_update` true, `auth_audit_insert` false, the four anon_exec false, `auth_exec_all_4` true.
 - TC-29: 41 expected columns, 0 missing, 4 views security_invoker. TC-30: v_grades 3 = 3, v_clearance_items 4 = 4, v_clearances 1 = 1, `counts_match` true, Student 2 rows 0. TC-31: grades 6/6, items 12/12, clearances 3/3, first clearance 4/4 and 2/2, no missing joins. TC-32: cashier and department both `-> OK`. TC-33: all four views denied for anon.
 - Nothing regressed. The old "normal update" tests that write outside the clearance slice (grades, charges.student_id) only run with the temporary grant; under the real column-level grants they are "permission denied" by design.
+
+## Regression after trigger_dept_approval.sql (2026-10-11)
+
+- TC-37 (`grants_clearance_test.sql`) showed `clear_item_dept` = `ERROR: active hold: clearance item 6 ...`: the test picked the lowest pending CCS item, which belongs to the seed student with an active CCS hold, so the new trigger (correctly) refused it. The test now picks a pending item without an active same-department hold; all 8 columns are `rows 1` again.
+- `regression_after_grants.sql` (TC-12 to TC-33) was run again after the trigger: all 22 results identical to the run before the trigger.
+- Diagnostic (c) before the change: one pending item the trigger blocks (item 6, CCS, the seed student's active CCS hold).
