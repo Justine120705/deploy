@@ -1,5 +1,6 @@
 import { requireRole } from '@/lib/auth/session'
 import DashboardShell from '@/components/layout/DashboardShell'
+import { SampleDataNote } from '@/components/ui'
 import { EnrollmentsActions, EnrollmentsBody, EnrollmentsProvider } from '@/components/registrar/EnrollmentsReview'
 
 export default async function RegistrarEnrollmentsPage() {
@@ -12,7 +13,10 @@ export default async function RegistrarEnrollmentsPage() {
         subtitle="1st Sem 2026-2027 · review and approve submitted enrollments"
         actions={<EnrollmentsActions />}
       >
-        <EnrollmentsBody />
+        <div className="flex flex-col gap-4">
+          <SampleDataNote />
+          <EnrollmentsBody />
+        </div>
       </DashboardShell>
     </EnrollmentsProvider>
   )
