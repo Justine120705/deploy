@@ -33,7 +33,7 @@
 -- check fails, which also ends in a rolled-back transaction. Repeat for each block. This
 -- is TC-34R in the guide.
 --
--- Status: rehearsed 2026-10-11 in rolled-back transactions on the live project (TC-34 to TC-39 pass); run live 2026-10-11; live TC-34 passes.
+-- Status: rehearsed 2026-10-11 in rolled-back transactions on the live project (TC-34 to TC-39 pass); run live 2026-10-11; TC-34 to TC-40 pass live.
 
 
 -- ------------------------------------------
