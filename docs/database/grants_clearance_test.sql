@@ -273,8 +273,13 @@ select set_config('app.fin',  coalesce((select min(department_id)::text from pub
 select set_config('app.mydept', coalesce((select min(department_id)::text from public.department_staff
   where profile_id = current_setting('app.dept')::uuid), ''), true);
 select set_config('app.clr', coalesce((select min(clearance_id)::text from public.clearances where approved_at is null), ''), true);
-select set_config('app.item_dept', coalesce((select min(clearance_item_id)::text from public.clearance_items
-  where cleared_at is null and department_id::text = current_setting('app.mydept')), ''), true);
+-- Not an item whose student has an active hold of the same department: trigger
+-- require_no_active_hold (trigger_dept_approval.sql) would refuse to clear it.
+select set_config('app.item_dept', coalesce((select min(ci.clearance_item_id)::text from public.clearance_items ci
+  join public.clearances c on c.clearance_id = ci.clearance_id
+  where ci.cleared_at is null and ci.department_id::text = current_setting('app.mydept')
+    and not exists (select 1 from public.academic_holds h
+                    where h.student_id = c.student_id and h.department_id = ci.department_id and h.lifted_at is null)), ''), true);
 select set_config('app.item_fin', coalesce((select min(clearance_item_id)::text from public.clearance_items
   where cleared_at is null and department_id::text = current_setting('app.fin')), ''), true);
 select set_config('app.hold', coalesce((select min(hold_id)::text from public.academic_holds

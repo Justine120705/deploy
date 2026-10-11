@@ -18,6 +18,9 @@ team** (see Project Charter, section 5: "ERD and 3NF Tables").
 | `grants_clearance.sql` | Issue #60: exposes the clearance slice to `authenticated` only (SELECT on 3 views, `charges`, `payments`, `audit_logs`; column-level writes on `clearances`, `clearance_items`, `academic_holds`, `payments`, `charges`), then repeats the anon part of `hardening2.sql` section C; checks before and after, rollback and diagnostics as comments. **Run live 2026-10-11** |
 | `grants_clearance_test.sql` | Tests TC-34 to TC-39 for `grants_clearance.sql` (each block ends in `ROLLBACK`), plus how to rehearse the whole change in a rolled-back transaction (TC-34R) |
 | `regression_after_grants.sql` | Issue 21 (#60): TC-12 to TC-33 as one rolled-back script with one result row (run live 2026-10-11, all pass) |
+| `trigger_dept_approval.sql` | Issue 22 (#61), REQ-DPT-03: BEFORE UPDATE trigger `require_no_active_hold` on `clearance_items` (function `private.require_no_active_hold()`, SECURITY DEFINER) rejects clearing an item while the student has an active hold of the same department; safety checks before and after, rollback and diagnostics as comments. **NOT RUN YET** |
+| `trigger_dept_approval_test.sql` | Tests TC-41 to TC-48 for `trigger_dept_approval.sql` (each block creates its own data and ends in `ROLLBACK`) |
+| `trigger_dept_approval_rehearsal.sql` | `trigger_dept_approval.sql` plus TC-41 to TC-48 in ONE rolled-back transaction with one result row (paste once, nothing committed) |
 
 `views.sql`, `private_functions.sql` and the policies in `rls.sql` were exported from the
 live Supabase project on 2026-10-10 (`pg_views`, `pg_get_functiondef`, `pg_policies`);
@@ -50,6 +53,12 @@ Run in the Supabase **SQL Editor** (or `psql`), in exactly this order:
    toggling the tables in the dashboard's Data API settings (the file header explains why
    the GRANTs are enough). Then Part I of `docs/issue-12-testing-guide.md` (TC-34 to TC-40)
    and TC-12 to TC-33 again. Undo with its ROLLBACK block.
+11. **`trigger_dept_approval.sql`** (issue #61, REQ-DPT-03; after `grants_clearance.sql`). **Run live on 2026-10-11** (rehearsed first; TC-41 to TC-48 pass live).
+   First run `trigger_dept_approval_rehearsal.sql` (the change and TC-41 to TC-48 in one rolled-back
+   transaction; every cell must end in `-> OK`, `all_ok` true) and save diagnostics (a) and (c) of
+   `trigger_dept_approval.sql`. Then run the file as a whole, then Part J of
+   `docs/issue-12-testing-guide.md` (TC-41 to TC-48, SQL in `trigger_dept_approval_test.sql`), TC-37 and
+   `regression_after_grants.sql` again. Undo with its ROLLBACK block (drop trigger, drop function).
 
 `triggers.sql` is a record of the triggers, **not** a step: do not run it (it stops itself
 and rolls back if run by mistake).
