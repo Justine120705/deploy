@@ -7,7 +7,7 @@ team** (see Project Charter, section 5: "ERD and 3NF Tables").
 | File                   | Contents                                                                 |
 | ---------------------- | ------------------------------------------------------------------------ |
 | `schema.sql`           | 23 tables (3NF) in dependency order, plus `document_ticket_seq`          |
-| `views.sql`            | The 4 views (`security_invoker = true`), exported from live              |
+| `views.sql`            | The 4 views (`security_invoker = true`), as live after `views_extend.sql`|
 | `seed.sql`             | Fictional test data: 7 accounts' profiles, 3 students, one full term     |
 | `private_functions.sql`| The 6 functions in schema `private`, exported from live                  |
 | `rls.sql`              | `ENABLE ROW LEVEL SECURITY` on all 23 tables and all 49 live policies    |
@@ -29,9 +29,11 @@ team** (see Project Charter, section 5: "ERD and 3NF Tables").
 | `trigger_final_clearance_test.sql` | Tests TC-62 to TC-70 for `trigger_final_clearance.sql` (each block creates its own data and ends in `ROLLBACK`) |
 | `trigger_final_clearance_rehearsal.sql` | `trigger_final_clearance.sql` plus TC-62 to TC-70 in ONE rolled-back transaction with one result row (TC-62R); its test part (from the `TESTS START HERE` line) also runs on its own once the change is live |
 
-`views.sql`, `private_functions.sql` and the policies in `rls.sql` were exported from the
-live Supabase project on 2026-10-10 (`pg_views`, `pg_get_functiondef`, `pg_policies`);
-their SQL text is verbatim from the export.
+`private_functions.sql` and the policies in `rls.sql` were exported from the live Supabase
+project on 2026-10-10 (`pg_get_functiondef`, `pg_policies`); their SQL text is verbatim from the
+export. `views.sql` is the state of the views after `views_extend.sql` ran on 2026-10-10:
+`v_active_holds` is the original export, the other three are the extended definitions (same SQL,
+not a fresh `pg_views` export, so the layout may differ slightly).
 
 ## Execution order
 
@@ -123,9 +125,9 @@ Admin: everything).
 Views, `private` functions and policies now match the live database (export of
 2026-10-10). These are still **not exported** and are therefore not in this folder:
 
-- **Triggers.** `triggers.sql` records them, but the exact definition of
-  `trg_clearances_create_items` on `clearances` (calls `private.create_clearance_items()`)
-  is still to be filled in from the live database. List them with:
+- **Triggers.** `triggers.sql` records all of them, including `trg_clearances_create_items` on
+  `clearances` (calls `private.create_clearance_items()`; its live definition is in section 1 of
+  that file). To re-check the live state, list them with:
   `select event_object_table, trigger_name, action_timing, event_manipulation, action_statement from information_schema.triggers where trigger_schema = 'public';`
 - **Grants.** No `GRANT` / `REVOKE` statements were exported (schema `private`, functions,
   tables, views). `private_functions.sql` keeps the old draft grants as a comment only;

@@ -44,6 +44,19 @@ Every screen that reads mock data shows the shared "Sample data" note (`componen
 student dashboard sections and the grades, enrollment and documents pages; the Registrar dashboard sections and the
 grades, enrollments and documents pages; the Admin dashboard, users and academic setup pages.
 
+## Known gaps and decisions (found by checking the closed issues against the repository, 2026-10-11)
+
+| Item | Status |
+| --- | --- |
+| Baseline grants on schema `private`, the EXECUTE grants of the 6 SECURITY DEFINER functions, sequences and the server role are not written down in `docs/database/` (only the changes since 2026-10-10 are: `hardening2.sql` section C, `grants_clearance.sql`, the two grant snapshots) | Open: the database cannot be recreated from the repository alone; export them with `pg_proc` / `relacl` after the deadline |
+| The Cashier can still update `charges.amount` (and `due_date`) | Decision: kept on purpose (REQ-CSH-01 and the Cashier's workflow need corrections); every change is recorded in `audit_logs`. Revisit if charges must become immutable after posting |
+| `Database_Design_ERD_3NF.docx` (the 3NF proof and rules R1 to R12 cited by `docs/documentation.md`) is not in the repository | Open: the Project Manager adds the file, or the documentation stops pointing to it |
+| `types/database.types.ts` was written by hand and matches `views.sql`; it was not produced by `supabase gen types` | Open: regenerate from the live project when convenient |
+| Student grades are still mock data (REQ-STU-02), so "student pages read real data" (issue #49) holds for the clearance path only | Carry-over, labelled "Sample data" |
+| No pull request of Sprint 3 had a teammate review (0 reviews on #58 to #86); the Project Manager merged them | Open: ask a teammate to review the merged changes |
+| `npx eslint .` reports errors only inside the local, untracked `.claude/` tool folder; project code is clean | Recorded: a clean clone passes |
+| Cosmetic: the login page uses the `Input` class constants but not the `Input` or `Card` components; the student dashboard has no enrollment-status card; Academic Setup shows tables instead of tabs; some shared pieces live in `components/student` and `components/admin` instead of `components/ui` | Not planned |
+
 ## Sprint 2 retrospective notes
 
 Recorded for Issue 18 ("Sprint 2 retrospective and Sprint 3 planning", GitHub #25).
