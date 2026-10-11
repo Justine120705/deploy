@@ -22,8 +22,15 @@ export function SummaryStrip({ items, className }: { items: SummaryItem[]; class
         className
       )}
     >
-      {items.map((item) => (
-        <div key={item.label} className="flex flex-col gap-0.5 bg-card px-4 py-3.5 lg:px-5">
+      {items.map((item, i) => (
+        <div
+          key={item.label}
+          // An odd count would leave a blank cell in the 2-column phone grid: let the last item fill the row.
+          className={cn(
+            'flex flex-col gap-0.5 bg-card px-4 py-3.5 lg:px-5',
+            items.length % 2 === 1 && i === items.length - 1 && 'col-span-2 lg:col-span-1'
+          )}
+        >
           <dt className="text-[13px] font-medium leading-5 text-muted">{item.label}</dt>
           <dd className={cn('text-2xl font-semibold leading-8 tabular-nums', item.hue && HUE_TEXT[item.hue])}>
             {item.value}
