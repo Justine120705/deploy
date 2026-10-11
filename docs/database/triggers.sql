@@ -2,7 +2,8 @@
 -- TABLE TRIGGERS (schema public) - RECORD ONLY, DO NOT RUN
 -- ==========================================
 -- A record of the app's triggers as they should exist after hardening.sql,
--- hardening2.sql (section B) and trigger_dept_approval.sql (section 5, run live 2026-10-11).
+-- hardening2.sql (section B), trigger_dept_approval.sql (section 5, run live 2026-10-11)
+-- and trigger_finance_autoclear.sql (section 6, run live 2026-10-11).
 -- The real source of these triggers is those files; this file only lists them in one
 -- place so the repo shows the full picture.
 -- Supabase's own triggers (schemas realtime, storage, auth) are not listed.
@@ -16,7 +17,7 @@
 -- and then rolled back, so running this file by mistake changes nothing.
 
 BEGIN;
-DO $$ BEGIN RAISE EXCEPTION 'docs/database/triggers.sql is a record, not a script; use hardening.sql / hardening2.sql / trigger_dept_approval.sql'; END $$;
+DO $$ BEGIN RAISE EXCEPTION 'docs/database/triggers.sql is a record, not a script; use hardening.sql / hardening2.sql / trigger_dept_approval.sql / trigger_finance_autoclear.sql'; END $$;
 
 -- ------------------------------------------
 -- 1. Clearance items (pre-existing, not created by this repo's SQL)
@@ -105,5 +106,40 @@ CREATE TRIGGER require_no_active_hold BEFORE UPDATE ON public.clearance_items
   FOR EACH ROW
   WHEN (NEW.cleared_at IS NOT NULL AND OLD.cleared_at IS NULL)
   EXECUTE FUNCTION private.require_no_active_hold();
+
+-- ------------------------------------------
+-- 6. Finance item clears automatically (trigger_finance_autoclear.sql, issue #62,
+--    REQ-CSH-03). Status: live since 2026-10-11. One function private.finance_autoclear()
+--    (SECURITY DEFINER, search_path ''), two triggers. When every charge of a student for
+--    a term is Cleared or Waived (at least one charge), the pending Financial item of that
+--    student's clearance for that term gets cleared_at = now(), cleared_by = the Cashier
+--    who tagged the last charge. Skipped (item stays pending, nothing fails) when the
+--    student has an active hold of the Financial department or no active Cashier can be
+--    recorded (postgres / SQL editor). Never overwrites a cleared item, never un-clears.
+-- ------------------------------------------
+-- Firing order on charges (Cashier's UPDATE):
+--   guard_immutable_columns (BEFORE) -> RLS WITH CHECK -> write
+--   -> audit_log (AFTER) -> finance_autoclear (AFTER)
+--      -> nested UPDATE of the Financial clearance_items row (as postgres, inside the
+--         definer): guard_immutable_columns (BEFORE, lets the owner through)
+--         -> require_no_active_hold (BEFORE) -> write -> audit_log (AFTER, actor = the Cashier)
+-- Firing order on clearance_items:
+--   INSERT (e.g. from trg_clearances_create_items):
+--     write -> audit_log (AFTER) -> finance_autoclear_on_create (AFTER)
+--     -> the same nested UPDATE of that row (audit actor = the requesting student,
+--        new cleared_by = the Cashier from the last charge tag in audit_logs)
+--   UPDATE (unchanged): guard_immutable_columns (BEFORE) -> require_no_active_hold (BEFORE)
+--     -> RLS WITH CHECK -> write -> audit_log (AFTER)
+-- "audit_log" sorts before "finance_autoclear..." ('a' < 'f'), so the charge's or the
+-- item's INSERT audit row is always written before the item's UPDATE audit row. No
+-- recursion: the nested UPDATE fires no INSERT trigger and no trigger on charges.
+CREATE TRIGGER finance_autoclear AFTER INSERT OR UPDATE OF status, student_id, term_id ON public.charges
+  FOR EACH ROW
+  WHEN (NEW.status::text IN ('Cleared', 'Waived'))
+  EXECUTE FUNCTION private.finance_autoclear();
+CREATE TRIGGER finance_autoclear_on_create AFTER INSERT ON public.clearance_items
+  FOR EACH ROW
+  WHEN (NEW.cleared_at IS NULL)
+  EXECUTE FUNCTION private.finance_autoclear();
 
 ROLLBACK;

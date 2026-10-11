@@ -259,6 +259,12 @@ rollback;
 -- target shows SKIPPED (record that half as "not run", not Pass).
 -- Expected: every column "rows 1" (request_clearance also shows the number of items the
 -- trigger created, one per department: 4 with the seed).
+-- After trigger_finance_autoclear.sql (issue 23) the results are the same: update_charge
+-- may now also auto-clear a pending Financial item when it settles the last charge of a
+-- student for that term (with the seed the lowest charge is normally Student 1's, whose
+-- Financial item is already cleared; either way the cell stays "rows 1"), and
+-- request_clearance uses a term without charges,
+-- so its Financial item stays pending.
 begin;
 select set_config('app.s1',   (select id::text from auth.users where email = 'student1@pnc.test'), true);
 select set_config('app.cash', (select id::text from auth.users where email = 'cashier@pnc.test'), true);
