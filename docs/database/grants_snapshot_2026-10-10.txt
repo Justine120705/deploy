@@ -1,0 +1,18 @@
+Grant snapshot of the live database BEFORE hardening2.sql section C (2026-10-10).
+Source: relacl / proacl from pg_class and pg_proc (schema public tables and views, schema private functions).
+ACL letters: a=INSERT r=SELECT w=UPDATE d=DELETE D=TRUNCATE x=REFERENCES t=TRIGGER m=MAINTAIN X=EXECUTE
+Format: grantee=privileges/grantor. An empty grantee (=X/postgres) means PUBLIC. NULL means default (owner + PUBLIC execute for functions).
+"server role" below is Supabase's server-side API role (the one used with the server-side key); its real name is left out of this repo on purpose.
+
+Pattern of every public table and view EXCEPT profiles:
+  postgres=arwdDxtm/postgres, authenticated=rDxtm/postgres, server role=Dxtm/postgres, anon=r/postgres
+  (audit_logs: authenticated=rxtm, no D)
+profiles:
+  postgres=arwdDxtm/postgres, authenticated=arwdDxtm/postgres, server role=arwdDxtm/postgres, anon=arwd/postgres
+Matches the Data API setting "1 of 27 tables exposed": exposing a table restores full rights (including anon), the other tables kept only read plus leftover Dxtm.
+
+private functions:
+  active_uid(), clearance_in_my_department(bigint), current_role_name(), my_department_id(), student_in_my_department(uuid):
+     {postgres=X/postgres,authenticated=X/postgres}
+  create_clearance_items(): {=X/postgres,postgres=X/postgres,authenticated=X/postgres}   (PUBLIC can execute)
+  guard_immutable_columns(): NULL (default, PUBLIC can execute)

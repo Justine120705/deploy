@@ -1,36 +1,68 @@
 import { logout } from '@/app/(auth)/login/actions'
 import type { CurrentProfile } from '@/lib/auth/session'
+import { NAV_ITEMS } from '@/lib/nav'
+import { Icon } from './Icon'
+import ShellFrame from './ShellFrame'
 
-// Shared frame for every module page: header with the user's name, role and sign-out.
-// Frontend team: build each module's real UI inside {children}.
+// Shared frame for every module page: flat role-based sidebar, optional page header and sign-out.
+// Build each module's real UI inside {children}.
 export default function DashboardShell({
   profile,
   title,
+  subtitle,
+  actions,
+  userMeta,
+  promo,
+  settingsHref,
+  variant,
   children,
 }: {
   profile: CurrentProfile
-  title: string
+  /** Page heading. Leave it out for screens that open with their own first line (the student dashboard). */
+  title?: string
+  subtitle?: string
+  actions?: React.ReactNode
+  /** Line under the user's name in the sidebar user row; defaults to the role. */
+  userMeta?: string
+  /** Accepted for compatibility; the flat shell does not render a sidebar promo. */
+  promo?: React.ReactNode
+  settingsHref?: string
+  /** Defaults to `student` for the Student role and `staff` for every other role (staff adds the role label). */
+  variant?: 'student' | 'staff'
   children: React.ReactNode
 }) {
+  const shell = variant ?? (profile.role === 'Student' ? 'student' : 'staff')
   return (
-    <div className="flex min-h-screen flex-1 flex-col bg-zinc-50">
-      <header className="flex items-center justify-between border-b border-zinc-200 bg-white px-6 py-4">
-        <div>
-          <p className="text-xs uppercase tracking-wide text-zinc-500">{profile.role}</p>
-          <h1 className="text-lg font-semibold text-zinc-900">{title}</h1>
-        </div>
-        <div className="flex items-center gap-4">
-          <span className="text-sm text-zinc-700">
-            {profile.firstName} {profile.lastName}
-          </span>
-          <form action={logout}>
-            <button className="rounded-md border border-zinc-300 px-3 py-1.5 text-sm text-zinc-800 hover:bg-zinc-100">
-              Sign out
-            </button>
-          </form>
-        </div>
-      </header>
-      <main className="mx-auto w-full max-w-5xl flex-1 p-6">{children}</main>
-    </div>
+    <ShellFrame
+      items={NAV_ITEMS[profile.role]}
+      roleLabel={profile.role}
+      userName={`${profile.firstName} ${profile.lastName}`}
+      userMeta={userMeta}
+      promo={promo}
+      settingsHref={settingsHref}
+      variant={shell}
+      title={title}
+      signOut={
+        <form action={logout}>
+          <button className="flex h-10 w-full items-center gap-3 rounded-md px-2.5 text-sm font-medium text-muted transition-colors max-lg:h-11 hover:bg-hover-tint hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
+            <span className="flex size-5 shrink-0 items-center justify-center">
+              <Icon name="logout" />
+            </span>
+            Sign out
+          </button>
+        </form>
+      }
+    >
+      {title && (
+        <header className="mb-6 flex flex-wrap items-end justify-between gap-x-4 gap-y-3 lg:mb-8">
+          <div className="min-w-0">
+            <h1 className="text-2xl font-semibold tracking-[-0.01em]">{title}</h1>
+            {subtitle && <p className="mt-1 max-w-[70ch] text-sm text-muted">{subtitle}</p>}
+          </div>
+          {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
+        </header>
+      )}
+      {children}
+    </ShellFrame>
   )
 }

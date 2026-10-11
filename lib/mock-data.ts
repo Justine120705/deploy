@@ -31,6 +31,8 @@ export const MOCK_IDS = {
 } as const;
 
 export const MOCK_CURRENT_TERM_ID = 1;
+/** Student shown on the student module pages until live auth data replaces the mocks. */
+export const MOCK_STUDENT_ID = MOCK_IDS.student2;
 export const MOCK_CASHIER_DEPARTMENT_ID = 2;
 
 /* -------------------------------------------------------------------------- */
