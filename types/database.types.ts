@@ -17,8 +17,10 @@ export type Json =
  *
  *   npx supabase gen types typescript --project-id <PROJECT_REF> --schema public > types/database.types.ts
  *
- * NOTE: the 4 views are not defined in the repo (schema.sql is missing), so their
- * columns are inferred. Regenerate from the live project to confirm them.
+ * NOTE: the 4 views are defined in docs/database/views.sql (the state after
+ * docs/database/views_extend.sql, run on the live project on 2026-10-10) and their columns
+ * here match those definitions (checked by reading). This file was written by hand, not
+ * produced by `supabase gen types`; regenerate it from the live project to confirm.
  */
 export type Database = {
   // Allows to automatically instantiate createClient with right options

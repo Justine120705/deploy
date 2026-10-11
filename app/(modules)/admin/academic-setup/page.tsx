@@ -1,3 +1,4 @@
+import { SampleDataNote } from '@/components/ui/SampleDataNote'
 import DashboardShell from '@/components/layout/DashboardShell'
 import TableCard from '@/components/admin/TableCard'
 import { requireRole } from '@/lib/auth/session'
@@ -43,6 +44,7 @@ export default async function AdminAcademicSetupPage() {
   return (
     <DashboardShell profile={profile} title="Academic Setup" subtitle="Terms, programs, departments, subjects and sections">
       <div className="flex flex-col gap-6">
+        <SampleDataNote>Terms, programs, subjects and sections here are not connected to live records yet.</SampleDataNote>
         <SummaryStrip
           items={[
             { label: 'Terms', value: setup.termCount, hint: `current: ${setup.currentLabel}` },

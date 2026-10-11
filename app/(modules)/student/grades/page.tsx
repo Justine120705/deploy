@@ -2,7 +2,7 @@ import DashboardShell from '@/components/layout/DashboardShell'
 import { UnavailableAction } from '@/components/student/PageActions'
 import { ResponsiveTable, type Column } from '@/components/student/ResponsiveTable'
 import { StatGrid } from '@/components/student/StatGrid'
-import { Badge, Section } from '@/components/ui'
+import { Badge, SampleDataNote, Section } from '@/components/ui'
 import { requireRole } from '@/lib/auth/session'
 import {
   MOCK_CURRENT_TERM_ID,
@@ -72,6 +72,7 @@ export default async function StudentGradesPage() {
       actions={<UnavailableAction label="Download grade report" reason="Not available yet." />}
     >
       <div className="flex flex-col gap-8">
+        <SampleDataNote>Grades are sample records until grade encoding goes live.</SampleDataNote>
         <StatGrid
           stats={[
             { label: 'GWA', value: gwa, hint: `${termLabel}, lower is better` },

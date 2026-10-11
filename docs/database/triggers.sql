@@ -1,9 +1,12 @@
 -- ==========================================
 -- TABLE TRIGGERS (schema public) - RECORD ONLY, DO NOT RUN
 -- ==========================================
--- A record of the app's triggers as they should exist after hardening.sql and
--- hardening2.sql (section B). The real source of these triggers is those two files;
--- this file only lists them in one place so the repo shows the full picture.
+-- A record of the app's triggers as they should exist after hardening.sql,
+-- hardening2.sql (section B), trigger_dept_approval.sql (section 5, run live 2026-10-11),
+-- trigger_finance_autoclear.sql (section 6, run live 2026-10-11) and
+-- trigger_final_clearance.sql (section 7, run live 2026-10-11).
+-- The real source of these triggers is those files; this file only lists them in one
+-- place so the repo shows the full picture.
 -- Supabase's own triggers (schemas realtime, storage, auth) are not listed.
 --
 -- Verify against the live database with diagnostic (c) in hardening2.sql.
@@ -15,7 +18,7 @@
 -- and then rolled back, so running this file by mistake changes nothing.
 
 BEGIN;
-DO $$ BEGIN RAISE EXCEPTION 'docs/database/triggers.sql is a record, not a script; use hardening.sql / hardening2.sql'; END $$;
+DO $$ BEGIN RAISE EXCEPTION 'docs/database/triggers.sql is a record, not a script; use hardening.sql / hardening2.sql / trigger_dept_approval.sql / trigger_finance_autoclear.sql / trigger_final_clearance.sql'; END $$;
 
 -- ------------------------------------------
 -- 1. Clearance items (pre-existing, not created by this repo's SQL)
@@ -89,5 +92,80 @@ ALTER TABLE public.audit_logs ENABLE ALWAYS TRIGGER audit_logs_readonly;
 CREATE TRIGGER audit_logs_readonly_truncate BEFORE TRUNCATE ON public.audit_logs
   FOR EACH STATEMENT EXECUTE FUNCTION private.audit_logs_readonly();
 ALTER TABLE public.audit_logs ENABLE ALWAYS TRIGGER audit_logs_readonly_truncate;
+
+-- ------------------------------------------
+-- 5. Department approval requires no active hold (trigger_dept_approval.sql, issue #61,
+--    REQ-DPT-03). Status: live since 2026-10-11. Function private.require_no_active_hold()
+--    (SECURITY DEFINER, search_path ''): rejects cleared_at NULL -> NOT NULL while the
+--    student has an active hold (lifted_at IS NULL) of the item's department; SQLSTATE
+--    P0001, message "active hold: ...". Applies to every role.
+-- ------------------------------------------
+-- Firing order on clearance_items (BEFORE by name, then the write, then AFTER):
+--   guard_immutable_columns (BEFORE) -> require_no_active_hold (BEFORE)
+--   -> RLS WITH CHECK -> write -> audit_log (AFTER)
+CREATE TRIGGER require_no_active_hold BEFORE UPDATE ON public.clearance_items
+  FOR EACH ROW
+  WHEN (NEW.cleared_at IS NOT NULL AND OLD.cleared_at IS NULL)
+  EXECUTE FUNCTION private.require_no_active_hold();
+
+-- ------------------------------------------
+-- 6. Finance item clears automatically (trigger_finance_autoclear.sql, issue #62,
+--    REQ-CSH-03). Status: live since 2026-10-11. One function private.finance_autoclear()
+--    (SECURITY DEFINER, search_path ''), two triggers. When every charge of a student for
+--    a term is Cleared or Waived (at least one charge), the pending Financial item of that
+--    student's clearance for that term gets cleared_at = now(), cleared_by = the Cashier
+--    who tagged the last charge. Skipped (item stays pending, nothing fails) when the
+--    student has an active hold of the Financial department or no active Cashier can be
+--    recorded (postgres / SQL editor). Never overwrites a cleared item, never un-clears.
+-- ------------------------------------------
+-- Firing order on charges (Cashier's UPDATE):
+--   guard_immutable_columns (BEFORE) -> RLS WITH CHECK -> write
+--   -> audit_log (AFTER) -> finance_autoclear (AFTER)
+--      -> nested UPDATE of the Financial clearance_items row (as postgres, inside the
+--         definer): guard_immutable_columns (BEFORE, lets the owner through)
+--         -> require_no_active_hold (BEFORE) -> write -> audit_log (AFTER, actor = the Cashier)
+-- Firing order on clearance_items:
+--   INSERT (e.g. from trg_clearances_create_items):
+--     write -> audit_log (AFTER) -> finance_autoclear_on_create (AFTER)
+--     -> the same nested UPDATE of that row (audit actor = the requesting student,
+--        new cleared_by = the Cashier from the last charge tag in audit_logs)
+--   UPDATE (unchanged): guard_immutable_columns (BEFORE) -> require_no_active_hold (BEFORE)
+--     -> RLS WITH CHECK -> write -> audit_log (AFTER)
+-- "audit_log" sorts before "finance_autoclear..." ('a' < 'f'), so the charge's or the
+-- item's INSERT audit row is always written before the item's UPDATE audit row. No
+-- recursion: the nested UPDATE fires no INSERT trigger and no trigger on charges.
+CREATE TRIGGER finance_autoclear AFTER INSERT OR UPDATE OF status, student_id, term_id ON public.charges
+  FOR EACH ROW
+  WHEN (NEW.status::text IN ('Cleared', 'Waived'))
+  EXECUTE FUNCTION private.finance_autoclear();
+CREATE TRIGGER finance_autoclear_on_create AFTER INSERT ON public.clearance_items
+  FOR EACH ROW
+  WHEN (NEW.cleared_at IS NULL)
+  EXECUTE FUNCTION private.finance_autoclear();
+
+-- ------------------------------------------
+-- 7. Final clearance requires every item cleared (trigger_final_clearance.sql, issue #63,
+--    REQ-REG-03). Status: live since 2026-10-11. Function
+--    private.require_all_items_cleared() (SECURITY DEFINER, search_path ''): rejects
+--    approved_at or approved_by going NULL -> value while any clearance_items row of that
+--    clearance has cleared_at NULL (the Financial item included), or when the clearance has
+--    no items; SQLSTATE P0001, message "pending items: ...", pending departments in DETAIL.
+--    Applies to every role. Editing or un-approving an approved clearance is not checked.
+--    Who may approve is unchanged (policy clearances_registrar_approve, Registrar only).
+-- ------------------------------------------
+-- Firing order on clearances:
+--   UPDATE: guard_immutable_columns (BEFORE) -> require_all_items_cleared (BEFORE)
+--           -> RLS WITH CHECK -> write -> audit_log (AFTER)
+--   INSERT: write -> audit_log (AFTER) -> trg_clearances_create_items (AFTER)
+--           (require_all_items_cleared is UPDATE only)
+-- "require_all_items_cleared" sorts after "guard_immutable_columns" ('g' < 'r'). A rejected
+-- approval stops before the write, so audit_log writes no row for it. It reads
+-- clearance_items and departments only and writes nothing, so it cannot fire any other
+-- trigger, and the triggers of sections 5 and 6 never update clearances.
+CREATE TRIGGER require_all_items_cleared BEFORE UPDATE ON public.clearances
+  FOR EACH ROW
+  WHEN ((OLD.approved_at IS NULL AND NEW.approved_at IS NOT NULL)
+        OR (OLD.approved_by IS NULL AND NEW.approved_by IS NOT NULL))
+  EXECUTE FUNCTION private.require_all_items_cleared();
 
 ROLLBACK;

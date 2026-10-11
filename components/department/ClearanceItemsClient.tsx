@@ -1,90 +1,62 @@
 'use client'
 
-import { useId, useState } from 'react'
+import { useActionState, useId, useState } from 'react'
 import { Button, Card, EmptyRow, Input, Section, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui'
-import { DeptStats } from '@/components/department/DeptStats'
+import { DeptStats, type DeptStat } from '@/components/department/DeptStats'
 import { ItemStatusBadge } from '@/components/department/DeptBadges'
+import { ActionMessage, DEPT_IDLE } from '@/components/department/DeptNotice'
 import { RecordList, type RecordItem } from '@/components/department/RecordList'
-import {
-  DEPT_CLEARANCE_ITEMS,
-  DEPT_HOLDS,
-  DEPT_STUDENTS,
-  studentByNo,
-  todayLabel,
-  type DeptClearanceItem,
-} from '@/lib/mock/department-data'
+import { reviewItem, type DeptActionState } from '@/lib/data/department-actions'
+import type { ReviewItem } from '@/lib/data/department'
 
-// Mock-only review state: nothing is saved. Approval is blocked while the student has an active hold
-// from this department (REQ-DPT-03).
-export default function ClearanceItemsClient() {
-  const [items, setItems] = useState<DeptClearanceItem[]>(DEPT_CLEARANCE_ITEMS)
-  const [rejecting, setRejecting] = useState<string | null>(null)
-  const [remarks, setRemarks] = useState('')
-  const [error, setError] = useState('')
+// Live review screen. Approve writes cleared_at and cleared_by; Reject writes remarks only (the item
+// stays pending and the student sees the remarks). The database blocks approval while this department
+// has an active hold on the student, and the message says so. One status region announces the result.
+export default function ClearanceItemsClient({ items, stats }: { items: ReviewItem[]; stats: DeptStat[] }) {
+  const [state, formAction, pending] = useActionState<DeptActionState, FormData>(reviewItem, DEPT_IDLE)
+  // The reject panel closes once a later result succeeds; a failed result keeps it open.
+  const [panel, setPanel] = useState<{ item: ReviewItem; base: DeptActionState } | null>(null)
   const remarksId = useId()
 
-  const activeHoldsFor = (no: string) => DEPT_HOLDS.filter((h) => h.studentNo === no && h.status === 'Active')
-  const activeHoldCount = DEPT_HOLDS.filter((h) => h.status === 'Active').length
+  const open = panel !== null && !(state !== panel.base && state.status === 'success')
+  const rejecting = open ? panel.item : null
 
-  function approve(no: string) {
-    setItems((prev) => prev.map((i) => (i.studentNo === no ? { ...i, status: 'Cleared', clearedOn: todayLabel() } : i)))
-  }
+  const pendingItems = items.filter((i) => i.status === 'Pending')
+  const decided = items.filter((i) => i.status === 'Cleared')
 
-  function cancelReject() {
-    setRejecting(null)
-    setRemarks('')
-    setError('')
-  }
-
-  function confirmReject() {
-    if (!remarks.trim()) {
-      setError('Enter the reason for rejecting this item.')
-      return
-    }
-    setItems((prev) =>
-      prev.map((i) => (i.studentNo === rejecting ? { ...i, status: 'Rejected', remarks: remarks.trim() } : i))
-    )
-    cancelReject()
-  }
-
-  // Why approval is blocked, in words: the hold's reason and who placed it.
-  function holdNote(no: string) {
-    const holds = activeHoldsFor(no)
-    if (holds.length === 0) return <span className="text-muted">No active hold</span>
+  function holdNote(item: ReviewItem) {
+    if (item.holds.length === 0) return <span className="text-muted">No active hold</span>
     return (
       <span>
-        {holds.map((h) => (
-          <span key={h.id} className="block">
+        {item.holds.map((h) => (
+          <span key={h.holdId} className="block">
             <span className="font-medium text-danger">Active hold: </span>
             {h.reason}
-            <span className="text-muted"> (placed by {h.placedBy})</span>
+            <span className="text-muted"> (placed by {h.placedByName})</span>
           </span>
         ))}
       </span>
     )
   }
 
-  function actions(item: DeptClearanceItem) {
-    const blocked = activeHoldsFor(item.studentNo).length > 0
-    const nameLabel = studentByNo(item.studentNo).name
+  function actions(item: ReviewItem) {
+    const blocked = item.holds.length > 0
     return (
       <div className="flex flex-col gap-1.5">
         <div className="flex flex-wrap gap-2">
-          <Button
-            disabled={blocked}
-            aria-label={`Approve item for ${nameLabel}`}
-            onClick={() => approve(item.studentNo)}
-          >
-            Approve
-          </Button>
+          <form action={formAction}>
+            <input type="hidden" name="itemId" value={item.itemId} />
+            <input type="hidden" name="intent" value="approve" />
+            <input type="hidden" name="studentName" value={item.name} />
+            <Button type="submit" disabled={blocked || pending} aria-label={`Approve item for ${item.name}`}>
+              Approve
+            </Button>
+          </form>
           <Button
             variant="outline"
-            aria-label={`Reject item for ${nameLabel}`}
-            onClick={() => {
-              setRejecting(item.studentNo)
-              setRemarks('')
-              setError('')
-            }}
+            disabled={pending}
+            aria-label={`Reject item for ${item.name}`}
+            onClick={() => setPanel({ item, base: state })}
           >
             Reject
           </Button>
@@ -94,74 +66,65 @@ export default function ClearanceItemsClient() {
     )
   }
 
-  const pendingItems = items.filter((i) => i.status === 'Pending')
-  const decided = items.filter((i) => i.status !== 'Pending')
-  const cleared = items.filter((i) => i.status === 'Cleared').length
-  const rejectingStudent = rejecting ? studentByNo(rejecting) : null
+  const pendingMobile: RecordItem[] = pendingItems.map((item) => ({
+    key: String(item.itemId),
+    title: item.name,
+    subtitle: `${item.studentNo} · ${item.program}`,
+    badge: <ItemStatusBadge status={item.status} />,
+    fields: [
+      { label: 'Requested', value: item.requestedOn },
+      { label: 'Hold', value: holdNote(item) },
+      ...(item.remarks ? [{ label: 'Your remarks', value: item.remarks }] : []),
+    ],
+    footer: actions(item),
+  }))
 
-  const pendingMobile: RecordItem[] = pendingItems.map((item) => {
-    const s = studentByNo(item.studentNo)
-    return {
-      key: item.studentNo,
-      title: s.name,
-      subtitle: `${s.studentNo} · ${s.program}`,
-      badge: <ItemStatusBadge status={item.status} />,
-      fields: [
-        { label: 'Requested', value: item.requestedOn },
-        { label: 'Hold', value: holdNote(item.studentNo) },
-      ],
-      footer: actions(item),
-    }
-  })
-
-  const decidedMobile: RecordItem[] = decided.map((item) => {
-    const s = studentByNo(item.studentNo)
-    return {
-      key: item.studentNo,
-      title: s.name,
-      subtitle: `${s.studentNo} · ${s.program}`,
-      badge: <ItemStatusBadge status={item.status} />,
-      fields: [
-        { label: 'Cleared on', value: item.clearedOn ?? 'Not cleared' },
-        ...(item.remarks ? [{ label: 'Remarks', value: item.remarks }] : []),
-      ],
-    }
-  })
+  const decidedMobile: RecordItem[] = decided.map((item) => ({
+    key: String(item.itemId),
+    title: item.name,
+    subtitle: `${item.studentNo} · ${item.program}`,
+    badge: <ItemStatusBadge status={item.status} />,
+    fields: [
+      { label: 'Cleared on', value: item.clearedOn ?? 'Not cleared' },
+      ...(item.remarks ? [{ label: 'Remarks', value: item.remarks }] : []),
+    ],
+  }))
 
   return (
     <div className="flex flex-col gap-6">
-      <DeptStats
-        stats={[
-          { label: 'Items to review', value: pendingItems.length, hint: 'waiting for you', hue: pendingItems.length ? 'amber' : undefined },
-          { label: 'Active holds', value: activeHoldCount, hint: 'block approval', hue: activeHoldCount ? 'rose' : undefined },
-          { label: 'Cleared', value: cleared, hint: 'items approved' },
-          { label: 'Students', value: DEPT_STUDENTS.length, hint: 'in clearance' },
-        ]}
-      />
+      <DeptStats stats={stats} />
+
+      <ActionMessage state={state} />
 
       <Section
         title="Items to review"
         description="Approve an item once the student has no active hold from your department."
       >
-        {rejectingStudent && (
+        {rejecting && (
           <Card elevation="flat" className="flex flex-col gap-3 p-4" role="group" aria-label="Reject clearance item">
-            <h3 className="text-sm font-semibold">Reject item for {rejectingStudent.name}</h3>
-            <Input
-              id={remarksId}
-              label="Remarks (shown to the student)"
-              value={remarks}
-              error={error || undefined}
-              onChange={(e) => setRemarks(e.target.value)}
-              autoFocus
-            />
-            <div className="flex flex-wrap gap-2">
-              <Button variant="danger" onClick={confirmReject}>
-                Confirm reject
-              </Button>
-              <Button variant="outline" onClick={cancelReject}>
-                Cancel
-              </Button>
-            </div>
+            <h3 className="text-sm font-semibold">Reject item for {rejecting.name}</h3>
+            <form action={formAction} className="flex flex-col gap-3">
+              <input type="hidden" name="itemId" value={rejecting.itemId} />
+              <input type="hidden" name="intent" value="reject" />
+              <input type="hidden" name="studentName" value={rejecting.name} />
+              <Input
+                id={remarksId}
+                name="remarks"
+                label="Remarks (shown to the student)"
+                maxLength={500}
+                required
+                autoFocus
+                autoComplete="off"
+              />
+              <div className="flex flex-wrap gap-2">
+                <Button type="submit" variant="danger" disabled={pending}>
+                  {pending ? 'Saving...' : 'Confirm reject'}
+                </Button>
+                <Button variant="outline" onClick={() => setPanel(null)}>
+                  Cancel
+                </Button>
+              </div>
+            </form>
           </Card>
         )}
 
@@ -178,21 +141,19 @@ export default function ClearanceItemsClient() {
             </TableHeader>
             <TableBody>
               {pendingItems.length === 0 && <EmptyRow colSpan={5}>No items waiting for review.</EmptyRow>}
-              {pendingItems.map((item) => {
-                const s = studentByNo(item.studentNo)
-                return (
-                  <TableRow key={item.studentNo}>
-                    <TableCell>
-                      <span className="block font-semibold">{s.name}</span>
-                      <span className="block text-xs text-muted">{s.studentNo}</span>
-                    </TableCell>
-                    <TableCell className="text-muted">{s.program}</TableCell>
-                    <TableCell className="text-muted">{item.requestedOn}</TableCell>
-                    <TableCell className="max-w-72 whitespace-normal">{holdNote(item.studentNo)}</TableCell>
-                    <TableCell>{actions(item)}</TableCell>
-                  </TableRow>
-                )
-              })}
+              {pendingItems.map((item) => (
+                <TableRow key={item.itemId}>
+                  <TableCell>
+                    <span className="block font-semibold">{item.name}</span>
+                    <span className="block text-xs text-muted">{item.studentNo}</span>
+                    {item.remarks && <span className="block text-xs text-muted">Your remarks: {item.remarks}</span>}
+                  </TableCell>
+                  <TableCell className="text-muted">{item.program}</TableCell>
+                  <TableCell className="text-muted">{item.requestedOn}</TableCell>
+                  <TableCell className="max-w-72 whitespace-normal">{holdNote(item)}</TableCell>
+                  <TableCell>{actions(item)}</TableCell>
+                </TableRow>
+              ))}
             </TableBody>
           </Table>
         </div>
@@ -213,28 +174,23 @@ export default function ClearanceItemsClient() {
             </TableHeader>
             <TableBody>
               {decided.length === 0 && <EmptyRow colSpan={5}>No decided items yet.</EmptyRow>}
-              {decided.map((item) => {
-                const s = studentByNo(item.studentNo)
-                return (
-                  <TableRow key={item.studentNo}>
-                    <TableCell>
-                      <span className="block font-semibold">{s.name}</span>
-                      <span className="block text-xs text-muted">{s.studentNo}</span>
-                    </TableCell>
-                    <TableCell className="text-muted">{s.program}</TableCell>
-                    <TableCell><ItemStatusBadge status={item.status} /></TableCell>
-                    <TableCell className="text-muted">{item.clearedOn ?? 'Not cleared'}</TableCell>
-                    <TableCell className="text-muted">{item.remarks ?? 'None'}</TableCell>
-                  </TableRow>
-                )
-              })}
+              {decided.map((item) => (
+                <TableRow key={item.itemId}>
+                  <TableCell>
+                    <span className="block font-semibold">{item.name}</span>
+                    <span className="block text-xs text-muted">{item.studentNo}</span>
+                  </TableCell>
+                  <TableCell className="text-muted">{item.program}</TableCell>
+                  <TableCell><ItemStatusBadge status={item.status} /></TableCell>
+                  <TableCell className="text-muted">{item.clearedOn ?? 'Not cleared'}</TableCell>
+                  <TableCell className="text-muted">{item.remarks ?? 'None'}</TableCell>
+                </TableRow>
+              ))}
             </TableBody>
           </Table>
         </div>
         <RecordList className="md:hidden" items={decidedMobile} empty="No decided items yet." />
       </Section>
-
-      <p className="text-sm text-muted">Changes on this screen are examples and are not saved.</p>
     </div>
   )
 }

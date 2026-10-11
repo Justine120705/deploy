@@ -24,15 +24,18 @@ const LINK =
 export function ClearanceChain({
   offices,
   activeHolds,
+  approved,
   className,
 }: {
   offices: readonly ChainOffice[]
   activeHolds: number
+  /** The Registrar has approved (live data). Leave out to derive it from offices and holds. */
+  approved?: boolean
   className?: string
 }) {
   const cleared = offices.filter((o) => o.status === 'Cleared').length
   const blocker = offices.find((o) => o.status !== 'Cleared')
-  const allCleared = !blocker && activeHolds === 0
+  const allCleared = !blocker && (approved ?? activeHolds === 0)
   const steps: Step[] = [
     ...offices.map((o) => ({ name: o.name, status: o.status })),
     { name: 'Registrar final approval', status: allCleared ? 'Approved' : 'Waiting' },
@@ -115,9 +118,11 @@ export function ClearanceChain({
         })}
       </ol>
 
-      <p className="text-sm text-muted">
-        After all {offices.length} offices clear you, the Registrar gives the final approval.
-      </p>
+      {blocker && (
+        <p className="text-sm text-muted">
+          After all {offices.length} offices clear you, the Registrar gives the final approval.
+        </p>
+      )}
     </Card>
   )
 }

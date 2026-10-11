@@ -1,9 +1,10 @@
 import Link from 'next/link'
 import { requireRole } from '@/lib/auth/session'
 import DashboardShell from '@/components/layout/DashboardShell'
-import { EmptyRow, Section, StatusBadge, SummaryStrip, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui'
+import { EmptyRow, SampleDataNote, Section, StatusBadge, SummaryStrip, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui'
 import { QueueSheet, QueueTable, StudentCell } from '@/components/registrar/QueueParts'
-import { REGISTRAR_CLEARANCES, REGISTRAR_DOCUMENTS, REGISTRAR_ENROLLMENTS } from '@/lib/mock/registrar-data'
+import { getRegistrarClearanceState } from '@/lib/data/registrar'
+import { REGISTRAR_DOCUMENTS, REGISTRAR_ENROLLMENTS } from '@/lib/mock/registrar-data'
 
 const OPEN_LINK =
   'inline-flex h-9 items-center text-sm font-semibold text-accent-foreground hover:underline max-lg:h-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring rounded-md'
@@ -13,7 +14,9 @@ export default async function RegistrarDashboardPage() {
 
   const pendingEnrollments = REGISTRAR_ENROLLMENTS.filter((e) => e.status === 'Pending')
   const openRequests = REGISTRAR_DOCUMENTS.filter((d) => d.status === 'Pending' || d.status === 'Processing')
-  const readyClearances = REGISTRAR_CLEARANCES.filter((c) => c.status === 'Pending' && c.cleared === c.total && c.holds === 0)
+  const clearanceState = await getRegistrarClearanceState()
+  const clearancesLoaded = clearanceState.kind === 'ready'
+  const readyClearances = clearanceState.kind === 'ready' ? clearanceState.clearances.filter((c) => !c.approved && c.ready) : []
 
   return (
     <DashboardShell profile={profile} title="Dashboard" subtitle="Registrar Office, 1st Sem 2026-2027">
@@ -22,9 +25,11 @@ export default async function RegistrarDashboardPage() {
           items={[
             { label: 'Enrollments', value: pendingEnrollments.length, hint: 'awaiting review', hue: pendingEnrollments.length ? 'amber' : undefined },
             { label: 'Document requests', value: openRequests.length, hint: 'to process', hue: openRequests.length ? 'amber' : undefined },
-            { label: 'Clearances', value: readyClearances.length, hint: 'ready for final approval', hue: readyClearances.length ? 'teal' : undefined },
+            { label: 'Clearances', value: clearancesLoaded ? readyClearances.length : '-', hint: clearancesLoaded ? 'ready for final approval' : 'could not load', hue: readyClearances.length ? 'teal' : undefined },
           ]}
         />
+        <SampleDataNote>Enrollments and document requests are not connected to live records yet. Clearances are live.</SampleDataNote>
+
 
         <Section
           title="Pending enrollments"

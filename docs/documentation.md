@@ -26,6 +26,7 @@ This revision aligns the document with the database design files (`schema.sql`, 
 | 8 | Development methodology changed from Rapid Application Development (RAD) to Agile. RAD wording replaced in the header, team roles and SRS 2.2; new Charter section 7 describes the Agile process. | Header, Charter 4 and 7, SRS 2.2 |
 | 9 | Charter section 7 replaced by the full SDLC plan (7.1 to 7.7). Sprint 2 ended Oct 10 instead of Oct 5; carry-over is recorded in 7.3. Phase 1 TODO comment removed (Sprint 1 end date is Oct 2). | Charter 6 and 7 |
 | 10 | Added the Activity Diagram (term clearance) and the Class Diagram (generated from `schema.sql`) as Part 3, Sections 4 and 5. | Part 3 |
+| 11 | Sprint 3 was compressed to one day (Oct 11) and delivered the clearance slice on live data: grants for the clearance objects, the three database triggers (department approval needs no active hold, the Finance item clears automatically, final clearance needs every item cleared), the Student, Department, Cashier and Registrar clearance screens, the Admin audit log, and the end-to-end test with `docs/testing-plan.md`. Carried over (still mock data, labelled "Sample data"): REQ-REG-01, REQ-REG-02, REQ-REG-04, REQ-STU-02, REQ-STU-04, REQ-STU-05, REQ-DOC-01, REQ-DOC-02, REQ-ADM-01, REQ-ADM-04; not done: SEC-03 (login lockout), SEC-04 (rate limiting). Section 6 and 7.3 show the real Sprint 3 date. | Charter 6, SDLC 7.3, `docs/sprint-3-plan.md` |
 
 
 **Row 6 details (edits outside the sections I was asked to edit):**
@@ -113,7 +114,7 @@ This project delivers a comprehensive, web-based university portal designed to e
 | --- | --- | --- |
 | **Sprint 1** | System modeling (DFD, Use Case, Activity, Class), ERD/3NF design, UI/UX wireframes, database initialization. | Oct 2 |
 | **Sprint 2** | ERD v3 finalized and migrated (see Revision Log), Auth setup, Role-Based Access Control (RLS), Admin/Student UI layouts, SDLC plan draft. | Oct 5 (completed Oct 10) |
-| **Sprint 3** | Registrar (Grades/Docs/Enrollment), Cashier, and Department (Clearance) modules connected; Admin audit log implemented. Clearance logic (holds, department approval, final clearance) is started first because the modules depend on it. | Oct 8 |
+| **Sprint 3** | Registrar (Grades/Docs/Enrollment), Cashier, and Department (Clearance) modules connected; Admin audit log implemented. Clearance logic (holds, department approval, final clearance) is started first because the modules depend on it. | Oct 8 (compressed to one day, done Oct 11: clearance slice only, see Revision Log) |
 | **Sprint 4 ** | Integration, QA testing, security hardening (SQL injection checks, login lockout, rate limiting, vulnerability patching), software testing plan and ethical analysis finalized. | Oct 10 |
 | **Sprint 5** | Live deployment to Vercel (dev merged into main by the PM), IEEE final paper compilation, plagiarism check, AI/anti-AI detector report, Team Monitoring Sheet (peer evaluation), final review. | Oct 12 |
 
@@ -142,11 +143,11 @@ The project has a fixed final deadline (Oct 12) and a 12-day window, and several
 | --- | --- | --- |
 | Sprint 1 | System modeling, ERD/3NF design, UI/UX wireframes, database initialization | Oct 2 |
 | Sprint 2 | ERD v3 migrated, authentication and role routing, shared UI and dashboard shell, SQL files committed, SDLC plan | Oct 5 (completed Oct 10) |
-| Sprint 3 | Clearance logic first (holds, department approval, Cashier auto-clear, final approval; database triggers), then the Registrar, Cashier and Department modules and the Admin audit log | Oct 8 |
-| Sprint 4 | Integration, QA, login lockout and rate limiting (SEC-03, SEC-04), testing plan and security tests | Oct 10 |
+| Sprint 3 | Clearance logic first (holds, department approval, Cashier auto-clear, final approval; database triggers), then the Registrar, Cashier and Department modules and the Admin audit log | Oct 8 (compressed to one day, done Oct 11: the clearance slice on live data; the other modules carried over) |
+| Sprint 4 | Integration, QA, login lockout and rate limiting (SEC-03, SEC-04), testing plan and security tests | Oct 10 (the testing plan for the clearance slice was delivered Oct 11; the rest overlaps Sprint 5 or is carried over) |
 | Sprint 5 | Vercel deployment from `main`, IEEE paper, verification reports, Team Monitoring Sheet | Oct 12 |
 
-Sprint 2 ended later than planned. The unfinished work and the shifted dates are recorded in the Revision Log, and the work of Sprints 3 and 4 overlaps in the remaining days.
+Sprint 2 ended later than planned, and Sprint 3 was compressed to one day (Oct 11). The unfinished work and the shifted dates are recorded in the Revision Log, and the work of Sprints 3, 4 and 5 overlaps in the remaining days. What Sprint 3 delivered and what was carried over is in `docs/sprint-3-plan.md`.
 
 #### 7.4 Roles
 

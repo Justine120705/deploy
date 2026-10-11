@@ -1,5 +1,6 @@
 import { requireRole } from '@/lib/auth/session'
 import DashboardShell from '@/components/layout/DashboardShell'
+import { SampleDataNote } from '@/components/ui'
 import { DocumentsActions, DocumentsBody, DocumentsProvider } from '@/components/registrar/DocumentsQueue'
 
 export default async function RegistrarDocumentsPage() {
@@ -12,7 +13,10 @@ export default async function RegistrarDocumentsPage() {
         subtitle="Registrar Office · process requests from students"
         actions={<DocumentsActions />}
       >
-        <DocumentsBody />
+        <div className="flex flex-col gap-4">
+          <SampleDataNote />
+          <DocumentsBody />
+        </div>
       </DashboardShell>
     </DocumentsProvider>
   )
