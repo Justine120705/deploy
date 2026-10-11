@@ -718,14 +718,14 @@ Fill in this table (copy into `docs/testing-plan.md` for Sprint 4). Actual = wha
 | TC-31 | Registrar sees all rows through the extended views (Part H) | counts equal real counts, no empty joins | grades 6 / 6, items 12 / 12, clearances 3 / 3; both missing_join 0; clearance 1: total_items 4 / 4, cleared_items 2 / 2 (2026-10-10, PM ran views_extend.sql and clicked Run, Claude loaded and read the test; rolled back) | Pass |
 | TC-32 | Cashier and Department see no more than the base tables (Part H) | OK for both | cashier: grades 0/0, items 3/3, clearances 3/3, holds 0/0, item_depts 1, max_total_items 1 -> OK; department: same with holds 1/1 -> OK (2026-10-10, PM ran views_extend.sql and clicked Run, Claude loaded and read the test; rolled back) | Pass |
 | TC-33 | Anonymous access to the 4 views (Part H) | all denied | all four: denied: permission denied for view ... (2026-10-10, PM ran views_extend.sql and clicked Run, Claude loaded and read the test; rolled back) | Pass |
-| TC-34R | Rehearsal: `grants_clearance.sql` sections 1 to 4 plus TC-34, TC-37, TC-38 in one rolled-back transaction (Part I, before the live run) | no `grants_clearance:` error; same results as TC-34, TC-37, TC-38 | Pass in rehearsal (rolled back), 2026-10-11 | live run pending |
-| TC-34 | Grants after `grants_clearance.sql` (Part I) | anon nothing anywhere; no TRUNCATE/REFERENCES/TRIGGER/MAINTAIN; exactly the 21 column grants; DELETE only on profiles (unchanged) | Pass in rehearsal (rolled back), 2026-10-11 | live run pending |
-| TC-35 | anon reads and writes every exposed object (Part I) | all denied | Pass in rehearsal (rolled back), 2026-10-11 | live run pending |
-| TC-36 | Reads per role on the 6 exposed read objects (Part I) | every role `-> OK`; student1_not_own 0 | Pass in rehearsal (rolled back), 2026-10-11 | live run pending |
-| TC-37 | Allowed writes per role with the real grants (Part I) | `rows 1` each; 4 items created | Pass in rehearsal (rolled back), 2026-10-11 | live run pending |
-| TC-38 | Writes outside the grants (DELETE, other columns, other tables, views) (Part I) | all denied | Pass in rehearsal (rolled back), 2026-10-11 | live run pending |
-| TC-39 | Granted columns, wrong role (Part I) | rows 0 or RLS error, never rows 1 | Pass in rehearsal (rolled back), 2026-10-11 | live run pending |
-| TC-40 | Signed-in app reads the exposed views through the Data API (Part I) | own rows only, no PGRST205 | Not run yet | |
+| TC-34R | Rehearsal: `grants_clearance.sql` sections 1 to 4 plus TC-34, TC-37, TC-38 in one rolled-back transaction (Part I, before the live run) | no `grants_clearance:` error; same results as TC-34, TC-37, TC-38 | Pass in rehearsal (rolled back), 2026-10-11 | - |
+| TC-34 | Grants after `grants_clearance.sql` (Part I) | anon nothing anywhere; no TRUNCATE/REFERENCES/TRIGGER/MAINTAIN; exactly the 21 column grants; DELETE only on profiles (unchanged) | Pass live and in rehearsal, 2026-10-11 | |
+| TC-35 | anon reads and writes every exposed object (Part I) | all denied | Pass in rehearsal (rolled back), 2026-10-11 | re-run live pending (same grants, passed in rehearsal) |
+| TC-36 | Reads per role on the 6 exposed read objects (Part I) | every role `-> OK`; student1_not_own 0 | Pass in rehearsal (rolled back), 2026-10-11 | re-run live pending (same grants, passed in rehearsal) |
+| TC-37 | Allowed writes per role with the real grants (Part I) | `rows 1` each; 4 items created | Pass in rehearsal (rolled back), 2026-10-11 | re-run live pending (same grants, passed in rehearsal) |
+| TC-38 | Writes outside the grants (DELETE, other columns, other tables, views) (Part I) | all denied | Pass in rehearsal (rolled back), 2026-10-11 | re-run live pending (same grants, passed in rehearsal) |
+| TC-39 | Granted columns, wrong role (Part I) | rows 0 or RLS error, never rows 1 | Pass in rehearsal (rolled back), 2026-10-11 | re-run live pending (same grants, passed in rehearsal) |
+| TC-40 | Signed-in app reads the exposed views through the Data API (Part I) | own rows only, no PGRST205 | Pending | Skipped on 2026-10-11 on purpose: it needs the data layer; it will show at issue 25 (#64). If PGRST205: expose that object in the dashboard and run grants_clearance.sql again. |
 
 ## Step 7: Fix what failed (before closing the issue)
 

@@ -84,8 +84,8 @@
 -- F, G, H).
 -- Undo: the ROLLBACK block after COMMIT.
 --
--- Status: NOT RUN on the live database yet. Not tested on a local PostgreSQL either (none
--- was available when this file was written); the rehearsal block is the first test.
+-- Status: RUN on the live database on 2026-10-11, after rehearsal in rolled-back transactions
+-- (TC-34R to TC-39 pass; live TC-34 passes). TC-40 (through the Data API) is pending.
 
 
 BEGIN;

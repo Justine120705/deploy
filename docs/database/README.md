@@ -15,7 +15,7 @@ team** (see Project Charter, section 5: "ERD and 3NF Tables").
 | `hardening2.sql`       | Issue #50, part 2, three sections run separately: A `holds_dept_place` checks the student's program department; B audit-log triggers (REQ-ADM-03) and append-only `audit_logs`; C grants cleanup. A rollback block per section |
 | `triggers.sql`         | Record (not a script) of the app's table triggers after `hardening.sql` and `hardening2.sql` |
 | `views_extend.sql`     | Issue #49: extends `v_grades`, `v_clearance_items`, `v_clearances` to the columns of `types/database.types.ts` (`CREATE OR REPLACE`, still `security_invoker = true`); safety checks, rollback and diagnostics as comments |
-| `grants_clearance.sql` | Issue #60: exposes the clearance slice to `authenticated` only (SELECT on 3 views, `charges`, `payments`, `audit_logs`; column-level writes on `clearances`, `clearance_items`, `academic_holds`, `payments`, `charges`), then repeats the anon part of `hardening2.sql` section C; checks before and after, rollback and diagnostics as comments. **Not run yet** |
+| `grants_clearance.sql` | Issue #60: exposes the clearance slice to `authenticated` only (SELECT on 3 views, `charges`, `payments`, `audit_logs`; column-level writes on `clearances`, `clearance_items`, `academic_holds`, `payments`, `charges`), then repeats the anon part of `hardening2.sql` section C; checks before and after, rollback and diagnostics as comments. **Run live 2026-10-11** |
 | `grants_clearance_test.sql` | Tests TC-34 to TC-39 for `grants_clearance.sql` (each block ends in `ROLLBACK`), plus how to rehearse the whole change in a rolled-back transaction (TC-34R) |
 
 `views.sql`, `private_functions.sql` and the policies in `rls.sql` were exported from the
@@ -43,7 +43,7 @@ Run in the Supabase **SQL Editor** (or `psql`), in exactly this order:
    save its diagnostics (a) to (c) first. Then the tests in Part H of
    `docs/issue-12-testing-guide.md` (TC-29 to TC-33) and TC-15, TC-16, TC-28 again. Undo
    with its ROLLBACK block (DROP + CREATE, then the grants again).
-10. **`grants_clearance.sql`** (issue #60; after `views_extend.sql`). **NOT RUN YET.** First
+10. **`grants_clearance.sql`** (issue #60; after `views_extend.sql`). **Run live on 2026-10-11** (rehearsed first, TC-34R to TC-39; live TC-34 passed). First
    rehearse it in a rolled-back transaction (TC-34R, see the top of
    `grants_clearance_test.sql`) and save its diagnostic (a). Then run it as a whole, WITHOUT
    toggling the tables in the dashboard's Data API settings (the file header explains why
