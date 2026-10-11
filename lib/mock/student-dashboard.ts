@@ -22,24 +22,6 @@ export const CURRENT_GRADES = [
   { code: 'GE101', course: 'Understanding the Self', units: 3, grade: '1.50', remarks: 'Passed' },
 ]
 
-/** Clearance chain, in the order the offices sign. `reason` and `nextAction` explain a step that is
- *  not cleared yet. After every office clears, the Registrar gives the final approval. */
-export const CLEARANCE_OFFICES = [
-  { name: "Cashier's Office", note: 'Completed', status: 'Cleared', reason: '', nextAction: '' },
-  { name: 'CBA Department', note: 'Completed', status: 'Cleared', reason: '', nextAction: '' },
-  { name: 'CAS Department', note: 'Completed', status: 'Cleared', reason: '', nextAction: '' },
-  {
-    name: 'CCS Department',
-    note: 'Awaiting review',
-    status: 'Pending',
-    reason: 'Awaiting department review',
-    nextAction: 'No action needed, CCS Department is reviewing.',
-  },
-] as const
-
-/** Academic holds that block clearance (none right now). */
-export const ACTIVE_HOLDS = 0
-
 /** Calendar shown on the dashboard: October 2026, "today" is the 5th. */
 export const CALENDAR_VIEW = { year: 2026, month: 9, today: '2026-10-05' } // month is 0-based
 export const CALENDAR_EVENTS = [

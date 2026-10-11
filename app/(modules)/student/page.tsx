@@ -15,20 +15,10 @@ import {
   TableRow,
 } from '@/components/ui'
 import { requireRole } from '@/lib/auth/session'
+import { MOCK_CURRENT_TERM_ID, MOCK_STUDENT_ID, documentRequests, documentTypes, programs, students, terms, vClearanceItems, vActiveHolds } from '@/lib/mock-data'
 import {
-  MOCK_CURRENT_TERM_ID,
-  MOCK_STUDENT_ID,
-  documentRequests,
-  documentTypes,
-  programs,
-  students,
-  terms,
-} from '@/lib/mock-data'
-import {
-  ACTIVE_HOLDS,
   CALENDAR_EVENTS,
   CALENDAR_VIEW,
-  CLEARANCE_OFFICES,
   CURRENT_GRADES,
   GWA_BY_TERM,
   GWA_Y_TICKS,
@@ -84,6 +74,24 @@ export default async function StudentDashboardPage() {
     .filter(Boolean)
     .join(' · ')
 
+  // Clearance: the same data as the Clearance page, so both screens tell one story. Signing order: the
+  // Cashier's Office (Financial) first, then the academic departments.
+  const offices = vClearanceItems
+    .filter((i) => i.student_id === MOCK_STUDENT_ID && i.term_id === MOCK_CURRENT_TERM_ID)
+    .sort((a, b) => Number(b.department_type === 'Financial') - Number(a.department_type === 'Financial'))
+    .map((i) => {
+      const name = i.department_name ?? 'Department'
+      return i.status === 'Cleared'
+        ? { name, status: 'Cleared' as const, reason: '', nextAction: '' }
+        : {
+            name,
+            status: 'Pending' as const,
+            reason: i.remarks ?? 'Awaiting review',
+            nextAction: `Request clearance from ${name}.`,
+          }
+    })
+  const activeHolds = vActiveHolds.filter((h) => h.student_id === MOCK_STUDENT_ID).length
+
   // Pending items: the student's document requests that are not released yet.
   const openRequests = documentRequests
     .filter((r) => r.student_id === MOCK_STUDENT_ID && (r.status === 'Pending' || r.status === 'Processing'))
@@ -118,8 +126,8 @@ export default async function StudentDashboardPage() {
           </header>
 
           <ClearanceRoute
-            offices={CLEARANCE_OFFICES}
-            activeHolds={ACTIVE_HOLDS}
+            offices={offices}
+            activeHolds={activeHolds}
             action={
               <Link href="/student/clearance" className={PRIMARY_LINK}>
                 Open clearance
