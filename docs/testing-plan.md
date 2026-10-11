@@ -98,7 +98,7 @@ CCS hold ("Missing lab equipment"), one unpaid charge of 15,000.
 
 | ID | Finding | Status |
 | --- | --- | --- |
-| F-1 | The student dashboard clearance card still shows "After all 4 offices clear you, the Registrar gives the final approval." after the clearance is approved (found in E2E-12) | Open: issue to be filed; fix in a separate small change |
+| F-1 | The student dashboard clearance card still shows "After all 4 offices clear you, the Registrar gives the final approval." after the clearance is approved (found in E2E-12) | Open: GitHub issue #83; fix in a separate small change |
 | F-2 | The duplicate-request message was lost on first test because the page re-rendered to the clearance view | Fixed before merge (notice after redirect), retested E2E-02 |
 | F-3 | TC-68 and TC-69 expectations assumed a lone `approved_at` or `approved_by` could be saved; table check `ck_clearances_approval` requires both together | Test expectations corrected; the trigger behaved as designed |
 | F-4 | First rehearsal of issue 23 stopped at its own safety check (a varchar type comparison) | Check fixed; rehearsal then passed |
