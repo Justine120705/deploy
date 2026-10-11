@@ -47,54 +47,70 @@ export function LoginShowcase() {
   return (
     <aside
       aria-label="About the portal"
-      className="relative m-4 hidden overflow-hidden rounded-xl bg-ink lg:block"
+      className="relative hidden overflow-hidden lg:block"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       onFocus={() => setPaused(true)}
       onBlur={() => setPaused(false)}
     >
-      {SLIDES.map((slide, i) => (
-        <Image
-          key={slide.src}
-          src={slide.src}
-          alt={i === index ? slide.alt : ''}
-          aria-hidden={i === index ? undefined : true}
-          fill
-          priority
-          sizes="50vw"
-          className={cn(
-            'object-cover transition-opacity duration-1000 ease-out motion-reduce:transition-none',
-            i === index ? 'opacity-100' : 'opacity-0'
-          )}
+      {/* One large circle, bleeding off the right edge like a porthole. A thin ring sits just outside it. */}
+      <div className="absolute left-[6%] top-1/2 aspect-square w-[min(56vw,96vh)] -translate-y-1/2">
+        <div
+          aria-hidden="true"
+          className="absolute -inset-5 rounded-full border border-hue-violet-solid/30"
         />
-      ))}
-      {/* Scrim for the text only: solid at the bottom where the text sits, clear at the top. */}
-      <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-transparent" />
-
-      <div className="absolute inset-x-0 bottom-0 flex flex-col gap-6 p-10 text-white">
-        <div aria-live={paused || reduced ? 'polite' : 'off'} className="min-h-[7.5rem]">
-          <p className="max-w-md text-3xl font-semibold leading-tight tracking-[-0.01em]">{SLIDES[index].title}</p>
-          <p className="mt-3 max-w-md text-sm leading-6 text-white/90">{SLIDES[index].text}</p>
-        </div>
-
-        <div className="flex items-center gap-1" role="group" aria-label="Choose a photo">
+        <div className="absolute inset-0 overflow-hidden rounded-full bg-ink">
           {SLIDES.map((slide, i) => (
-            <button
+            <Image
               key={slide.src}
-              type="button"
-              onClick={() => setIndex(i)}
-              aria-label={`Show photo ${i + 1} of ${SLIDES.length}`}
-              aria-current={i === index ? 'true' : undefined}
-              className="group flex h-6 w-8 items-center justify-center rounded-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-            >
-              <span
-                className={cn(
-                  'h-1.5 rounded-full transition-all duration-300 motion-reduce:transition-none',
-                  i === index ? 'w-6 bg-white' : 'w-1.5 bg-white/55 group-hover:bg-white/80'
-                )}
-              />
-            </button>
+              src={slide.src}
+              alt={i === index ? slide.alt : ''}
+              aria-hidden={i === index ? undefined : true}
+              fill
+              priority
+              sizes="50vw"
+              className={cn(
+                'object-cover transition-opacity duration-1000 ease-out motion-reduce:transition-none',
+                i === index ? 'opacity-100' : 'opacity-0'
+              )}
+            />
           ))}
+          {/* Lavender tint over the photo, deeper toward the bottom where the text sits. */}
+          <div
+            aria-hidden="true"
+            className="absolute inset-0"
+            style={{
+              background:
+                'linear-gradient(to top, color-mix(in srgb, var(--veil-violet) 94%, transparent), color-mix(in srgb, var(--veil-violet) 62%, transparent) 55%, color-mix(in srgb, var(--veil-violet) 38%, transparent))',
+            }}
+          />
+
+          <div className="absolute inset-x-0 bottom-0 flex flex-col items-start gap-5 pb-[14%] pl-[16%] pr-[26%] text-white">
+            <div aria-live={paused || reduced ? 'polite' : 'off'} className="min-h-[8.5rem]">
+              <p className="text-3xl font-semibold leading-tight tracking-[-0.01em]">{SLIDES[index].title}</p>
+              <p className="mt-3 text-sm leading-6 text-white/90">{SLIDES[index].text}</p>
+            </div>
+
+            <div className="flex items-center gap-1" role="group" aria-label="Choose a photo">
+              {SLIDES.map((slide, i) => (
+                <button
+                  key={slide.src}
+                  type="button"
+                  onClick={() => setIndex(i)}
+                  aria-label={`Show photo ${i + 1} of ${SLIDES.length}`}
+                  aria-current={i === index ? 'true' : undefined}
+                  className="group flex h-6 w-8 items-center justify-center rounded-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                >
+                  <span
+                    className={cn(
+                      'h-1.5 rounded-full transition-all duration-300 motion-reduce:transition-none',
+                      i === index ? 'w-6 bg-white' : 'w-1.5 bg-white/55 group-hover:bg-white/80'
+                    )}
+                  />
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </aside>
