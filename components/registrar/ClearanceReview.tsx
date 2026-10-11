@@ -113,7 +113,7 @@ export function ClearanceBody() {
                     {r.holds > 0 ? `${r.holds} active` : 'None'}
                   </TableCell>
                   <TableCell><StatusBadge status={r.status} /></TableCell>
-                  <TableCell className="text-muted">{r.requested}</TableCell>
+                  <TableCell className="whitespace-nowrap text-muted">{r.requested}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

@@ -109,7 +109,7 @@ export function EnrollmentsBody() {
                   <TableCell className="text-muted">{r.program}</TableCell>
                   <TableCell className="text-muted">{r.subjects} subjects</TableCell>
                   <TableCell><StatusBadge status={r.status} /></TableCell>
-                  <TableCell className="text-muted">{r.submitted}</TableCell>
+                  <TableCell className="whitespace-nowrap text-muted">{r.submitted}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

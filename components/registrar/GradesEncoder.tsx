@@ -171,6 +171,9 @@ export function GradesBody() {
                 >
                   ‹
                 </Button>
+                <span className="px-2 text-sm text-muted sm:hidden">
+                  Page {current} of {pages}
+                </span>
                 {Array.from({ length: pages }, (_, i) => i + 1).map((p) => (
                   <Button
                     key={p}
@@ -178,7 +181,7 @@ export function GradesBody() {
                     aria-label={`Page ${p}`}
                     aria-current={p === current ? 'page' : undefined}
                     onClick={() => setPage(p)}
-                    className="size-11 px-0 lg:size-9"
+                    className="size-11 px-0 max-sm:hidden lg:size-9"
                   >
                     {p}
                   </Button>

@@ -107,12 +107,12 @@ export function DocumentsBody() {
                   <TableCell className="w-12 px-1.5">
                     <RowRadio name="document" checked={selected === r.id} onChange={() => select(r.id)} label={`Select ${r.ticket}, ${r.name}`} />
                   </TableCell>
-                  <TableCell className="text-muted">{r.ticket}</TableCell>
+                  <TableCell className="whitespace-nowrap text-muted">{r.ticket}</TableCell>
                   <TableCell><StudentCell name={r.name} /></TableCell>
                   <TableCell>{r.document}</TableCell>
                   <TableCell className="text-muted">{r.copies}</TableCell>
                   <TableCell><StatusBadge status={r.status} /></TableCell>
-                  <TableCell className="text-muted">{r.requested}</TableCell>
+                  <TableCell className="whitespace-nowrap text-muted">{r.requested}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
