@@ -1,32 +1,26 @@
 import { EmptyRow, Section, StatusBadge, SummaryStrip, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui'
-import {
-  CASHIER_CHARGES,
-  CASHIER_PAYMENTS,
-  buildChargeRows,
-  chargeTotals,
-  formatPeso,
-  plural,
-} from '@/lib/mock/cashier-data'
+import type { CashierLedger } from '@/lib/data/cashier'
+import ChargeActions from './ChargeActions'
+import { formatDateOnly, formatPeso, plural } from './format'
 
 const NUM = 'text-right tabular-nums'
 
-export default function ChargesView() {
-  const rows = buildChargeRows(CASHIER_CHARGES, CASHIER_PAYMENTS)
-  const t = chargeTotals(rows, CASHIER_PAYMENTS)
+export default function ChargesView({ ledger }: { ledger: CashierLedger }) {
+  const { charges, payments, totals: t } = ledger
 
   return (
     <div className="flex flex-col gap-8">
       <SummaryStrip
         items={[
-          { label: 'Total charged', value: formatPeso(t.totalCharged), hint: plural(rows.length, 'charge') },
-          { label: 'Collected', value: formatPeso(t.collected), hint: plural(CASHIER_PAYMENTS.length, 'payment'), hue: 'teal' },
+          { label: 'Total charged', value: formatPeso(t.totalCharged), hint: plural(charges.length, 'charge') },
+          { label: 'Collected', value: formatPeso(t.collected), hint: plural(payments.length, 'payment'), hue: 'teal' },
           { label: 'Outstanding', value: formatPeso(t.outstanding), hint: 'still to collect', hue: 'amber' },
-          { label: 'Unpaid charges', value: String(t.unpaidCount), hint: t.unpaidCount === 1 ? 'student' : 'students' },
+          { label: 'Unpaid charges', value: String(t.unpaidCount), hint: t.waived > 0 ? `${formatPeso(t.waived)} waived` : 'to settle' },
         ]}
       />
       <Section
         title="All charges"
-        description="The Cashier's Office item clears automatically once every charge is Cleared or Waived."
+        description="Balance is the charge minus its payments. Mark a charge Cleared once it is paid, or Waive it. The Finance clearance item then clears by itself when every charge of the student is Cleared or Waived."
       >
         <Table className="min-w-[420px]">
           <TableHeader>
@@ -37,22 +31,30 @@ export default function ChargesView() {
               <TableHead className={`${NUM} hidden sm:table-cell`}>Paid</TableHead>
               <TableHead className={NUM}>Balance</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead className="text-right">Tag charge</TableHead>
             </tr>
           </TableHeader>
           <TableBody>
-            {rows.length === 0 && <EmptyRow colSpan={6}>No charges have been posted yet.</EmptyRow>}
-            {rows.map((r) => (
-              <TableRow key={r.chargeId}>
+            {charges.length === 0 && <EmptyRow colSpan={7}>No charges have been posted for this term yet.</EmptyRow>}
+            {charges.map((c) => (
+              <TableRow key={c.chargeId}>
                 <TableCell>
-                  <span className="block font-medium">{r.studentName}</span>
-                  <span className="block text-xs text-muted">{r.studentNo}</span>
+                  <span className="block font-medium">{c.studentName}</span>
+                  <span className="block text-xs text-muted">
+                    {c.studentNo}
+                    <span className="md:hidden">, {c.feeType}</span>
+                    {c.dueDate && <span className="hidden lg:inline">, due {formatDateOnly(c.dueDate)}</span>}
+                  </span>
                 </TableCell>
-                <TableCell className="hidden text-muted md:table-cell">{r.feeType}</TableCell>
-                <TableCell className={`${NUM} hidden text-muted sm:table-cell`}>{formatPeso(r.amount)}</TableCell>
-                <TableCell className={`${NUM} hidden text-muted sm:table-cell`}>{formatPeso(r.paid)}</TableCell>
-                <TableCell className={`${NUM} font-medium`}>{formatPeso(r.balance)}</TableCell>
+                <TableCell className="hidden text-muted md:table-cell">{c.feeType}</TableCell>
+                <TableCell className={`${NUM} hidden text-muted sm:table-cell`}>{formatPeso(c.amount)}</TableCell>
+                <TableCell className={`${NUM} hidden text-muted sm:table-cell`}>{formatPeso(c.paid)}</TableCell>
+                <TableCell className={`${NUM} font-medium`}>{formatPeso(c.balance)}</TableCell>
                 <TableCell>
-                  <StatusBadge status={r.status} />
+                  <StatusBadge status={c.status} />
+                </TableCell>
+                <TableCell>
+                  <ChargeActions chargeId={c.chargeId} settled={c.status !== 'Unpaid'} />
                 </TableCell>
               </TableRow>
             ))}

@@ -1,35 +1,30 @@
 import { EmptyRow, Section, StatusBadge, SummaryStrip, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui'
-import {
-  CASHIER_CHARGES,
-  CASHIER_PAYMENTS,
-  buildChargeRows,
-  chargeTotals,
-  formatPaidOn,
-  formatPeso,
-  plural,
-} from '@/lib/mock/cashier-data'
+import type { CashierLedger, FinanceClearance } from '@/lib/data/cashier'
+import { formatPeso, formatTimestamp, plural } from './format'
 
 const NUM = 'text-right tabular-nums'
 
-export default function DashboardView() {
-  const rows = buildChargeRows(CASHIER_CHARGES, CASHIER_PAYMENTS)
-  const t = chargeTotals(rows, CASHIER_PAYMENTS)
-  const owing = rows.filter((r) => r.balance > 0)
-  const recent = [...CASHIER_PAYMENTS].sort((a, b) => b.paidOn.localeCompare(a.paidOn))
-  const chargeOf = (chargeId: number) => rows.find((r) => r.chargeId === chargeId)
+export default function DashboardView({ ledger, finance }: { ledger: CashierLedger; finance: FinanceClearance | null }) {
+  const { charges, payments, totals: t } = ledger
+  const owing = charges.filter((c) => c.balance > 0)
+  const recent = payments.slice(0, 8)
 
   return (
     <div className="flex flex-col gap-8">
       <SummaryStrip
         items={[
-          { label: 'Total charged', value: formatPeso(t.totalCharged), hint: plural(rows.length, 'charge') },
-          { label: 'Collected', value: formatPeso(t.collected), hint: plural(CASHIER_PAYMENTS.length, 'payment'), hue: 'teal' },
+          { label: 'Total charged', value: formatPeso(t.totalCharged), hint: plural(charges.length, 'charge') },
+          { label: 'Collected', value: formatPeso(t.collected), hint: plural(payments.length, 'payment'), hue: 'teal' },
           { label: 'Outstanding', value: formatPeso(t.outstanding), hint: 'still to collect', hue: 'amber' },
-          { label: 'Finance cleared', value: String(t.clearedCount), hint: `of ${plural(rows.length, 'student')}` },
+          {
+            label: 'Finance cleared',
+            value: finance ? String(finance.cleared) : '-',
+            hint: finance ? `of ${plural(finance.items.length, 'request')}` : 'not available',
+          },
         ]}
       />
 
-      <Section title="Students with a balance" description="Collect these first.">
+      <Section title="Charges with a balance" description="Collect these first.">
         <Table className="min-w-[420px]">
           <TableHeader>
             <tr>
@@ -42,19 +37,19 @@ export default function DashboardView() {
           </TableHeader>
           <TableBody>
             {owing.length === 0 && <EmptyRow colSpan={5}>No student has a balance.</EmptyRow>}
-            {owing.map((r) => (
-              <TableRow key={r.chargeId}>
+            {owing.map((c) => (
+              <TableRow key={c.chargeId}>
                 <TableCell>
-                  <span className="block font-medium">{r.studentName}</span>
-                  <span className="block text-xs text-muted">{r.studentNo}</span>
+                  <span className="block font-medium">{c.studentName}</span>
+                  <span className="block text-xs text-muted">{c.studentNo}</span>
                 </TableCell>
-                <TableCell className="hidden text-muted md:table-cell">{r.feeType}</TableCell>
-                <TableCell className={`${NUM} font-medium`}>{formatPeso(r.balance)}</TableCell>
+                <TableCell className="hidden text-muted md:table-cell">{c.feeType}</TableCell>
+                <TableCell className={`${NUM} font-medium`}>{formatPeso(c.balance)}</TableCell>
                 <TableCell>
-                  <StatusBadge status={r.status} />
+                  <StatusBadge status={c.status} />
                 </TableCell>
                 <TableCell className="hidden text-muted lg:table-cell">
-                  {r.lastPaymentOn ? formatPaidOn(r.lastPaymentOn) : 'None yet'}
+                  {c.lastPaymentAt ? formatTimestamp(c.lastPaymentAt) : 'None yet'}
                 </TableCell>
               </TableRow>
             ))}
@@ -76,22 +71,19 @@ export default function DashboardView() {
           </TableHeader>
           <TableBody>
             {recent.length === 0 && <EmptyRow colSpan={6}>No payments logged yet.</EmptyRow>}
-            {recent.map((p) => {
-              const c = chargeOf(p.chargeId)
-              return (
-                <TableRow key={p.receiptNo}>
-                  <TableCell className="text-muted">{p.receiptNo}</TableCell>
-                  <TableCell>
-                    <span className="block font-medium">{c?.studentName}</span>
-                    <span className="block text-xs text-muted sm:hidden">{formatPaidOn(p.paidOn)}</span>
-                  </TableCell>
-                  <TableCell className="hidden text-muted md:table-cell">{c?.feeType}</TableCell>
-                  <TableCell className={`${NUM} font-medium`}>{formatPeso(p.amount)}</TableCell>
-                  <TableCell className="hidden text-muted sm:table-cell">{formatPaidOn(p.paidOn)}</TableCell>
-                  <TableCell className="hidden text-muted lg:table-cell">{p.recordedBy}</TableCell>
-                </TableRow>
-              )
-            })}
+            {recent.map((p) => (
+              <TableRow key={p.paymentId}>
+                <TableCell className="text-muted">{p.receiptNo}</TableCell>
+                <TableCell>
+                  <span className="block font-medium">{p.studentName}</span>
+                  <span className="block text-xs text-muted sm:hidden">{formatTimestamp(p.paidAt)}</span>
+                </TableCell>
+                <TableCell className="hidden text-muted md:table-cell">{p.feeType}</TableCell>
+                <TableCell className={`${NUM} font-medium`}>{formatPeso(p.amount)}</TableCell>
+                <TableCell className="hidden text-muted sm:table-cell">{formatTimestamp(p.paidAt)}</TableCell>
+                <TableCell className="hidden text-muted lg:table-cell">{p.recordedBy}</TableCell>
+              </TableRow>
+            ))}
           </TableBody>
         </Table>
       </Section>
