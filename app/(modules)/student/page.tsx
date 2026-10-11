@@ -1,13 +1,16 @@
 import Link from 'next/link'
 import DashboardShell from '@/components/layout/DashboardShell'
-import { LineChart } from '@/components/charts'
-import { ClearanceRoute } from '@/components/student/ClearanceRoute'
+import PromoCard from '@/components/layout/PromoCard'
+import { BarChart, LegendItem, LineChart } from '@/components/charts'
+import { ClearanceChain } from '@/components/student/ClearanceChain'
 import { NextLesson } from '@/components/student/NextLesson'
 import {
+  Card,
+  CardHeader,
+  EventCalendar,
+  PhotoBanner,
   ScheduleList,
-  Section,
   StatusBadge,
-  Table,
   TableBody,
   TableCell,
   TableHead,
@@ -15,29 +18,22 @@ import {
   TableRow,
 } from '@/components/ui'
 import { requireRole } from '@/lib/auth/session'
-import { MOCK_CURRENT_TERM_ID, MOCK_STUDENT_ID, documentRequests, documentTypes, programs, students, terms, vClearanceItems, vActiveHolds } from '@/lib/mock-data'
+import { MOCK_STUDENT_ID, students, MOCK_CURRENT_TERM_ID, vClearanceItems, vActiveHolds } from '@/lib/mock-data'
 import {
   CALENDAR_EVENTS,
   CALENDAR_VIEW,
   CURRENT_GRADES,
+  DASHBOARD_UNITS_THIS_TERM,
   GWA_BY_TERM,
   GWA_Y_TICKS,
   NEXT_CLASS,
   SCHEDULE,
 } from '@/lib/mock/student-dashboard'
 
-const FOCUS = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring'
-const SEE_ALL = `inline-flex items-center text-sm font-semibold text-accent-foreground hover:underline max-lg:min-h-11 ${FOCUS}`
-const PRIMARY_LINK = `inline-flex h-9 items-center justify-center rounded-md bg-primary px-3.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover max-lg:h-11 max-lg:px-4 ${FOCUS}`
-const SHEET = 'rounded-lg border border-edge bg-card'
-// A ruled row that is one link: name on the left, a drawn chevron on the right.
-const ROW_LINK = `group flex min-h-11 items-center justify-between gap-3 px-4 py-2.5 text-sm font-medium transition-colors hover:bg-hover-tint ${FOCUS} focus-visible:-outline-offset-2`
-
-const QUICK_ACTIONS = [
-  { href: '/student/documents', label: 'Request a document' },
-  { href: '/student/grades', label: 'View grades' },
-  { href: '/student/enrollment', label: 'Enrollment' },
-] as const
+const SEE_ALL = 'text-sm font-semibold text-accent-foreground hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring'
+const TH = 'text-sm'
+const ON_VEIL_LINK =
+  'inline-flex h-10 items-center gap-2 rounded-full bg-on-veil px-4 text-sm font-bold text-(--veil-violet) shadow-elev-sm transition-colors hover:bg-on-veil-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-on-veil'
 
 // Greeting by the hour in the Philippines (the server may run in another time zone).
 function greeting() {
@@ -47,32 +43,24 @@ function greeting() {
   return hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'
 }
 
-// Calendar dates are plain YYYY-MM-DD; read them as Philippine dates so server and browser agree.
-const EVENT_DAY = new Intl.DateTimeFormat('en-US', { weekday: 'short', timeZone: 'Asia/Manila' })
-const EVENT_DATE = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone: 'Asia/Manila' })
-const asManilaDate = (ymd: string) => new Date(`${ymd}T12:00:00+08:00`)
-
-function Chevron() {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 16 16"
-      fill="none"
-      className="size-4 shrink-0 text-muted transition-colors group-hover:text-foreground"
-    >
-      <path d="m6 3.5 4.5 4.5L6 12.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
-}
-
 export default async function StudentDashboardPage() {
   const profile = await requireRole('Student')
   const student = students.find((s) => s.student_id === MOCK_STUDENT_ID)
-  const term = terms.find((t) => t.term_id === MOCK_CURRENT_TERM_ID)
-  const program = programs.find((p) => p.program_id === student?.program_id)
-  const context = [term ? `${term.semester} ${term.school_year}` : null, program?.code, student ? `ID ${student.student_number}` : null]
-    .filter(Boolean)
-    .join(' · ')
+
+  // One GWA series drives both charts. Lower is better: the latest term is highlighted on the bars and
+  // the best (lowest) term is pinned on the line.
+  const latest = GWA_BY_TERM[GWA_BY_TERM.length - 1]
+  const bestIndex = GWA_BY_TERM.reduce((b, t, i) => (t.gwa < GWA_BY_TERM[b].gwa ? i : b), 0)
+  const best = GWA_BY_TERM[bestIndex]
+  const gwaSummary = GWA_BY_TERM.map((t) => `${t.full} ${t.gwa.toFixed(2)}`).join(', ')
+
+  // A bar's height is its distance below 3.25, so the best GWA is the tallest bar.
+  const bars = GWA_BY_TERM.map((t) => ({
+    label: t.short,
+    value: 3.25 - t.gwa,
+    display: t.gwa.toFixed(2),
+    highlight: t === latest,
+  }))
 
   // Clearance: the same data as the Clearance page, so both screens tell one story. Signing order: the
   // Cashier's Office (Financial) first, then the academic departments.
@@ -83,209 +71,160 @@ export default async function StudentDashboardPage() {
       const name = i.department_name ?? 'Department'
       return i.status === 'Cleared'
         ? { name, status: 'Cleared' as const, reason: '', nextAction: '' }
-        : {
-            name,
-            status: 'Pending' as const,
-            reason: i.remarks ?? 'Awaiting review',
-            nextAction: `Request clearance from ${name}.`,
-          }
+        : { name, status: 'Pending' as const, reason: i.remarks ?? 'Awaiting review', nextAction: `Request clearance from ${name}.` }
     })
   const activeHolds = vActiveHolds.filter((h) => h.student_id === MOCK_STUDENT_ID).length
 
-  // Pending items: the student's document requests that are not released yet.
-  const openRequests = documentRequests
-    .filter((r) => r.student_id === MOCK_STUDENT_ID && (r.status === 'Pending' || r.status === 'Processing'))
-    .map((r) => ({
-      id: r.request_id,
-      ticket: r.ticket_number,
-      status: r.status,
-      title: documentTypes.find((d) => d.document_type_id === r.document_type_id)?.name ?? 'Document request',
-      copies: r.copies,
-    }))
-
-  // Coming up: every calendar date from today on, in date order.
-  const upcoming = CALENDAR_EVENTS.flatMap((e) => e.dates.map((date) => ({ id: `${e.id}-${date}`, date, title: e.title })))
-    .filter((e) => e.date >= CALENDAR_VIEW.today)
-    .sort((a, b) => a.date.localeCompare(b.date))
-
-  // One GWA series. Lower is better; the best (lowest) term is pinned on the line.
-  const latest = GWA_BY_TERM[GWA_BY_TERM.length - 1]
-  const bestIndex = GWA_BY_TERM.reduce((b, t, i) => (t.gwa < GWA_BY_TERM[b].gwa ? i : b), 0)
-  const best = GWA_BY_TERM[bestIndex]
-  const gwaSummary = GWA_BY_TERM.map((t) => `${t.full} ${t.gwa.toFixed(2)}`).join(', ')
-
   return (
-    <DashboardShell profile={profile} userMeta={student ? `ID ${student.student_number}` : undefined}>
-      <div className="flex flex-col gap-8 lg:gap-10">
-        <div className="flex flex-col gap-4">
-          <header>
-            <h1 className="text-xl font-semibold">
-              {greeting()}, {profile.firstName}
-            </h1>
-            {context && <p className="mt-0.5 text-sm text-muted">{context}</p>}
-          </header>
-
-          <ClearanceRoute
-            offices={offices}
-            activeHolds={activeHolds}
-            action={
-              <Link href="/student/clearance" className={PRIMARY_LINK}>
-                Open clearance
-              </Link>
-            }
-          />
-        </div>
-
-        <div className="grid gap-8 lg:grid-cols-2 lg:gap-6">
-          <Section
-            title="Classes"
-            action={
-              <Link href="/student/enrollment" aria-label="See all classes" className={SEE_ALL}>
-                See all
-              </Link>
-            }
-          >
-            <div className={SHEET}>
-              <NextLesson
-                className="px-4 py-3.5"
-                title={NEXT_CLASS.title}
-                code={NEXT_CLASS.code}
-                startsAt={NEXT_CLASS.startsAt}
-              />
-              <div className="border-t border-border-subtle px-4 py-3.5">
-                <h3 className="mb-3 text-sm font-semibold">Weekly schedule</h3>
-                <ScheduleList items={SCHEDULE} />
-              </div>
-            </div>
-          </Section>
-
-          <div className="flex flex-col gap-8">
-            <Section title="Tasks">
-              <div className={SHEET}>
-                {openRequests.length === 0 ? (
-                  <p className="px-4 py-3.5 text-sm text-muted">Nothing waiting on you right now.</p>
-                ) : (
-                  <ul className="divide-y divide-border-subtle">
-                    {openRequests.map((r) => (
-                      <li key={r.id}>
-                        <Link href="/student/documents" className={ROW_LINK}>
-                          <span className="flex min-w-0 flex-col">
-                            <span className="truncate font-semibold">{r.title}</span>
-                            <span className="text-muted">
-                              {r.ticket} · {r.copies} {r.copies === 1 ? 'copy' : 'copies'}
-                            </span>
-                          </span>
-                          <span className="flex shrink-0 items-center gap-2">
-                            <StatusBadge status={r.status} />
-                            <Chevron />
-                          </span>
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                <ul aria-label="Quick actions" className="divide-y divide-border-subtle border-t border-border-subtle">
-                  {QUICK_ACTIONS.map((a) => (
-                    <li key={a.href}>
-                      <Link href={a.href} className={`${ROW_LINK} text-accent-foreground`}>
-                        {a.label}
-                        <Chevron />
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </Section>
-
-            <Section title="Coming up">
-              {upcoming.length === 0 ? (
-                <p className="text-sm text-muted">No dates on the calendar.</p>
-              ) : (
-                <ol className={`${SHEET} divide-y divide-border-subtle`}>
-                  {upcoming.map((e) => {
-                    const d = asManilaDate(e.date)
-                    return (
-                      <li key={e.id} className="flex items-baseline gap-4 px-4 py-2.5 text-sm">
-                        <time dateTime={e.date} className="w-24 shrink-0 tabular-nums text-muted">
-                          {EVENT_DAY.format(d)}, {EVENT_DATE.format(d)}
-                        </time>
-                        <span className="min-w-0 font-medium">{e.title}</span>
-                      </li>
-                    )
-                  })}
-                </ol>
-              )}
-            </Section>
-          </div>
-        </div>
-
-        <Section
-          title="Current grades"
-          description={`Latest term with grades: ${latest.full}`}
-          action={
-            <Link href="/student/grades" aria-label="See all grades" className={SEE_ALL}>
-              See all
+    <DashboardShell
+      profile={profile}
+      userMeta={student ? `ID ${student.student_number}` : undefined}
+      promo={
+        <PromoCard
+          value={DASHBOARD_UNITS_THIS_TERM}
+          label="Units this term"
+          note="Keep it up!"
+          image="graduation-cap-books"
+        />
+      }
+    >
+      <h1 className="sr-only">Student dashboard</h1>
+      {/*
+        One grid so the phone reading order is: banner, clearance, next class, then the rest. On xl the
+        third column holds the calendar, schedule and next class; the 1fr last row soaks up the left
+        column's extra height so the right column never pushes the left one down.
+      */}
+      <div className="grid gap-4 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_304px] xl:grid-rows-[auto_auto_auto_auto_1fr]">
+        <PhotoBanner
+          className="md:col-span-2 xl:col-start-1 xl:row-start-1"
+          image="study-desk"
+          title={`${greeting()}, ${profile.firstName}`}
+          subtitle="Here is your clearance, your grades and today's classes."
+          aside={
+            <Link href="/student/clearance" className={ON_VEIL_LINK}>
+              Open clearance
             </Link>
           }
-        >
-          <p className="text-sm">
-            GWA <span className="text-base font-semibold tabular-nums">{latest.gwa.toFixed(2)}</span>
-            <span className="text-muted">. Lower is better; 1.00 is the highest grade.</span>
-          </p>
-          <div className="grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
-            <Table className="min-w-[320px]">
-              <caption className="sr-only">Current grades, {latest.full}</caption>
-              <TableHeader>
-                <TableRow className="hover:bg-transparent">
-                  <TableHead scope="col" className="max-sm:px-3">Course</TableHead>
-                  <TableHead scope="col" className="w-14 max-sm:px-2">Units</TableHead>
-                  <TableHead scope="col" className="w-16 max-sm:px-2">Grade</TableHead>
-                  <TableHead scope="col" className="w-24 max-sm:px-3">Remarks</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {CURRENT_GRADES.map((g) => (
-                  <TableRow key={g.code}>
-                    <TableCell className="max-sm:px-3">
-                      <span className="flex flex-col">
-                        <span className="font-medium">{g.course}</span>
-                        <span className="text-xs text-muted">{g.code}</span>
-                      </span>
-                    </TableCell>
-                    <TableCell className="max-sm:px-2">{g.units}</TableCell>
-                    <TableCell className="font-semibold max-sm:px-2">{g.grade}</TableCell>
-                    <TableCell className="max-sm:px-3">
-                      <StatusBadge status={g.remarks} />
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+        />
 
-            <figure className={`${SHEET} flex flex-col gap-3 p-4`}>
-              <figcaption className="flex flex-col">
-                <span className="text-sm font-semibold">GWA by term</span>
-                <span className="text-xs text-muted">
-                  Oldest term first. The scale is flipped so a better (lower) GWA sits higher.
-                </span>
-              </figcaption>
-              <p className="sr-only">
-                GWA by term, oldest first: {gwaSummary}. Best: {best.full}, {best.gwa.toFixed(2)}.
-              </p>
-              <div aria-hidden="true">
-                <LineChart
-                  values={GWA_BY_TERM.map((t) => t.gwa)}
-                  yTicks={GWA_Y_TICKS}
-                  xLabels={GWA_BY_TERM.map((t) => t.short)}
-                  hue="violet"
-                  mark={{ index: bestIndex, label: `Best ${best.gwa.toFixed(2)}` }}
-                  ariaLabel="GWA by term"
-                />
-              </div>
-              <p className="text-xs text-muted">Y1 S1 means Year 1, 1st semester.</p>
-            </figure>
+        <ClearanceChain
+          className="md:col-start-1 md:row-start-2"
+          offices={offices}
+          activeHolds={activeHolds}
+        />
+
+        <NextLesson
+          className="md:col-span-2 md:row-start-3 xl:col-span-1 xl:col-start-3 xl:row-start-4 xl:self-start"
+          seconds={NEXT_CLASS.seconds}
+          title={NEXT_CLASS.title}
+          code={NEXT_CLASS.code}
+          startsAt={NEXT_CLASS.startsAt}
+        />
+
+        <Card className="flex flex-col gap-3 p-5 md:col-start-2 md:row-start-2">
+          <CardHeader tinted title="GWA by term" icon="grades" hue="violet" />
+          <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+            <p className="flex flex-col">
+              <span className="text-3xl font-extrabold">{latest.gwa.toFixed(2)}</span>
+              <span className="text-sm text-muted">GWA, {latest.full}</span>
+            </p>
+            <p className="text-sm font-semibold text-muted">Lower is better</p>
           </div>
-        </Section>
+          <p className="sr-only">GWA by term, oldest first: {gwaSummary}.</p>
+          <div aria-hidden="true" className="mt-auto">
+            <BarChart data={bars} max={1.5} hue="violet" ariaLabel="GWA by term" />
+          </div>
+        </Card>
+
+        <div className="flex min-w-0 flex-col gap-4 md:col-span-2 xl:col-start-1 xl:row-start-3 xl:row-span-3">
+          <Card className="flex flex-col gap-2 px-6 py-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex flex-wrap items-baseline gap-x-3">
+                <h2 className="text-base font-bold leading-[22px]">Progress</h2>
+                <p className="text-sm font-semibold text-muted">Lower is better</p>
+              </div>
+              <LegendItem color="var(--hue-violet-strong)">GWA</LegendItem>
+            </div>
+            <p className="sr-only">GWA by term, oldest first: {gwaSummary}. Best: {best.full}, {best.gwa.toFixed(2)}.</p>
+            <div aria-hidden="true">
+              <LineChart
+                values={GWA_BY_TERM.map((t) => t.gwa)}
+                yTicks={GWA_Y_TICKS}
+                xLabels={GWA_BY_TERM.map((t) => t.short)}
+                hue="violet"
+                mark={{ index: bestIndex, label: `Best ${best.gwa.toFixed(2)}` }}
+                ariaLabel="GWA progress"
+              />
+            </div>
+            <p className="text-sm text-muted">Y1 S1 means Year 1, 1st semester.</p>
+          </Card>
+
+          <Card className="flex flex-col overflow-hidden">
+            <CardHeader tinted
+              title="Current grades"
+              icon="grades"
+              hue="violet"
+              className="px-[18px] py-4"
+              action={
+                <Link href="/student/grades" aria-label="See all grades" className={SEE_ALL}>
+                  See all
+                </Link>
+              }
+            />
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[480px] text-left text-sm">
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className={`${TH} w-[76px] px-3.5`}>Code</TableHead>
+                    <TableHead className={TH}>Course</TableHead>
+                    <TableHead className={`${TH} w-14`}>Units</TableHead>
+                    <TableHead className={`${TH} w-[60px]`}>Grade</TableHead>
+                    <TableHead className={`${TH} w-28`}>Remarks</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {CURRENT_GRADES.map((g) => (
+                    <TableRow key={g.code}>
+                      <TableCell>{g.code}</TableCell>
+                      <TableCell>{g.course}</TableCell>
+                      <TableCell>{g.units}</TableCell>
+                      <TableCell className="font-bold">{g.grade}</TableCell>
+                      <TableCell>
+                        <StatusBadge status={g.remarks} className="text-sm" />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </table>
+            </div>
+          </Card>
+        </div>
+
+        <div className="flex flex-col gap-4 md:col-span-2 xl:col-span-1 xl:col-start-3 xl:row-start-1 xl:row-span-3 xl:self-start">
+          <Card className="p-5">
+            <CardHeader title="Event calendar" className="mb-3" />
+            <EventCalendar
+              year={CALENDAR_VIEW.year}
+              month={CALENDAR_VIEW.month}
+              today={CALENDAR_VIEW.today}
+              events={CALENDAR_EVENTS}
+            />
+          </Card>
+
+          <Card className="flex flex-col gap-3 p-5">
+            <CardHeader tinted
+              title="My schedule"
+              icon="enrollment"
+              hue="sky"
+              action={
+                <Link href="/student/enrollment" aria-label="See all classes" className={SEE_ALL}>
+                  See all
+                </Link>
+              }
+            />
+            <ScheduleList items={SCHEDULE} />
+          </Card>
+        </div>
       </div>
     </DashboardShell>
   )

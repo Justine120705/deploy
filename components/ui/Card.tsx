@@ -1,5 +1,6 @@
 import { Icon, type IconKey } from "@/components/layout/Icon";
 import { cn } from "@/lib/utils";
+import { HUE_SOFT, HUE_TEXT } from "./hue";
 import type { Hue } from "./hue";
 
 // A sheet: white (lighter ink in dark) with one hairline. "flat" = hairline only, "base" = hairline plus
@@ -48,18 +49,32 @@ export function CardHeader({
   title,
   action,
   icon,
+  hue = "violet",
+  tinted = false,
   className,
 }: {
   title: string;
   action?: React.ReactNode;
   icon?: IconKey;
   hue?: Hue;
+  /** Draw the icon in a small chip tinted with the card's topic hue (used on the student dashboard). */
+  tinted?: boolean;
   className?: string;
 }) {
   return (
     <div className={cn("flex min-h-6 items-center justify-between gap-3", className)}>
       <div className="flex min-w-0 items-center gap-2">
-        {icon && <Icon name={icon} className="size-4 text-muted" />}
+        {icon &&
+          (tinted ? (
+            <span
+              aria-hidden="true"
+              className={cn("flex size-6 shrink-0 items-center justify-center rounded-md", HUE_SOFT[hue], HUE_TEXT[hue])}
+            >
+              <Icon name={icon} className="size-3.5" />
+            </span>
+          ) : (
+            <Icon name={icon} className="size-4 text-muted" />
+          ))}
         <h2 className="truncate text-base font-semibold">{title}</h2>
       </div>
       {action}
