@@ -27,17 +27,18 @@ export default function LoginPage() {
 
         <div className="flex flex-1 items-center">
           <div className="mx-auto w-full max-w-[360px] py-10">
-            <div className="mb-8 flex items-center gap-3">
-              <CuMark className="w-12" />
-              <div className="leading-tight">
-                <p className="text-xl font-semibold text-foreground">Cabuyao University</p>
-                <p className="text-sm text-muted">Student Portal</p>
-              </div>
+            <div className="mb-8 flex flex-col items-center text-center">
+              <CuMark className="w-24" />
+              <p className="mt-4 text-3xl font-semibold leading-tight tracking-[-0.01em]">
+                <span className="text-accent-foreground">Cabuyao</span>{' '}
+                <span className="text-foreground">University</span>
+              </p>
+              <p className="mt-1 text-sm font-medium tracking-wide text-muted">Student Portal</p>
+              <h1 className="mt-7 text-xl font-semibold text-foreground">Welcome back</h1>
+              <p className="mt-1 text-sm text-muted">Sign in to your portal account.</p>
             </div>
-            <h1 className="text-2xl font-semibold tracking-[-0.01em] text-foreground">Welcome back</h1>
-            <p className="mt-1 text-sm text-muted">Sign in to your portal account.</p>
 
-          <form action={formAction} className="mt-6 flex flex-col gap-4">
+            <form action={formAction} className="mt-6 flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
               <label htmlFor="email" className={FIELD_LABEL}>
                 Email
@@ -97,7 +98,7 @@ export default function LoginPage() {
             </Button>
           </form>
 
-            <p className="mt-6 text-sm text-muted">Forgot your password? Contact the portal Admin to reset it.</p>
+            <p className="mt-6 text-center text-sm text-muted">Forgot your password? Contact the portal Admin to reset it.</p>
           </div>
         </div>
 
