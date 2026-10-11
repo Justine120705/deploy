@@ -21,7 +21,7 @@ export default function LoginPage() {
   return (
     <main className="grid min-h-dvh bg-background lg:grid-cols-2">
       <div className="flex min-h-dvh flex-col px-5 py-4 sm:px-10 lg:px-14">
-        <header className="flex justify-end">
+        <header className="flex justify-start">
           <ThemeToggle />
         </header>
 
