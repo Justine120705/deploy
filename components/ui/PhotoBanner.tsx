@@ -3,9 +3,10 @@ import { cn } from '@/lib/utils'
 import type { Hue } from './hue'
 import { PHOTOS, VEIL, type PhotoKey } from './photos'
 
-// Legacy: the new direction has no photo banners (use a plain page heading). Kept working and flat:
-// the photo sits on the right from sm up under one even veil (85%), so white text keeps >= 10:1 even
-// over a white pixel. No shadow, no gradient, no lit edge.
+// Photo banner (used on the student dashboard). The photo fills the right side and dissolves into the
+// veil colour toward the left through a mask, so there is no hard edge. Under one even veil (75%) white
+// text keeps >= 6:1 even over a white pixel; on the left, where the text sits, the photo has already
+// faded to nothing.
 export function PhotoBanner({
   image,
   title,
@@ -39,13 +40,17 @@ export function PhotoBanner({
         height={photo.height}
         unoptimized
         loading="eager"
-        className="absolute inset-0 -z-10 size-full object-cover sm:left-auto sm:w-1/2"
-        style={{ objectPosition: photo.position }}
+        className="absolute inset-y-0 right-0 -z-10 h-full w-full object-cover sm:w-[72%]"
+        style={{
+          objectPosition: photo.position,
+          maskImage: 'linear-gradient(to right, transparent 0%, rgb(0 0 0 / 0.55) 35%, #000 75%)',
+          WebkitMaskImage: 'linear-gradient(to right, transparent 0%, rgb(0 0 0 / 0.55) 35%, #000 75%)',
+        }}
       />
       <div
         aria-hidden="true"
         className="absolute inset-0 -z-10"
-        style={{ background: `color-mix(in srgb, ${veil} 85%, transparent)` }}
+        style={{ background: `color-mix(in srgb, ${veil} 75%, transparent)` }}
       />
 
       <div className="flex max-w-full flex-col gap-1 sm:max-w-[55%]">
