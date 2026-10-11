@@ -50,6 +50,7 @@ function Mark({ state, terminal }: { state: StationState; terminal?: boolean }) 
 export function ClearanceRoute({
   offices,
   activeHolds,
+  approved,
   action,
   detail = false,
   headingLevel = 'h2',
@@ -57,6 +58,8 @@ export function ClearanceRoute({
 }: {
   offices: readonly RouteOffice[]
   activeHolds: number
+  /** The Registrar has approved (live data). Leave out to derive it from offices and holds. */
+  approved?: boolean
   action?: React.ReactNode
   detail?: boolean
   headingLevel?: 'h2' | 'h3'
@@ -65,7 +68,7 @@ export function ClearanceRoute({
   const Heading = headingLevel
   const cleared = offices.filter((o) => o.status === 'Cleared').length
   const blocker = offices.find((o) => o.status !== 'Cleared')
-  const allCleared = !blocker && activeHolds === 0
+  const allCleared = !blocker && (approved ?? activeHolds === 0)
   const stations: Station[] = [
     ...offices.map((o) => ({
       name: o.name,
@@ -150,7 +153,9 @@ export function ClearanceRoute({
           <p className="font-semibold text-hue-teal-strong">
             {allCleared
               ? 'Your clearance is complete.'
-              : 'All offices cleared. Lift the active holds before the Registrar can approve.'}
+              : activeHolds > 0
+                ? 'All offices cleared. Lift the active holds before the Registrar can approve.'
+                : 'All offices cleared. Waiting for the Registrar.'}
           </p>
         )}
       </div>

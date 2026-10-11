@@ -1,87 +1,37 @@
-'use client'
-
-import { useState } from 'react'
-import { Button, Section, StatusBadge, SummaryStrip } from '@/components/ui'
-import { ClearanceRoute, type RouteOffice } from './ClearanceRoute'
+import { Section, StatusBadge, SummaryStrip } from '@/components/ui'
+import { toOfficeSteps, type ActiveHold, type ClearanceItem } from '@/lib/data/clearance'
+import { ClearanceRoute } from './ClearanceRoute'
 import { formatShortDate } from './format'
-import RequestClearanceButton from './RequestClearanceButton'
 import { ResponsiveTable, type Column } from './ResponsiveTable'
 
-export type ClearanceOfficeRow = {
-  id: number
-  name: string
-  type: string
-  status: 'Cleared' | 'Pending'
-  clearedAt: string | null
-  remarks: string | null
-}
-
-// UI only for now: "Request clearance" marks the office as requested in local state, no backend call.
-// Order: the route (where it stands and what is next, with the one primary action), the counts, then
-// the office table with a per-office request button.
+// Live clearance of the signed-in student: the route (where it stands and what is next), the counts,
+// then the office table. The Registrar's final approval comes from the clearance itself.
 export default function ClearanceOverview({
   offices,
-  activeHolds,
+  holds,
+  approved,
+  approvedAt,
 }: {
-  offices: ClearanceOfficeRow[]
-  activeHolds: number
+  offices: ClearanceItem[]
+  holds: ActiveHold[]
+  approved: boolean
+  approvedAt: string | null
 }) {
-  const [requested, setRequested] = useState<number[]>([])
-
+  const activeHolds = holds.length
   const cleared = offices.filter((o) => o.status === 'Cleared').length
   const pending = offices.length - cleared
-  const waiting = offices.filter((o) => o.status === 'Pending' && !requested.includes(o.id))
 
-  const route: RouteOffice[] = offices.map((o) => {
-    if (o.status === 'Cleared') return { name: o.name, status: 'Cleared', reason: '', nextAction: '' }
-    return {
-      name: o.name,
-      status: 'Pending',
-      reason: o.remarks ?? 'Awaiting review',
-      nextAction: requested.includes(o.id)
-        ? `Requested. ${o.name} is reviewing.`
-        : `Request clearance from ${o.name}.`,
-    }
-  })
-
-  const columns: Column<ClearanceOfficeRow>[] = [
+  const columns: Column<ClearanceItem>[] = [
     { key: 'office', header: 'Office', primary: true, cell: (o) => o.name },
     { key: 'type', header: 'Type', cell: (o) => o.type },
     { key: 'status', header: 'Status', badge: true, cell: (o) => <StatusBadge status={o.status} /> },
     { key: 'cleared', header: 'Cleared on', cell: (o) => formatShortDate(o.clearedAt) },
     { key: 'remarks', header: 'Remarks', cell: (o) => o.remarks ?? '-' },
-    {
-      key: 'action',
-      header: 'Action',
-      className: 'text-right',
-      cell: (o) =>
-        o.status === 'Pending' ? (
-          <RequestClearanceButton
-            department={o.name}
-            requested={requested.includes(o.id)}
-            onRequest={() => setRequested((prev) => [...prev, o.id])}
-          />
-        ) : (
-          <span className="text-muted">None needed</span>
-        ),
-    },
   ]
 
   return (
     <div className="flex flex-col gap-8">
-      <ClearanceRoute
-        detail
-        offices={route}
-        activeHolds={activeHolds}
-        action={
-          <Button
-            disabled={waiting.length === 0}
-            onClick={() => setRequested((prev) => [...prev, ...waiting.map((o) => o.id)])}
-          >
-            {pending > 0 && waiting.length === 0 ? 'All requested' : 'Request clearance'}
-          </Button>
-        }
-      />
+      <ClearanceRoute detail offices={toOfficeSteps(offices, holds)} activeHolds={activeHolds} approved={approved} />
 
       <SummaryStrip
         items={[
@@ -97,7 +47,14 @@ export default function ClearanceOverview({
         ]}
       />
 
-      <Section title="Offices" description="The Registrar gives final approval once every office has cleared you.">
+      <Section
+        title="Offices"
+        description={
+          approved
+            ? `The Registrar approved your clearance${approvedAt ? ` on ${formatShortDate(approvedAt)}` : ''}.`
+            : 'The Registrar gives final approval once every office has cleared you.'
+        }
+      >
         <ResponsiveTable
           columns={columns}
           rows={offices}

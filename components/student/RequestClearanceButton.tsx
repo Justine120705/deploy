@@ -1,31 +1,28 @@
 'use client'
 
-import { useState } from 'react'
+import { useActionState } from 'react'
 import { Button } from '@/components/ui'
+import { requestClearance, type RequestClearanceState } from '@/lib/data/clearance-actions'
 
-// UI only for now: no backend call yet. Alone it keeps its own state; pass `requested` and
-// `onRequest` to let a parent own the state (the clearance page does, so the chain can follow it).
-export default function RequestClearanceButton({
-  department,
-  requested: requestedProp,
-  onRequest,
-}: {
-  department: string
-  requested?: boolean
-  onRequest?: () => void
-}) {
-  const [own, setOwn] = useState(false)
-  const requested = requestedProp ?? own
+const INITIAL: RequestClearanceState = { status: 'idle', message: '' }
+
+// Requests the term clearance for the signed-in student (server action). The result is announced in a
+// polite live region; on success the page re-renders with the new clearance.
+export default function RequestClearanceButton({ className }: { className?: string }) {
+  const [state, formAction, pending] = useActionState(requestClearance, INITIAL)
 
   return (
-    <Button
-      variant={requested ? 'outline' : 'primary'}
-      className="h-9 px-4 max-lg:h-11"
-      disabled={requested}
-      onClick={() => (onRequest ? onRequest() : setOwn(true))}
-      aria-label={requested ? `Clearance requested from ${department}` : `Request clearance from ${department}`}
-    >
-      {requested ? 'Requested' : 'Request clearance'}
-    </Button>
+    <form action={formAction} className={className}>
+      <Button type="submit" disabled={pending} aria-disabled={pending}>
+        {pending ? 'Requesting...' : 'Request clearance'}
+      </Button>
+      <p
+        role="status"
+        aria-live="polite"
+        className={state.status === 'error' ? 'mt-2 max-w-[48ch] text-sm font-medium text-danger' : 'mt-2 max-w-[48ch] text-sm text-muted'}
+      >
+        {state.message}
+      </p>
+    </form>
   )
 }

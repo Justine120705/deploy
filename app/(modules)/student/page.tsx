@@ -3,12 +3,14 @@ import DashboardShell from '@/components/layout/DashboardShell'
 import PromoCard from '@/components/layout/PromoCard'
 import { BarChart, LegendItem, LineChart } from '@/components/charts'
 import { ClearanceChain } from '@/components/student/ClearanceChain'
+import RequestClearanceButton from '@/components/student/RequestClearanceButton'
 import { NextLesson } from '@/components/student/NextLesson'
 import {
   Card,
   CardHeader,
   EventCalendar,
   PhotoBanner,
+  SampleDataNote,
   ScheduleList,
   StatusBadge,
   TableBody,
@@ -18,7 +20,7 @@ import {
   TableRow,
 } from '@/components/ui'
 import { requireRole } from '@/lib/auth/session'
-import { MOCK_STUDENT_ID, students, MOCK_CURRENT_TERM_ID, vClearanceItems, vActiveHolds } from '@/lib/mock-data'
+import { getStudentClearanceState, toOfficeSteps } from '@/lib/data/clearance'
 import {
   CALENDAR_EVENTS,
   CALENDAR_VIEW,
@@ -45,7 +47,6 @@ function greeting() {
 
 export default async function StudentDashboardPage() {
   const profile = await requireRole('Student')
-  const student = students.find((s) => s.student_id === MOCK_STUDENT_ID)
 
   // One GWA series drives both charts. Lower is better: the latest term is highlighted on the bars and
   // the best (lowest) term is pinned on the line.
@@ -62,23 +63,12 @@ export default async function StudentDashboardPage() {
     highlight: t === latest,
   }))
 
-  // Clearance: the same data as the Clearance page, so both screens tell one story. Signing order: the
-  // Cashier's Office (Financial) first, then the academic departments.
-  const offices = vClearanceItems
-    .filter((i) => i.student_id === MOCK_STUDENT_ID && i.term_id === MOCK_CURRENT_TERM_ID)
-    .sort((a, b) => Number(b.department_type === 'Financial') - Number(a.department_type === 'Financial'))
-    .map((i) => {
-      const name = i.department_name ?? 'Department'
-      return i.status === 'Cleared'
-        ? { name, status: 'Cleared' as const, reason: '', nextAction: '' }
-        : { name, status: 'Pending' as const, reason: i.remarks ?? 'Awaiting review', nextAction: `Request clearance from ${name}.` }
-    })
-  const activeHolds = vActiveHolds.filter((h) => h.student_id === MOCK_STUDENT_ID).length
+  // Clearance: live data for the signed-in student, the same as the Clearance page.
+  const clearanceState = await getStudentClearanceState()
 
   return (
     <DashboardShell
       profile={profile}
-      userMeta={student ? `ID ${student.student_number}` : undefined}
       promo={
         <PromoCard
           value={DASHBOARD_UNITS_THIS_TERM}
@@ -107,22 +97,58 @@ export default async function StudentDashboardPage() {
           }
         />
 
-        <ClearanceChain
-          className="md:col-start-1 md:row-start-2"
-          offices={offices}
-          activeHolds={activeHolds}
-        />
+        {clearanceState.kind === 'ready' && clearanceState.clearance ? (
+          <ClearanceChain
+            className="md:col-start-1 md:row-start-2"
+            offices={toOfficeSteps(clearanceState.clearance.items, clearanceState.holds)}
+            activeHolds={clearanceState.holds.length}
+            approved={clearanceState.clearance.approved}
+          />
+        ) : (
+          <Card elevation="raised" className="flex flex-col gap-4 p-5 md:col-start-1 md:row-start-2">
+            <CardHeader
+              tinted
+              title="Clearance"
+              icon="clearance"
+              hue="teal"
+              action={
+                <Link href="/student/clearance" aria-label="See all clearance" className={SEE_ALL}>
+                  See all
+                </Link>
+              }
+            />
+            {clearanceState.kind === 'error' ? (
+              <p role="alert" className="text-sm text-muted">
+                We could not load your clearance. Reload the page, and if it keeps happening, come back in a few
+                minutes.
+              </p>
+            ) : clearanceState.kind === 'no-term' ? (
+              <p className="text-sm text-muted">No term is open yet. Clearance opens when the Registrar sets one.</p>
+            ) : (
+              <>
+                <p className="text-sm text-muted">
+                  You have not requested clearance for {clearanceState.term.semester} {clearanceState.term.schoolYear}{' '}
+                  yet.
+                </p>
+                <RequestClearanceButton />
+              </>
+            )}
+          </Card>
+        )}
 
-        <NextLesson
-          className="md:col-span-2 md:row-start-3 xl:col-span-1 xl:col-start-3 xl:row-start-4 xl:self-start"
-          seconds={NEXT_CLASS.seconds}
-          title={NEXT_CLASS.title}
-          code={NEXT_CLASS.code}
-          startsAt={NEXT_CLASS.startsAt}
-        />
+        <div className="flex flex-col gap-2 md:col-span-2 md:row-start-3 xl:col-span-1 xl:col-start-3 xl:row-start-4 xl:self-start">
+          <NextLesson
+            seconds={NEXT_CLASS.seconds}
+            title={NEXT_CLASS.title}
+            code={NEXT_CLASS.code}
+            startsAt={NEXT_CLASS.startsAt}
+          />
+          <SampleDataNote />
+        </div>
 
         <Card className="flex flex-col gap-3 p-5 md:col-start-2 md:row-start-2">
           <CardHeader tinted title="GWA by term" icon="grades" hue="violet" />
+          <SampleDataNote />
           <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
             <p className="flex flex-col">
               <span className="text-3xl font-extrabold">{latest.gwa.toFixed(2)}</span>
@@ -157,6 +183,7 @@ export default async function StudentDashboardPage() {
               />
             </div>
             <p className="text-sm text-muted">Y1 S1 means Year 1, 1st semester.</p>
+            <SampleDataNote />
           </Card>
 
           <Card className="flex flex-col overflow-hidden">
@@ -171,6 +198,7 @@ export default async function StudentDashboardPage() {
                 </Link>
               }
             />
+            <SampleDataNote className="px-[18px] pt-3" />
             <div className="overflow-x-auto">
               <table className="w-full min-w-[480px] text-left text-sm">
                 <TableHeader>
@@ -203,6 +231,7 @@ export default async function StudentDashboardPage() {
         <div className="flex flex-col gap-4 md:col-span-2 xl:col-span-1 xl:col-start-3 xl:row-start-1 xl:row-span-3 xl:self-start">
           <Card className="p-5">
             <CardHeader title="Event calendar" className="mb-3" />
+            <SampleDataNote className="mb-3" />
             <EventCalendar
               year={CALENDAR_VIEW.year}
               month={CALENDAR_VIEW.month}
@@ -222,6 +251,7 @@ export default async function StudentDashboardPage() {
                 </Link>
               }
             />
+            <SampleDataNote />
             <ScheduleList items={SCHEDULE} />
           </Card>
         </div>

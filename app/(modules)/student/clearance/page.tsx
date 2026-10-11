@@ -1,45 +1,64 @@
 import DashboardShell from '@/components/layout/DashboardShell'
 import ClearanceOverview from '@/components/student/ClearanceOverview'
+import RequestClearanceButton from '@/components/student/RequestClearanceButton'
+import { EmptyState } from '@/components/ui'
 import { requireRole } from '@/lib/auth/session'
-import {
-  MOCK_CURRENT_TERM_ID,
-  MOCK_STUDENT_ID,
-  programs,
-  students,
-  terms,
-  vActiveHolds,
-  vClearanceItems,
-} from '@/lib/mock-data'
+import { getStudentClearanceState } from '@/lib/data/clearance'
 
-export default async function StudentClearancePage() {
+const NOTICES: Record<string, string> = {
+  requested: 'Clearance requested. Each office will now review it.',
+  'already-requested':
+    'You already requested clearance for this term. There is one clearance per student per term, so here is your existing request.',
+}
+
+export default async function StudentClearancePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}) {
   const profile = await requireRole('Student')
+  const state = await getStudentClearanceState()
+  const { notice } = await searchParams
+  const noticeText = typeof notice === 'string' ? NOTICES[notice] : undefined
 
-  const items = vClearanceItems.filter(
-    (i) => i.student_id === MOCK_STUDENT_ID && i.term_id === MOCK_CURRENT_TERM_ID
-  )
-  // Signing order: the Cashier's Office (Financial) first, then the academic departments.
-  const offices = [...items]
-    .sort((a, b) => Number(b.department_type === 'Financial') - Number(a.department_type === 'Financial'))
-    .map((i) => ({
-      id: i.clearance_item_id ?? 0,
-      name: i.department_name ?? 'Department',
-      type: i.department_type ?? '-',
-      status: i.status === 'Cleared' ? ('Cleared' as const) : ('Pending' as const),
-      clearedAt: i.cleared_at,
-      remarks: i.remarks,
-    }))
-  const activeHolds = vActiveHolds.filter((h) => h.student_id === MOCK_STUDENT_ID).length
-
-  const term = terms.find((t) => t.term_id === MOCK_CURRENT_TERM_ID)
-  const student = students.find((s) => s.student_id === MOCK_STUDENT_ID)
-  const program = programs.find((p) => p.program_id === student?.program_id)
-  const subtitle = [term ? `${term.semester} ${term.school_year}` : null, program?.code, 'one item per office']
-    .filter(Boolean)
-    .join(' · ')
+  const subtitle =
+    state.kind === 'ready'
+      ? `${state.term.semester} ${state.term.schoolYear} · one item per office`
+      : 'Clearance for the current term'
 
   return (
     <DashboardShell profile={profile} title="My clearance" subtitle={subtitle}>
-      <ClearanceOverview offices={offices} activeHolds={activeHolds} />
+      {noticeText && state.kind === 'ready' && state.clearance !== null && (
+        <p role="status" className="mb-4 rounded-md border border-edge bg-card px-4 py-3 text-sm text-ink">
+          {noticeText}
+        </p>
+      )}
+      {state.kind === 'error' ? (
+        <div role="alert">
+          <EmptyState title="We could not load your clearance">
+            Something went wrong on our side. Reload the page, and if it keeps happening, come back in a few minutes.
+          </EmptyState>
+        </div>
+      ) : state.kind === 'no-term' ? (
+        <EmptyState title="No term is open">
+          Clearance opens when the Registrar sets the current term. Check back later.
+        </EmptyState>
+      ) : state.clearance === null ? (
+        <EmptyState
+          title="You have not requested clearance yet"
+          action={<RequestClearanceButton />}
+        >
+          Request your {state.term.semester} {state.term.schoolYear} clearance. Every office will get an item to review,
+          and the Registrar gives the final approval once all of them clear you.
+        </EmptyState>
+      ) : (
+        <ClearanceOverview
+          offices={state.clearance.items}
+          holds={state.holds}
+          approved={state.clearance.approved}
+          approvedAt={state.clearance.approvedAt}
+        />
+      )}
     </DashboardShell>
   )
 }
