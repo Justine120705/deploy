@@ -13,17 +13,20 @@ team** (see Project Charter, section 5: "ERD and 3NF Tables").
 | `rls.sql`              | `ENABLE ROW LEVEL SECURITY` on all 23 tables and all 49 live policies    |
 | `hardening.sql`        | Issue #50 fixes: 3 policies, `my_department_id()`, immutable-column triggers; rollback and grant/trigger diagnostics as comments |
 | `hardening2.sql`       | Issue #50, part 2, three sections run separately: A `holds_dept_place` checks the student's program department; B audit-log triggers (REQ-ADM-03) and append-only `audit_logs`; C grants cleanup. A rollback block per section |
-| `triggers.sql`         | Record (not a script) of the app's table triggers after `hardening.sql`, `hardening2.sql`, `trigger_dept_approval.sql` and `trigger_finance_autoclear.sql`, with the firing order per table |
+| `triggers.sql`         | Record (not a script) of the app's table triggers after `hardening.sql`, `hardening2.sql`, `trigger_dept_approval.sql`, `trigger_finance_autoclear.sql` and `trigger_final_clearance.sql`, with the firing order per table |
 | `views_extend.sql`     | Issue #49: extends `v_grades`, `v_clearance_items`, `v_clearances` to the columns of `types/database.types.ts` (`CREATE OR REPLACE`, still `security_invoker = true`); safety checks, rollback and diagnostics as comments |
 | `grants_clearance.sql` | Issue #60: exposes the clearance slice to `authenticated` only (SELECT on 3 views, `charges`, `payments`, `audit_logs`; column-level writes on `clearances`, `clearance_items`, `academic_holds`, `payments`, `charges`), then repeats the anon part of `hardening2.sql` section C; checks before and after, rollback and diagnostics as comments. **Run live 2026-10-11** |
-| `grants_clearance_test.sql` | Tests TC-34 to TC-39 for `grants_clearance.sql` (each block ends in `ROLLBACK`), plus how to rehearse the whole change in a rolled-back transaction (TC-34R) |
-| `regression_after_grants.sql` | Issue 21 (#60): TC-12 to TC-33 as one rolled-back script with one result row (run live 2026-10-11, all pass) |
+| `grants_clearance_test.sql` | Tests TC-34 to TC-39 for `grants_clearance.sql` (each block ends in `ROLLBACK`), plus how to rehearse the whole change in a rolled-back transaction (TC-34R). The setup of TC-37 and TC-39 changed for issue 24 (items cleared first); not re-run yet |
+| `regression_after_grants.sql` | Issue 21 (#60): TC-12 to TC-33 as one rolled-back script with one result row (run live 2026-10-11, all pass). TC-18 / TC-19 changed for issue 24 (they approve a throwaway clearance whose items are all cleared); not re-run yet |
 | `trigger_dept_approval.sql` | Issue 22 (#61), REQ-DPT-03: BEFORE UPDATE trigger `require_no_active_hold` on `clearance_items` (function `private.require_no_active_hold()`, SECURITY DEFINER) rejects clearing an item while the student has an active hold of the same department; safety checks before and after, rollback and diagnostics as comments. **Run live 2026-10-11** |
 | `trigger_dept_approval_test.sql` | Tests TC-41 to TC-48 for `trigger_dept_approval.sql` (each block creates its own data and ends in `ROLLBACK`) |
 | `trigger_dept_approval_rehearsal.sql` | `trigger_dept_approval.sql` plus TC-41 to TC-48 in ONE rolled-back transaction with one result row (paste once, nothing committed) |
-| `trigger_finance_autoclear.sql` | Issue 23 (#62), REQ-CSH-03: function `private.finance_autoclear()` (SECURITY DEFINER) with two triggers, `finance_autoclear` on `charges` and `finance_autoclear_on_create` on `clearance_items`, clears the Financial item automatically when every charge of the student for that term is Cleared or Waived (`cleared_by` = the Cashier who tagged the last charge); skips on an active Financial hold, never overwrites, never un-clears; design decisions in the header; safety checks before and after, rollback and diagnostics as comments. **NOT RUN YET** (untested, no local PostgreSQL) |
+| `trigger_finance_autoclear.sql` | Issue 23 (#62), REQ-CSH-03: function `private.finance_autoclear()` (SECURITY DEFINER) with two triggers, `finance_autoclear` on `charges` and `finance_autoclear_on_create` on `clearance_items`, clears the Financial item automatically when every charge of the student for that term is Cleared or Waived (`cleared_by` = the Cashier who tagged the last charge); skips on an active Financial hold, never overwrites, never un-clears; design decisions in the header; safety checks before and after, rollback and diagnostics as comments. **Run live 2026-10-11** |
 | `trigger_finance_autoclear_test.sql` | Tests TC-49 to TC-61 for `trigger_finance_autoclear.sql` (each block creates its own data and ends in `ROLLBACK`; TC-50 uses the seed rows) |
 | `trigger_finance_autoclear_rehearsal.sql` | `trigger_finance_autoclear.sql` plus TC-49 to TC-61 in ONE rolled-back transaction with one result row; its test part (from the `TESTS START HERE` line) also runs on its own once the change is live |
+| `trigger_final_clearance.sql` | Issue 24 (#63), REQ-REG-03: BEFORE UPDATE trigger `require_all_items_cleared` on `clearances` (function `private.require_all_items_cleared()`, SECURITY DEFINER) rejects approving a clearance (`approved_at` or `approved_by` NULL -> value) while any of its items is pending (the Financial item included) or when it has no items; SQLSTATE P0001, message `pending items: ...`; applies to every role; who may approve is unchanged (Registrar only, by policy); design decisions in the header; safety checks before and after, rollback and diagnostics as comments. **NOT RUN YET** (untested, no local PostgreSQL) |
+| `trigger_final_clearance_test.sql` | Tests TC-62 to TC-70 for `trigger_final_clearance.sql` (each block creates its own data and ends in `ROLLBACK`) |
+| `trigger_final_clearance_rehearsal.sql` | `trigger_final_clearance.sql` plus TC-62 to TC-70 in ONE rolled-back transaction with one result row (TC-62R); its test part (from the `TESTS START HERE` line) also runs on its own once the change is live |
 
 `views.sql`, `private_functions.sql` and the policies in `rls.sql` were exported from the
 live Supabase project on 2026-10-10 (`pg_views`, `pg_get_functiondef`, `pg_policies`);
@@ -69,6 +72,14 @@ Run in the Supabase **SQL Editor** (or `psql`), in exactly this order:
    `docs/issue-12-testing-guide.md` (TC-49 to TC-61: the blocks of `trigger_finance_autoclear_test.sql`, or the
    test part of the rehearsal file on its own), TC-37, Part J and `regression_after_grants.sql` again. Undo with its
    ROLLBACK block (drop both triggers, drop the function).
+13. **`trigger_final_clearance.sql`** (issue #63, REQ-REG-03; after `trigger_finance_autoclear.sql`). **Run live on 2026-10-11** (rehearsed first; TC-62 to TC-70 pass live)
+   (written without a local PostgreSQL, untested). First run `trigger_final_clearance_rehearsal.sql` (the change and
+   TC-62 to TC-70 in one rolled-back transaction, TC-62R; every cell must end in `-> OK`, `all_ok` true) and save
+   diagnostics (a), (c), (d) and (e) of `trigger_final_clearance.sql`. Then run the file as a whole, then Part L of
+   `docs/issue-12-testing-guide.md` (TC-62 to TC-70: the blocks of `trigger_final_clearance_test.sql`, or the test part
+   of the rehearsal file on its own), then TC-37 and TC-39 (`grants_clearance_test.sql`), Parts J and K and
+   `regression_after_grants.sql` again (TC-18, TC-19, TC-37 and TC-39 were adjusted for the new rule; Part L explains
+   how). Undo with its ROLLBACK block (drop the trigger, drop the function).
 
 `triggers.sql` is a record of the triggers, **not** a step: do not run it (it stops itself
 and rolls back if run by mistake).

@@ -2,8 +2,9 @@
 -- TABLE TRIGGERS (schema public) - RECORD ONLY, DO NOT RUN
 -- ==========================================
 -- A record of the app's triggers as they should exist after hardening.sql,
--- hardening2.sql (section B), trigger_dept_approval.sql (section 5, run live 2026-10-11)
--- and trigger_finance_autoclear.sql (section 6, run live 2026-10-11).
+-- hardening2.sql (section B), trigger_dept_approval.sql (section 5, run live 2026-10-11),
+-- trigger_finance_autoclear.sql (section 6, run live 2026-10-11) and
+-- trigger_final_clearance.sql (section 7, run live 2026-10-11).
 -- The real source of these triggers is those files; this file only lists them in one
 -- place so the repo shows the full picture.
 -- Supabase's own triggers (schemas realtime, storage, auth) are not listed.
@@ -17,7 +18,7 @@
 -- and then rolled back, so running this file by mistake changes nothing.
 
 BEGIN;
-DO $$ BEGIN RAISE EXCEPTION 'docs/database/triggers.sql is a record, not a script; use hardening.sql / hardening2.sql / trigger_dept_approval.sql / trigger_finance_autoclear.sql'; END $$;
+DO $$ BEGIN RAISE EXCEPTION 'docs/database/triggers.sql is a record, not a script; use hardening.sql / hardening2.sql / trigger_dept_approval.sql / trigger_finance_autoclear.sql / trigger_final_clearance.sql'; END $$;
 
 -- ------------------------------------------
 -- 1. Clearance items (pre-existing, not created by this repo's SQL)
@@ -141,5 +142,30 @@ CREATE TRIGGER finance_autoclear_on_create AFTER INSERT ON public.clearance_item
   FOR EACH ROW
   WHEN (NEW.cleared_at IS NULL)
   EXECUTE FUNCTION private.finance_autoclear();
+
+-- ------------------------------------------
+-- 7. Final clearance requires every item cleared (trigger_final_clearance.sql, issue #63,
+--    REQ-REG-03). Status: live since 2026-10-11. Function
+--    private.require_all_items_cleared() (SECURITY DEFINER, search_path ''): rejects
+--    approved_at or approved_by going NULL -> value while any clearance_items row of that
+--    clearance has cleared_at NULL (the Financial item included), or when the clearance has
+--    no items; SQLSTATE P0001, message "pending items: ...", pending departments in DETAIL.
+--    Applies to every role. Editing or un-approving an approved clearance is not checked.
+--    Who may approve is unchanged (policy clearances_registrar_approve, Registrar only).
+-- ------------------------------------------
+-- Firing order on clearances:
+--   UPDATE: guard_immutable_columns (BEFORE) -> require_all_items_cleared (BEFORE)
+--           -> RLS WITH CHECK -> write -> audit_log (AFTER)
+--   INSERT: write -> audit_log (AFTER) -> trg_clearances_create_items (AFTER)
+--           (require_all_items_cleared is UPDATE only)
+-- "require_all_items_cleared" sorts after "guard_immutable_columns" ('g' < 'r'). A rejected
+-- approval stops before the write, so audit_log writes no row for it. It reads
+-- clearance_items and departments only and writes nothing, so it cannot fire any other
+-- trigger, and the triggers of sections 5 and 6 never update clearances.
+CREATE TRIGGER require_all_items_cleared BEFORE UPDATE ON public.clearances
+  FOR EACH ROW
+  WHEN ((OLD.approved_at IS NULL AND NEW.approved_at IS NOT NULL)
+        OR (OLD.approved_by IS NULL AND NEW.approved_by IS NOT NULL))
+  EXECUTE FUNCTION private.require_all_items_cleared();
 
 ROLLBACK;

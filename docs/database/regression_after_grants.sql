@@ -22,6 +22,10 @@
 --   r18 .. r26                    section 3 (with the temporary grant)
 -- "-> OK" or "-> FAIL" ends the cells that carry their own verdict; the cells that hold a JSON
 -- row (r29, r30, r31) or the output of a loop (r32, r33) are compared with the guide.
+--
+-- Changed for trigger_final_clearance.sql (issue 24, #63): TC-18 and TC-19 approve a throwaway
+-- clearance of Student 3 whose items are all cleared first (see the comment above TC-18), because
+-- a clearance with a pending item can no longer be approved. Expected results are unchanged.
 
 begin;
 
@@ -272,6 +276,36 @@ select set_config('app.ccs', (select department_id::text from public.departments
 select set_config('app.gid_max', (select max(grade_id)::text from public.grades), true);
 
 -- TC-18 (expected: blocked by RLS on clearances), TC-19 (expected: approve 1, grade 1)
+-- After trigger_final_clearance.sql (issue 24): a clearance can only be approved when every
+-- item is cleared (BEFORE UPDATE trigger require_all_items_cleared, which fires BEFORE the RLS
+-- WITH CHECK). Student 1's seed clearance still has a pending item (CCS), so on it TC-18 would
+-- show the trigger's "pending items:" error instead of the RLS error and TC-19 would fail. Both
+-- now use a throwaway clearance of Student 3 (a new term, created here as postgres without a
+-- user JWT, undone by the rollback) whose items are all cleared first. TC-18 still proves that
+-- RLS rejects approved_by NULL, TC-19 still approves exactly 1 row; the cells are unchanged.
+-- Student 3, not Student 1: TC-22 and TC-23 update the CCS item of EVERY clearance of Student 1,
+-- so a second Student 1 clearance would make TC-23 report 2 rows; no later case touches
+-- Student 3's clearances or holds. Student 3's active holds are lifted first, because
+-- require_no_active_hold (issue 22) refuses to clear an item of a department with an active
+-- hold, also for postgres (the seed has none: Student 3's hold is already lifted). The term has
+-- no charges, so the Finance auto-clear (issue 23) does nothing here.
+select set_config('request.jwt.claims', '', true);
+select set_config('app.s3', coalesce((select id::text from auth.users where email = 'student3@pnc.test'), ''), true);
+with t as (insert into public.terms (school_year, semester, start_date, end_date, is_current)
+           values ('2095-2096', '1st', '2095-08-01', '2096-01-01', false) returning term_id)
+select set_config('app.t18_term', term_id::text, true) from t;
+update public.academic_holds set lifted_at = now(), lifted_by = current_setting('app.dept')::uuid
+where student_id = current_setting('app.s3')::uuid and lifted_at is null;
+with c as (insert into public.clearances (student_id, term_id)
+           values (current_setting('app.s3')::uuid, current_setting('app.t18_term')::bigint) returning clearance_id)
+select set_config('app.t18_clr', clearance_id::text, true) from c;
+insert into public.clearance_items (clearance_id, department_id)
+select current_setting('app.t18_clr')::bigint, d.department_id
+from public.departments d
+where not exists (select 1 from public.clearance_items i
+                  where i.clearance_id = current_setting('app.t18_clr')::bigint and i.department_id = d.department_id);
+update public.clearance_items set cleared_at = now(), cleared_by = current_setting('app.dept')::uuid
+where clearance_id = current_setting('app.t18_clr')::bigint and cleared_at is null;
 set local role authenticated;
 select set_config('request.jwt.claims',
   json_build_object('sub', current_setting('app.reg'), 'role', 'authenticated')::text, true);
@@ -280,7 +314,7 @@ declare n bigint; m bigint;
 begin
   begin
     update public.clearances set approved_at = now(), approved_by = null
-      where student_id = current_setting('app.s1')::uuid;
+      where clearance_id = current_setting('app.t18_clr')::bigint;
     get diagnostics n = row_count;
     perform set_config('app.r18', format('NOT BLOCKED, rows %s -> FAIL', n), true);
   exception when others then
@@ -288,7 +322,7 @@ begin
   end;
   begin
     update public.clearances set approved_at = now(), approved_by = auth.uid()
-      where student_id = current_setting('app.s1')::uuid;
+      where clearance_id = current_setting('app.t18_clr')::bigint;
     get diagnostics n = row_count;
     update public.grades set grade_code = '1.25', encoded_by = auth.uid(), encoded_at = now()
       where grade_id = (select min(grade_id) from public.grades);

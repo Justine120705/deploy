@@ -34,6 +34,9 @@
 -- is TC-34R in the guide.
 --
 -- Status: rehearsed 2026-10-11 in rolled-back transactions on the live project (TC-34 to TC-39 pass); run live 2026-10-11; TC-34 to TC-40 pass live.
+-- Changed for trigger_final_clearance.sql (issue 24, #63): the setup of TC-37 (approve_clearance
+-- target) and TC-39 (Student 1's items cleared first); expected results unchanged. The changed
+-- blocks are NOT RUN YET (untested, no local PostgreSQL).
 
 
 -- ------------------------------------------
@@ -265,6 +268,9 @@ rollback;
 -- Financial item is already cleared; either way the cell stays "rows 1"), and
 -- request_clearance uses a term without charges,
 -- so its Financial item stays pending.
+-- After trigger_final_clearance.sql (issue 24) approve_clearance approves a throwaway clearance
+-- whose items are all cleared first (see the comment at app.clr below); the expected result
+-- stays "rows 1".
 begin;
 select set_config('app.s1',   (select id::text from auth.users where email = 'student1@pnc.test'), true);
 select set_config('app.cash', (select id::text from auth.users where email = 'cashier@pnc.test'), true);
@@ -278,7 +284,33 @@ select set_config('app.term', term_id::text, true) from t;
 select set_config('app.fin',  coalesce((select min(department_id)::text from public.departments where department_type = 'Financial'), ''), true);
 select set_config('app.mydept', coalesce((select min(department_id)::text from public.department_staff
   where profile_id = current_setting('app.dept')::uuid), ''), true);
-select set_config('app.clr', coalesce((select min(clearance_id)::text from public.clearances where approved_at is null), ''), true);
+-- After trigger_final_clearance.sql (issue 24) a clearance can only be approved when every item
+-- is cleared, and every seed clearance still has a pending item, so the old target (the lowest
+-- clearance with approved_at NULL) would now give "ERROR: pending items: ...". approve_clearance
+-- therefore approves a second throwaway clearance of Student 1 (another throwaway term, created
+-- here as postgres without a user JWT) whose items are all cleared here first. Student 1's
+-- active holds are lifted first, because require_no_active_hold (issue 22) refuses to clear an
+-- item of a department with an active hold, also for postgres (the seed has none for Student 1).
+-- This runs BEFORE the other targets are picked, so they never pick these cleared items; the
+-- term has no charges, so the Finance auto-clear (issue 23) does nothing here.
+with t as (insert into public.terms (school_year, semester, start_date, end_date, is_current)
+           values ('2097-2098', '1st', '2097-08-01', '2098-01-01', false) returning term_id)
+select set_config('app.term2', term_id::text, true) from t;
+update public.academic_holds set lifted_at = now(), lifted_by = current_setting('app.dept')::uuid
+where student_id = current_setting('app.s1')::uuid and lifted_at is null;
+with c as (insert into public.clearances (student_id, term_id)
+           values (current_setting('app.s1')::uuid, current_setting('app.term2')::bigint) returning clearance_id)
+select set_config('app.clr', clearance_id::text, true) from c;
+insert into public.clearance_items (clearance_id, department_id)
+select current_setting('app.clr')::bigint, d.department_id
+from public.departments d
+where not exists (select 1 from public.clearance_items i
+                  where i.clearance_id = current_setting('app.clr')::bigint and i.department_id = d.department_id);
+update public.clearance_items
+set cleared_at = now(),
+    cleared_by = case when department_id::text = current_setting('app.fin') then current_setting('app.cash')::uuid
+                      else current_setting('app.dept')::uuid end
+where clearance_id = current_setting('app.clr')::bigint and cleared_at is null;
 -- Not an item whose student has an active hold of the same department: trigger
 -- require_no_active_hold (trigger_dept_approval.sql) would refuse to clear it.
 select set_config('app.item_dept', coalesce((select min(ci.clearance_item_id)::text from public.clearance_items ci
@@ -458,6 +490,9 @@ rollback;
 --   dept_lifts_other_office    rows 0  (holds_dept_lift: own department only; SKIPPED
 --                                       if no active hold of another department exists)
 -- "rows 0" or "rls: ..." are both a Pass where listed; any "rows 1" is a Fail.
+-- After trigger_final_clearance.sql (issue 24) Student 1's items are all cleared first (see the
+-- comment before the hold insert below), so student_approves_own tests the policy alone; an
+-- "ERROR: pending items: ..." there means the policy let the Student's row through (a Fail).
 begin;
 select set_config('app.s1',   (select id::text from auth.users where email = 'student1@pnc.test'), true);
 select set_config('app.s2',   (select id::text from auth.users where email = 'student2@pnc.test'), true);
@@ -470,6 +505,20 @@ select set_config('app.mydept', coalesce((select min(department_id)::text from p
 select set_config('app.charge', coalesce((select min(charge_id)::text from public.charges), '0'), true);
 select set_config('app.s1_charge', coalesce((select min(charge_id)::text from public.charges
   where student_id = current_setting('app.s1')::uuid), '0'), true);
+-- After trigger_final_clearance.sql (issue 24): student_approves_own must be stopped by the
+-- policy (clearances_registrar_approve, USING role = Registrar, filters the row out: rows 0),
+-- not by the new trigger. Every item of Student 1's clearances is cleared here first (as
+-- postgres), so a policy that wrongly let the Student through would show "rows 1" (a Fail)
+-- instead of being hidden behind "ERROR: pending items: ...". Student 1's active holds are
+-- lifted first, because require_no_active_hold (issue 22) refuses to clear an item of a
+-- department with an active hold, also for postgres (the seed has none for Student 1).
+update public.academic_holds set lifted_at = now(), lifted_by = current_setting('app.dept')::uuid
+where student_id = current_setting('app.s1')::uuid and lifted_at is null;
+update public.clearance_items
+set cleared_at = now(), cleared_by = current_setting('app.dept')::uuid
+where cleared_at is null
+  and clearance_id in (select c.clearance_id from public.clearances c
+                       where c.student_id = current_setting('app.s1')::uuid);
 -- The seed has no active hold of another department, so add one here as postgres (undone by
 -- the rollback); otherwise dept_lifts_other_office is SKIPPED.
 insert into public.academic_holds (student_id, department_id, reason, placed_by)
