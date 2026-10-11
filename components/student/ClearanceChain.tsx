@@ -15,7 +15,7 @@ export type ChainOffice = {
 type Step = { name: string; status: 'Cleared' | 'Pending' | 'Waiting' | 'Approved' }
 
 const LINK =
-  'text-sm font-semibold text-accent-foreground hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring'
+  'inline-flex items-center text-sm font-semibold max-lg:min-h-11 text-accent-foreground hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring'
 
 // The clearance as one ordered chain: every office in signing order, then the Registrar's final
 // approval. The first office that has not cleared the student is pulled out on top with its reason and

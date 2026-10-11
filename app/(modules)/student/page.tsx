@@ -30,10 +30,10 @@ import {
   SCHEDULE,
 } from '@/lib/mock/student-dashboard'
 
-const SEE_ALL = 'text-sm font-semibold text-accent-foreground hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring'
+const SEE_ALL = 'inline-flex items-center text-sm font-semibold max-lg:min-h-11 text-accent-foreground hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring'
 const TH = 'text-sm'
 const ON_VEIL_LINK =
-  'inline-flex h-10 items-center gap-2 rounded-full bg-on-veil px-4 text-sm font-bold text-(--veil-violet) shadow-elev-sm transition-colors hover:bg-on-veil-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-on-veil'
+  'inline-flex h-10 items-center gap-2 rounded-md bg-on-veil px-4 text-sm font-bold text-(--veil-violet) shadow-elev-sm max-lg:h-11 transition-colors hover:bg-on-veil-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-on-veil'
 
 // Greeting by the hour in the Philippines (the server may run in another time zone).
 function greeting() {
