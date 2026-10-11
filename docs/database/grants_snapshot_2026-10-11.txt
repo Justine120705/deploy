@@ -1,0 +1,15 @@
+Grant snapshot of the live database BEFORE grants_clearance.sql (2026-10-11).
+Source: diagnostic (a) at the bottom of grants_clearance.sql (relacl and column ACLs from pg_class / pg_attribute).
+ACL letters: a=INSERT r=SELECT w=UPDATE d=DELETE D=TRUNCATE x=REFERENCES t=TRIGGER m=MAINTAIN
+"server role" is Supabase's server-side API role; its real name is left out of this repo on purpose.
+
+Tables academic_holds, audit_logs, charges, clearance_items, clearances, payments (relkind r) and
+views v_active_holds, v_clearance_items, v_clearances (relkind v):
+  postgres=arwdDxtm/postgres, authenticated=r/postgres, server role=Dxtm/postgres
+  anon: no entry. Column ACLs: none.
+
+profiles (relkind r):
+  postgres=arwdDxtm/postgres, authenticated=arwd/postgres, server role=arwdDxtm/postgres
+  anon: no entry. Column ACLs: none.
+
+To return to this state, use the ROLLBACK block of grants_clearance.sql and compare diagnostic (a) with this file.
