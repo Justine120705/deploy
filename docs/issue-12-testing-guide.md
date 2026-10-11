@@ -677,7 +677,7 @@ Through the real API (TC-40, after the live run). This checks the one thing SQL 
 
 ## Part J: tests for trigger_dept_approval.sql (issue #61)
 
-`docs/database/trigger_dept_approval.sql` enforces REQ-DPT-03: a BEFORE UPDATE trigger `require_no_active_hold` on `clearance_items` rejects clearing an item (`cleared_at` NULL -> NOT NULL) while the student has an active hold (`lifted_at` NULL) of the same department as the item. The error is SQLSTATE `P0001` with a message that starts with `active hold:` (PostgREST: HTTP 400, code `P0001`). A hold of another department does not block; the Cashier's Financial item is only blocked by a Financial hold. Editing remarks of an already cleared item, correcting its `cleared_at` and un-clearing are not checked. The rule applies to every role, including postgres in the SQL editor. The SQL of every case is in `docs/database/trigger_dept_approval_test.sql`; status: **not run yet**.
+`docs/database/trigger_dept_approval.sql` enforces REQ-DPT-03: a BEFORE UPDATE trigger `require_no_active_hold` on `clearance_items` rejects clearing an item (`cleared_at` NULL -> NOT NULL) while the student has an active hold (`lifted_at` NULL) of the same department as the item. The error is SQLSTATE `P0001` with a message that starts with `active hold:` (PostgREST: HTTP 400, code `P0001`). A hold of another department does not block; the Cashier's Financial item is only blocked by a Financial hold. Editing remarks of an already cleared item, correcting its `cleared_at` and un-clearing are not checked. The rule applies to every role, including postgres in the SQL editor. The SQL of every case is in `docs/database/trigger_dept_approval_test.sql`; status: run live 2026-10-11, TC-41 to TC-48 pass (see Step 6).
 
 Same rules as Part I: run each block on its own, as a whole; every block ends with `rollback`; one result row with a `verdict` cell (`-> OK` or `-> FAIL`). No temporary `grant`. Each block creates its own data as postgres inside the transaction (a throwaway term, a clearance for Student 1 with one pending item per department, the holds it needs) and first lifts every active hold of Student 1, so no case depends on the live data and none can end as SKIPPED. If a seed account or department is missing, the block stops with `TC setup: ...`.
 
@@ -702,6 +702,44 @@ Audit row (TC-46, criterion e): a successful approval by the Department user wri
 Already-cleared item (TC-47, criterion f): with an active hold of the same department, the Department user edits the remarks, corrects `cleared_at`, un-clears (each `rows 1`), then tries to clear again: `blocked [P0001]: active hold: ...` (un-clear then re-clear cannot get around the rule).
 
 Privileges (TC-48, criterion g): `anon_execute` false, `authenticated_execute` true, `public_in_acl` false, `security_definer` true; anon calling the function gets `denied: permission denied for ...`; a signed-in user calling it directly gets an error (normally `trigger functions can only be called as triggers`).
+
+## Part K: tests for trigger_finance_autoclear.sql (issue #62)
+
+`docs/database/trigger_finance_autoclear.sql` implements REQ-CSH-03: when every charge of a student for a term is `Cleared` or `Waived` (and there is at least one), the Financial item (Cashier's Office) of that student's clearance for that term is cleared automatically, with `cleared_by` = the Cashier who tagged the last charge. One function, `private.finance_autoclear()` (SECURITY DEFINER), and two triggers: `finance_autoclear` (AFTER INSERT OR UPDATE OF status, student_id, term_id on `charges`) and `finance_autoclear_on_create` (AFTER INSERT on `clearance_items`, for a clearance created after the charges were settled; then `cleared_by` comes from the last charge tag in `audit_logs`). The auto-clear is skipped, the item stays pending and nothing fails, when the student has an active Financial hold or when no active Cashier can be recorded (postgres in the SQL editor). It never overwrites a cleared item and never un-clears one when a charge goes back to `Unpaid`. The header of the file explains every decision. The SQL of every case is in `docs/database/trigger_finance_autoclear_test.sql`; status: **not run yet** (written without a local PostgreSQL, untested).
+
+Same rules as Parts I and J: run each block on its own, as a whole; every block ends with `rollback`; one result row with a `verdict` cell (`-> OK` or `-> FAIL`). No temporary `grant`. Each block creates its own data as postgres inside the transaction (a throwaway term, charges, payments, a clearance, holds) and first lifts every active hold of Student 1, so no case can end as SKIPPED. If a seed account, the Financial department or a fee type is missing, the block stops with `TC setup: ...`. After every impersonated step the block clears `request.jwt.claims`, so "postgres" always means "no user JWT".
+
+Order:
+1. **Before the live run: `docs/database/trigger_finance_autoclear_rehearsal.sql`** (the change plus TC-49 to TC-61 in ONE rolled-back transaction, one result row; this is TC-49R). Expected: `all_ok` true and every cell ends in `-> OK`. A `trigger_finance_autoclear: ...` error means the live state differs from what the file assumes: do not run it live, send the error to the Backend team.
+2. Save diagnostics (a), (c) and (d) of `trigger_finance_autoclear.sql`, then the PM runs the file live.
+3. TC-49 to TC-61 against the live database: either the blocks of `trigger_finance_autoclear_test.sql`, or only the test part of the rehearsal file (from its `TESTS START HERE` line to the end; the file header gives the line number).
+4. Regression: TC-37 (Part I), Part J (TC-41 to TC-48) and `regression_after_grants.sql` (TC-12 to TC-33). Expected: every result the same as before. Side effects that do not change any cell: TC-21 of the regression settles Student 2's only charge, so Student 2's Financial item is also auto-cleared (one more audit row, rolled back); TC-37 `update_charge` can auto-clear a Financial item in the same way.
+
+Installed as intended (TC-49, catalog): `charges` triggers in order `guard_immutable_columns (BEFORE) > audit_log (AFTER) > finance_autoclear (AFTER)`; `clearance_items` triggers `guard_immutable_columns (BEFORE) > require_no_active_hold (BEFORE) > audit_log (AFTER) > finance_autoclear_on_create (AFTER)`; `finance_autoclear` enabled (`O`), type 21 (AFTER INSERT OR UPDATE FOR EACH ROW) with a WHEN clause, on the columns `status,student_id,term_id`; `finance_autoclear_on_create` enabled, type 5 (AFTER INSERT FOR EACH ROW) with a WHEN clause; function SECURITY DEFINER with `search_path=""`, owned by postgres, owner bypasses RLS on the 8 tables it uses.
+
+The seed data (TC-50, the issue's wording): the current term has 3 charges of 15,000 (45,000) with 20,000 collected. The Cashier tags Student 2's only charge `Cleared`. Expected: `seed` `charges 3, total 45000, collected 20000`, `seed_ok` and `preconditions_ok` true, `rows 1`, Student 2's Financial item cleared by the Cashier (Student 2's active CCS hold does not matter), Student 3's item still pending (Unpaid charge, 5,000 paid), Student 1's item unchanged. If the live data no longer matches the seed, this case shows the numbers it found and fails (it does not skip).
+
+Mixed Cleared / Waived (TC-51, criterion a): 3 charges, 20,000 of 45,000 paid; the Cashier tags them Cleared, Waived, Waived. Expected: `rows 1, item pending` after the first two tags, `rows 1, item cleared` after the last, `cleared_by` = the Cashier.
+
+One charge still Unpaid (TC-52, criterion b): two tags and an amount / due-date edit of the third charge (still Unpaid). Expected: each `rows 1`, item pending, `cleared_by` null.
+
+No clearance yet (TC-53, criterion c): the Cashier tags all three charges while Student 1 has no clearance for the term (`rows 1` each, no error); Student 1 then requests the clearance. Expected: `request` `rows 1`, one item per department, the Financial item cleared at creation with `cleared_by` = the Cashier, the other items pending, the item's audit rows `INSERT,UPDATE` with the requesting student as the actor of the UPDATE.
+
+Zero charges (TC-54, criterion d): no charge in the term (a settled charge in another term does not count); Student 1 requests the clearance. Expected: `rows 1`, Financial item pending.
+
+Active Financial hold (TC-55, criterion e): with an active Financial hold the Cashier's three tags each give `rows 1` (none fails) and the item stays pending; after the hold is lifted, re-saving the last charge's status (`set status = status`) clears it, by the Cashier. With an active Financial hold the student's clearance request also gives `rows 1` and the new Financial item stays pending. Note: today no API flow places Financial holds, so the case places them as postgres.
+
+Already cleared (TC-56, criterion f): the Financial item was cleared earlier (different time, `cleared_by` the Admin account, a remark). The Cashier tags all three charges. Expected: `rows 1` each; `cleared_at`, `cleared_by` and `remarks` unchanged; no audit row for the item.
+
+Back to Unpaid (TC-57, criterion g): after the auto-clear the Cashier sets one charge back to `Unpaid` and then `Cleared` again. Expected: both `rows 1`; the item stays cleared by the Cashier (no automatic un-clear, decision 8 in the file); no audit row for the item after the revert; 2 audit rows for that charge. The Cashier un-clears by hand if needed (diagnostic (d) lists cleared Financial items with an Unpaid charge).
+
+Audit row (TC-58, criterion h): the last tag writes exactly one `audit_logs` row for the item: action `UPDATE`, actor = the Cashier, old `cleared_at` null, new `cleared_by` = the Cashier, and it comes after the charge's own audit row.
+
+Other items untouched (TC-59, criterion i): Student 1 and Student 2 both have a clearance in the throwaway term; Student 2 has an Unpaid charge. After Student 1's three tags: Student 1's Financial item cleared, every other item of that clearance still pending with `cleared_by` null, no audit row on any other `clearance_items` row, Student 2's Financial item pending.
+
+No Cashier to record (TC-60): postgres without a user JWT (`auth.uid()` null) settles the last charge (`rows 1`): the item stays pending. A clearance created when the last tag was made by postgres also stays pending.
+
+Privileges (TC-61, criterion j): `anon_execute` false, `authenticated_execute` true, `public_in_acl` false, `security_definer` true; anon calling the function gets `denied: permission denied for ...`; a signed-in user calling it directly gets an error (normally `trigger functions can only be called as triggers`).
 
 ## Part D (optional, later): test through the real Supabase client
 
@@ -763,6 +801,20 @@ Fill in this table (copy into `docs/testing-plan.md` for Sprint 4). Actual = wha
 | TC-46 | A successful approval writes an audit row (Part J) | 1 row, UPDATE, actor = Department user | Pass (rehearsal, then live, 2026-10-11; PM ran it, Claude read the result row) | |
 | TC-47 | Already-cleared item with an active hold: remarks, `cleared_at` correction, un-clear, re-clear (Part J) | `rows 1` x 3, then `blocked [P0001]: active hold: ...` | Pass (rehearsal, then live, 2026-10-11; PM ran it, Claude read the result row) | |
 | TC-48 | Function privileges; anon calls the function (Part J) | anon no EXECUTE and denied; authenticated EXECUTE; no PUBLIC; SECURITY DEFINER | Pass (rehearsal, then live, 2026-10-11; PM ran it, Claude read the result row) | |
+| TC-49R | Rehearsal: `trigger_finance_autoclear_rehearsal.sql` (the change plus TC-49 to TC-61 in one rolled-back transaction) (Part K, before the live run) | no `trigger_finance_autoclear:` error; `all_ok` true, every cell `-> OK` | Pass (rehearsal, then live, 2026-10-11; PM ran it, Claude read the result row) | |
+| TC-49 | Function and both triggers installed as intended (Part K) | charges: guard_immutable_columns > audit_log > finance_autoclear; clearance_items: guard_immutable_columns > require_no_active_hold > audit_log > finance_autoclear_on_create; types 21 and 5 with WHEN; SECURITY DEFINER, `search_path=""` | Pass (rehearsal, then live, 2026-10-11; PM ran it, Claude read the result row) | |
+| TC-50 | Seed data (3 charges, 20,000 of 45,000 collected): Cashier tags Student 2's only charge Cleared (Part K) | `rows 1`; Student 2's Financial item cleared by the Cashier; Student 3 pending; Student 1 unchanged | Pass (rehearsal, then live, 2026-10-11; PM ran it, Claude read the result row) | |
+| TC-51 | Mixed Cleared / Waived, the last tag by the Cashier (Part K) | pending, pending, then cleared; `cleared_by` = Cashier | Pass (rehearsal, then live, 2026-10-11; PM ran it, Claude read the result row) | |
+| TC-52 | One charge still Unpaid (Part K) | `rows 1` x3; item pending, `cleared_by` null | Pass (rehearsal, then live, 2026-10-11; PM ran it, Claude read the result row) | |
+| TC-53 | Charges settled before the clearance exists; then the student requests it (Part K) | tags `rows 1`; request `rows 1`; Financial item cleared at creation by the Cashier; audit INSERT,UPDATE | Pass (rehearsal, then live, 2026-10-11; PM ran it, Claude read the result row) | |
+| TC-54 | Zero charges in the term; the student requests the clearance (Part K) | request `rows 1`; Financial item pending | Pass (rehearsal, then live, 2026-10-11; PM ran it, Claude read the result row) | |
+| TC-55 | Active Financial hold: tags, re-save after the lift, request with a hold (Part K) | tags `rows 1` (no error), pending; after lift and re-save cleared; request `rows 1`, pending | Pass (rehearsal, then live, 2026-10-11; PM ran it, Claude read the result row) | |
+| TC-56 | Already-cleared Financial item (Part K) | `rows 1` x3; `cleared_at`, `cleared_by`, `remarks` unchanged; no item audit row | Pass (rehearsal, then live, 2026-10-11; PM ran it, Claude read the result row) | |
+| TC-57 | A charge goes back to Unpaid after the auto-clear, then Cleared again (Part K) | `rows 1`, `rows 1`; item stays cleared; no item audit row | Pass (rehearsal, then live, 2026-10-11; PM ran it, Claude read the result row) | |
+| TC-58 | The auto-clear writes an audit row (Part K) | 1 row, UPDATE, actor = Cashier, after the charge's row | Pass (rehearsal, then live, 2026-10-11; PM ran it, Claude read the result row) | |
+| TC-59 | Other departments' items and another student's item are not touched (Part K) | only Student 1's Financial item changes and is audited | Pass (rehearsal, then live, 2026-10-11; PM ran it, Claude read the result row) | |
+| TC-60 | postgres without a user JWT settles the last charge; clearance created after a postgres tag (Part K) | `rows 1`; both items pending | Pass (rehearsal, then live, 2026-10-11; PM ran it, Claude read the result row) | |
+| TC-61 | Function privileges; anon calls the function (Part K) | anon no EXECUTE and denied; authenticated EXECUTE; no PUBLIC; SECURITY DEFINER | Pass (rehearsal, then live, 2026-10-11; PM ran it, Claude read the result row) | |
 
 ## Step 7: Fix what failed (before closing the issue)
 
@@ -876,3 +928,9 @@ TC-12 to TC-33 were run again as one rolled-back script, `docs/database/regressi
 - TC-37 (`grants_clearance_test.sql`) showed `clear_item_dept` = `ERROR: active hold: clearance item 6 ...`: the test picked the lowest pending CCS item, which belongs to the seed student with an active CCS hold, so the new trigger (correctly) refused it. The test now picks a pending item without an active same-department hold; all 8 columns are `rows 1` again.
 - `regression_after_grants.sql` (TC-12 to TC-33) was run again after the trigger: all 22 results identical to the run before the trigger.
 - Diagnostic (c) before the change: one pending item the trigger blocks (item 6, CCS, the seed student's active CCS hold).
+
+## Regression after trigger_finance_autoclear.sql (2026-10-11)
+
+- The rehearsal first stopped at the file's own safety check: `format_type()` prints `character varying(N)` for varchar columns, so the comparison with `character varying` failed. Fixed by comparing `format_type(a.atttypid, NULL)`; the rehearsal then passed (`all_ok` true).
+- TC-49 to TC-61 pass live. TC-37 passes (all 8 columns `rows 1`). `regression_after_grants.sql` (TC-12 to TC-33) gives the same 22 results as before the trigger.
+- Diagnostic (c) before the change: no pending Financial item with all charges settled (nothing to back-fill).

@@ -298,6 +298,9 @@ begin
 end $$;
 
 -- TC-20 (expected: column charges.student_id cannot be changed), TC-21 part 2 (charge cleared: rows 1) as Cashier
+-- After trigger_finance_autoclear.sql (issue 23): TC-21 settles Student 2's only charge, so the
+-- trigger also clears Student 2's pending Financial item (cleared_by = the Cashier) and writes one
+-- more audit row; every result cell stays the same (rolled back like everything else here).
 reset role;
 select set_config('request.jwt.claims',
   json_build_object('sub', current_setting('app.cash'), 'role', 'authenticated')::text, true);
