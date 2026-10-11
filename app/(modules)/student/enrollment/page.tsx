@@ -1,6 +1,7 @@
 import DashboardShell from '@/components/layout/DashboardShell'
 import EnrollmentView from '@/components/student/EnrollmentView'
 import { UnavailableAction } from '@/components/student/PageActions'
+import { SampleDataNote } from '@/components/ui'
 import { requireRole } from '@/lib/auth/session'
 import {
   MOCK_CURRENT_TERM_ID,
@@ -65,6 +66,7 @@ export default async function StudentEnrollmentPage() {
       subtitle={subtitle}
       actions={<UnavailableAction label="Download COR" reason="Not available yet." />}
     >
+      <SampleDataNote className="mb-6">Enrollment records are sample data and are not saved yet.</SampleDataNote>
       <EnrollmentView
         terms={terms.map((t) => ({
           term_id: t.term_id,
