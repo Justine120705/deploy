@@ -118,9 +118,11 @@ export function ClearanceChain({
         })}
       </ol>
 
-      <p className="text-sm text-muted">
-        After all {offices.length} offices clear you, the Registrar gives the final approval.
-      </p>
+      {blocker && (
+        <p className="text-sm text-muted">
+          After all {offices.length} offices clear you, the Registrar gives the final approval.
+        </p>
+      )}
     </Card>
   )
 }
