@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import DashboardShell from '@/components/layout/DashboardShell'
+import { SampleDataNote } from '@/components/ui/SampleDataNote'
 import TableCard from '@/components/admin/TableCard'
 import { requireRole } from '@/lib/auth/session'
 import {
@@ -27,6 +28,7 @@ export default async function AdminDashboardPage() {
   return (
     <DashboardShell profile={profile} title="Dashboard" subtitle="Accounts and recent activity">
       <div className="flex flex-col gap-6">
+        <SampleDataNote>Accounts and counts here are sample data. Only the audit log is live.</SampleDataNote>
         <SummaryStrip
           items={[
             { label: 'Total users', value: profiles.length, hint: 'accounts' },
