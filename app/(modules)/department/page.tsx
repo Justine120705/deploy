@@ -5,13 +5,8 @@ import { EmptyRow, Section, Table, TableBody, TableCell, TableHead, TableHeader,
 import { DeptStats } from '@/components/department/DeptStats'
 import { HoldFlagBadge, ItemStatusBadge } from '@/components/department/DeptBadges'
 import { RecordList } from '@/components/department/RecordList'
-import {
-  DEPT_CLEARANCE_ITEMS,
-  DEPT_HOLDS,
-  DEPT_NAME,
-  DEPT_STUDENTS,
-  studentByNo,
-} from '@/lib/mock/department-data'
+import { DeptUnavailable } from '@/components/department/DeptNotice'
+import { countDepartment, getDepartmentState } from '@/lib/data/department'
 
 const LINK =
   'inline-flex items-center text-sm font-semibold text-accent-foreground underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring max-lg:min-h-11'
@@ -19,20 +14,29 @@ const LINK =
 export default async function DepartmentDashboardPage() {
   const profile = await requireRole('Department')
 
-  const activeHolds = DEPT_HOLDS.filter((h) => h.status === 'Active')
-  const holdNos = new Set(activeHolds.map((h) => h.studentNo))
-  const pending = DEPT_CLEARANCE_ITEMS.filter((i) => i.status === 'Pending')
-  const cleared = DEPT_CLEARANCE_ITEMS.filter((i) => i.status === 'Cleared')
+  const state = await getDepartmentState()
+  if (state.kind !== 'ready') {
+    return (
+      <DashboardShell profile={profile} title="Dashboard" subtitle="Department clearance">
+        <DeptUnavailable kind={state.kind} />
+      </DashboardShell>
+    )
+  }
+
+  const activeHolds = state.holds.filter((h) => h.status === 'Active')
+  const pending = state.items.filter((i) => i.status === 'Pending')
+  const counts = countDepartment(state.items, state.holds)
+  const term = state.term ? `${state.term.semester} ${state.term.schoolYear}` : 'No open term'
 
   return (
-    <DashboardShell profile={profile} title="Dashboard" subtitle={`${DEPT_NAME} · 1st Sem 2026-2027`}>
+    <DashboardShell profile={profile} title="Dashboard" subtitle={`${state.department.name} · ${term}`}>
       <div className="flex flex-col gap-6">
         <DeptStats
           stats={[
-            { label: 'Items to review', value: pending.length, hint: 'waiting for you', hue: pending.length ? 'amber' : undefined },
-            { label: 'Active holds', value: activeHolds.length, hint: 'block approval', hue: activeHolds.length ? 'rose' : undefined },
-            { label: 'Cleared', value: cleared.length, hint: 'items approved' },
-            { label: 'Students', value: DEPT_STUDENTS.length, hint: 'in clearance' },
+            { label: 'Items to review', value: counts.toReview, hint: 'waiting for you', hue: counts.toReview ? 'amber' : undefined },
+            { label: 'Active holds', value: counts.activeHolds, hint: 'block approval', hue: counts.activeHolds ? 'rose' : undefined },
+            { label: 'Cleared', value: counts.cleared, hint: 'items approved' },
+            { label: 'Students', value: counts.students, hint: 'in clearance' },
           ]}
         />
 
@@ -58,38 +62,32 @@ export default async function DepartmentDashboardPage() {
               </TableHeader>
               <TableBody>
                 {pending.length === 0 && <EmptyRow colSpan={6}>No pending clearance items.</EmptyRow>}
-                {pending.map((item) => {
-                  const s = studentByNo(item.studentNo)
-                  return (
-                    <TableRow key={item.studentNo}>
-                      <TableCell className="text-muted">{s.studentNo}</TableCell>
-                      <TableCell className="font-semibold">{s.name}</TableCell>
-                      <TableCell className="text-muted">{s.program}</TableCell>
-                      <TableCell><ItemStatusBadge status={item.status} /></TableCell>
-                      <TableCell><HoldFlagBadge active={holdNos.has(item.studentNo)} /></TableCell>
-                      <TableCell className="text-muted">{item.requestedOn}</TableCell>
-                    </TableRow>
-                  )
-                })}
+                {pending.map((item) => (
+                  <TableRow key={item.itemId}>
+                    <TableCell className="text-muted">{item.studentNo}</TableCell>
+                    <TableCell className="font-semibold">{item.name}</TableCell>
+                    <TableCell className="text-muted">{item.program}</TableCell>
+                    <TableCell><ItemStatusBadge status={item.status} /></TableCell>
+                    <TableCell><HoldFlagBadge active={item.holds.length > 0} /></TableCell>
+                    <TableCell className="text-muted">{item.requestedOn}</TableCell>
+                  </TableRow>
+                ))}
               </TableBody>
             </Table>
           </div>
           <RecordList
             className="md:hidden"
             empty="No pending clearance items."
-            items={pending.map((item) => {
-              const s = studentByNo(item.studentNo)
-              return {
-                key: item.studentNo,
-                title: s.name,
-                subtitle: `${s.studentNo} · ${s.program}`,
-                badge: <ItemStatusBadge status={item.status} />,
-                fields: [
-                  { label: 'Hold', value: <HoldFlagBadge active={holdNos.has(item.studentNo)} /> },
-                  { label: 'Requested', value: item.requestedOn },
-                ],
-              }
-            })}
+            items={pending.map((item) => ({
+              key: String(item.itemId),
+              title: item.name,
+              subtitle: `${item.studentNo} · ${item.program}`,
+              badge: <ItemStatusBadge status={item.status} />,
+              fields: [
+                { label: 'Hold', value: <HoldFlagBadge active={item.holds.length > 0} /> },
+                { label: 'Requested', value: item.requestedOn },
+              ],
+            }))}
           />
         </Section>
 
@@ -114,37 +112,31 @@ export default async function DepartmentDashboardPage() {
               </TableHeader>
               <TableBody>
                 {activeHolds.length === 0 && <EmptyRow colSpan={5}>No active academic holds.</EmptyRow>}
-                {activeHolds.map((h) => {
-                  const s = studentByNo(h.studentNo)
-                  return (
-                    <TableRow key={h.id}>
-                      <TableCell className="text-muted">{s.studentNo}</TableCell>
-                      <TableCell className="font-semibold">{s.name}</TableCell>
-                      <TableCell>{h.reason}</TableCell>
-                      <TableCell className="text-muted">{h.placedBy}</TableCell>
-                      <TableCell className="text-muted">{h.placedOn}</TableCell>
-                    </TableRow>
-                  )
-                })}
+                {activeHolds.map((h) => (
+                  <TableRow key={h.holdId}>
+                    <TableCell className="text-muted">{h.studentNo}</TableCell>
+                    <TableCell className="font-semibold">{h.name}</TableCell>
+                    <TableCell className="max-w-72 whitespace-normal">{h.reason}</TableCell>
+                    <TableCell className="text-muted">{h.placedByName}</TableCell>
+                    <TableCell className="text-muted">{h.placedOn}</TableCell>
+                  </TableRow>
+                ))}
               </TableBody>
             </Table>
           </div>
           <RecordList
             className="md:hidden"
             empty="No active academic holds."
-            items={activeHolds.map((h) => {
-              const s = studentByNo(h.studentNo)
-              return {
-                key: h.id,
-                title: s.name,
-                subtitle: s.studentNo,
-                fields: [
-                  { label: 'Reason', value: h.reason },
-                  { label: 'Placed by', value: h.placedBy },
-                  { label: 'Placed on', value: h.placedOn },
-                ],
-              }
-            })}
+            items={activeHolds.map((h) => ({
+              key: String(h.holdId),
+              title: h.name,
+              subtitle: h.studentNo,
+              fields: [
+                { label: 'Reason', value: h.reason },
+                { label: 'Placed by', value: h.placedByName },
+                { label: 'Placed on', value: h.placedOn },
+              ],
+            }))}
           />
         </Section>
       </div>
