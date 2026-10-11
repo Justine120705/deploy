@@ -85,7 +85,7 @@
 -- Undo: the ROLLBACK block after COMMIT.
 --
 -- Status: RUN on the live database on 2026-10-11, after rehearsal in rolled-back transactions
--- (TC-34R to TC-39 pass; live TC-34 passes). TC-40 (through the Data API) is pending.
+-- (TC-34R to TC-39 pass; TC-34 to TC-39 pass live). TC-40 (through the Data API) passes.
 
 
 BEGIN;

@@ -720,12 +720,12 @@ Fill in this table (copy into `docs/testing-plan.md` for Sprint 4). Actual = wha
 | TC-33 | Anonymous access to the 4 views (Part H) | all denied | all four: denied: permission denied for view ... (2026-10-10, PM ran views_extend.sql and clicked Run, Claude loaded and read the test; rolled back) | Pass |
 | TC-34R | Rehearsal: `grants_clearance.sql` sections 1 to 4 plus TC-34, TC-37, TC-38 in one rolled-back transaction (Part I, before the live run) | no `grants_clearance:` error; same results as TC-34, TC-37, TC-38 | Pass in rehearsal (rolled back), 2026-10-11 | - |
 | TC-34 | Grants after `grants_clearance.sql` (Part I) | anon nothing anywhere; no TRUNCATE/REFERENCES/TRIGGER/MAINTAIN; exactly the 21 column grants; DELETE only on profiles (unchanged) | Pass live and in rehearsal, 2026-10-11 | |
-| TC-35 | anon reads and writes every exposed object (Part I) | all denied | Pass in rehearsal (rolled back), 2026-10-11 | re-run live pending (same grants, passed in rehearsal) |
-| TC-36 | Reads per role on the 6 exposed read objects (Part I) | every role `-> OK`; student1_not_own 0 | Pass in rehearsal (rolled back), 2026-10-11 | re-run live pending (same grants, passed in rehearsal) |
-| TC-37 | Allowed writes per role with the real grants (Part I) | `rows 1` each; 4 items created | Pass in rehearsal (rolled back), 2026-10-11 | re-run live pending (same grants, passed in rehearsal) |
-| TC-38 | Writes outside the grants (DELETE, other columns, other tables, views) (Part I) | all denied | Pass in rehearsal (rolled back), 2026-10-11 | re-run live pending (same grants, passed in rehearsal) |
-| TC-39 | Granted columns, wrong role (Part I) | rows 0 or RLS error, never rows 1 | Pass in rehearsal (rolled back), 2026-10-11 | re-run live pending (same grants, passed in rehearsal) |
-| TC-40 | Signed-in app reads the exposed views through the Data API (Part I) | own rows only, no PGRST205 | Pending | Skipped on 2026-10-11 on purpose: it needs the data layer; it will show at issue 25 (#64). If PGRST205: expose that object in the dashboard and run grants_clearance.sql again. |
+| TC-35 | anon reads and writes every exposed object (Part I) | all denied | Pass live (rolled-back block, PM ran it, Claude read the result) and in rehearsal, 2026-10-11 |
+| TC-36 | Reads per role on the 6 exposed read objects (Part I) | every role `-> OK`; student1_not_own 0 | Pass live (rolled-back block, PM ran it, Claude read the result) and in rehearsal, 2026-10-11 |
+| TC-37 | Allowed writes per role with the real grants (Part I) | `rows 1` each; 4 items created | Pass live (rolled-back block, PM ran it, Claude read the result) and in rehearsal, 2026-10-11 |
+| TC-38 | Writes outside the grants (DELETE, other columns, other tables, views) (Part I) | all denied | Pass live (rolled-back block, PM ran it, Claude read the result) and in rehearsal, 2026-10-11 |
+| TC-39 | Granted columns, wrong role (Part I) | rows 0 or RLS error, never rows 1 | Pass live (rolled-back block, PM ran it, Claude read the result) and in rehearsal, 2026-10-11 |
+| TC-40 | Signed-in app reads the exposed views through the Data API (Part I) | own rows only, no PGRST205 | Signed in as student1, a temporary server page (deleted, never committed) counted rows through the Data API: v_clearances 1, v_clearance_items 4, v_active_holds 0, charges 1, payments 1, audit_logs 0, profiles 1; no PGRST205 (2026-10-11, Claude, localhost dev server) | Pass |
 
 ## Step 7: Fix what failed (before closing the issue)
 
@@ -820,3 +820,16 @@ TC-12 to TC-23 were run again as one rolled-back script (PM clicked Run in the S
 
 `views_extend.sql` was run on the live database (it passed its own before and after checks) and TC-29 to TC-33 pass. `v_grades`, `v_clearance_items` and `v_clearances` now have every column of `types/database.types.ts`, so the generated types, `lib/mock-data.ts` and the student pages did not need to change. Row access is the same as before for every role: Students and the Registrar get the new columns filled; a Cashier or Department user sees only their own department's items, so for them `total_items` / `cleared_items` count only that department's items (by design). `docs/database/views.sql` now holds the extended definitions. Still open: `v_clearances.status` has no `Ready` value (the mock data has one); the app can derive it from `cleared_items = total_items`.
 
+
+## Regression after grants_clearance.sql (2026-10-11)
+
+TC-12 to TC-33 were run again as one rolled-back script, `docs/database/regression_after_grants.sql` (PM pasted it and clicked Run in the Supabase SQL editor, Claude read the result row). Sections 1 and 2 use the real grants only; section 3 uses the same temporary grant as Parts F and G (undone by the rollback) so the old attack tests still reach the RLS policy or the column lock.
+
+- TC-12 to TC-14: own_profile 1; Student 2's grades, charges, payments, clearances, holds, enrollments and document requests all 0 for Student 1.
+- TC-15: students per view 1 (v_active_holds 0). TC-16 and TC-28: anon is denied on `grades` and `v_grades`; Student 1 sees 3 = 3 own grades. TC-17: a student changing their own role: `rows 0`.
+- TC-18, TC-20, TC-22 (the three attacks) are still blocked: RLS on `clearances`, the column lock on `charges.student_id`, RLS on `clearance_items`.
+- TC-19, TC-21, TC-23 (normal updates) still work: `approve_clearance 1, correct_grade 1`; `dept_id 1 = expected 1`, charge cleared 1; `clear 1, lift 1, place 1`.
+- TC-24: 1 audit row, actor = registrar, new grade 1.50. TC-25: update, delete and truncate of `audit_logs` all blocked, even as postgres. TC-26: own-department student `inserted`; other department's student blocked by RLS.
+- TC-27: no TRUNCATE/REFERENCES/TRIGGER, no anon SELECT, `auth_profiles_update` true, `auth_audit_insert` false, the four anon_exec false, `auth_exec_all_4` true.
+- TC-29: 41 expected columns, 0 missing, 4 views security_invoker. TC-30: v_grades 3 = 3, v_clearance_items 4 = 4, v_clearances 1 = 1, `counts_match` true, Student 2 rows 0. TC-31: grades 6/6, items 12/12, clearances 3/3, first clearance 4/4 and 2/2, no missing joins. TC-32: cashier and department both `-> OK`. TC-33: all four views denied for anon.
+- Nothing regressed. The old "normal update" tests that write outside the clearance slice (grades, charges.student_id) only run with the temporary grant; under the real column-level grants they are "permission denied" by design.
