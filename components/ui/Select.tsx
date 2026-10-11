@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { FIELD, FIELD_ERROR, FIELD_LABEL } from "./Input";
 
 type SelectProps = React.SelectHTMLAttributes<HTMLSelectElement> & {
   label?: string;
@@ -11,12 +12,7 @@ export function Select({ className, label, error, id, children, ...props }: Sele
     <select
       id={id}
       aria-invalid={error ? true : undefined}
-      className={cn(
-        "flex h-11 w-full rounded-xl border border-border bg-card px-3 text-sm text-foreground",
-        "focus:outline-2 focus:outline-offset-0 focus:outline-lilac disabled:cursor-not-allowed disabled:opacity-50",
-        error && "border-danger",
-        className
-      )}
+      className={cn(FIELD, "pr-8", className)}
       {...props}
     >
       {children}
@@ -28,13 +24,13 @@ export function Select({ className, label, error, id, children, ...props }: Sele
   return (
     <div className="flex flex-col gap-1.5">
       {label && (
-        <label htmlFor={id} className="text-sm font-semibold text-foreground">
+        <label htmlFor={id} className={FIELD_LABEL}>
           {label}
         </label>
       )}
       {field}
       {error && (
-        <p role="alert" className="text-sm text-danger">
+        <p role="alert" className={FIELD_ERROR}>
           {error}
         </p>
       )}

@@ -1,20 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import {
-  Button,
-  Card,
-  CardHeader,
-  Input,
-  Select,
-  StatusBadge,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui'
+import { Button, Input, Section, Select, StatusBadge } from '@/components/ui'
+import { formatShortDate } from './format'
+import { ResponsiveTable, type Column } from './ResponsiveTable'
+import { StatGrid } from './StatGrid'
 
 export type DocumentRequestRecord = {
   id: number
@@ -23,6 +13,8 @@ export type DocumentRequestRecord = {
   purpose: string
   copies: number
   requested_at: string
+  /** When the Registrar processed it; empty until then. */
+  processed_at?: string | null
   status: string
 }
 
@@ -67,6 +59,7 @@ export default function DocumentRequestsView({
         purpose: purpose.trim(),
         copies: n,
         requested_at: new Date().toISOString(),
+        processed_at: null,
         status: 'Pending',
       },
       ...prev,
@@ -75,11 +68,55 @@ export default function DocumentRequestsView({
     setCopies('1')
   }
 
+  const count = (status: string) => requests.filter((r) => r.status === status).length
+
+  const columns: Column<DocumentRequestRecord>[] = [
+    {
+      key: 'document',
+      header: 'Document',
+      primary: true,
+      cell: (r) => (
+        <>
+          {typeName(r.document_type_id)}
+          <span className="block text-sm font-normal text-muted">{r.ticket_number}</span>
+        </>
+      ),
+    },
+    { key: 'purpose', header: 'Purpose', cell: (r) => r.purpose },
+    { key: 'copies', header: 'Copies', className: 'w-20', cell: (r) => r.copies },
+    { key: 'requested', header: 'Requested on', cell: (r) => formatShortDate(r.requested_at) },
+    { key: 'status', header: 'Status', badge: true, cell: (r) => <StatusBadge status={r.status} /> },
+    { key: 'processed', header: 'Processed on', cell: (r) => formatShortDate(r.processed_at) },
+  ]
+
   return (
-    <div className="flex flex-col gap-6">
-      <Card className="p-5">
-        <CardHeader title="New document request" />
-        <form onSubmit={handleSubmit} noValidate className="mt-4 flex flex-col gap-4">
+    <div className="flex flex-col gap-8">
+      <StatGrid
+        stats={[
+          { label: 'Requests', value: requests.length, hint: 'all time' },
+          { label: 'Pending', value: count('Pending'), hint: 'not yet processed', hue: count('Pending') > 0 ? 'amber' : undefined },
+          { label: 'Processing', value: count('Processing'), hint: 'with the Registrar', hue: count('Processing') > 0 ? 'violet' : undefined },
+          { label: 'Released', value: count('Released'), hint: 'collected', hue: count('Released') > 0 ? 'teal' : undefined },
+        ]}
+      />
+
+      <Section title="Your requests" description="Students can only file requests. The Registrar updates the status.">
+        <ResponsiveTable
+          columns={columns}
+          rows={requests}
+          rowKey={(r) => r.id}
+          caption="Your document requests"
+          empty="No document requests yet."
+        />
+      </Section>
+
+      <Section title="New document request">
+        <form
+          id="new-request"
+          onSubmit={handleSubmit}
+          noValidate
+          className="flex scroll-mt-4 flex-col gap-4 rounded-lg border border-edge bg-card p-4 lg:p-5"
+        >
           <div className="grid gap-4 sm:grid-cols-[2fr_3fr_1fr]">
             <Select
               id="doc-type"
@@ -116,44 +153,7 @@ export default function DocumentRequestsView({
             <Button type="submit">Submit request</Button>
           </div>
         </form>
-      </Card>
-
-      <div className="flex flex-col gap-3">
-        <h2 className="text-base font-bold">Your requests</h2>
-        <Table>
-          <TableHeader>
-            <TableRow className="hover:bg-transparent">
-              <TableHead>Ticket</TableHead>
-              <TableHead>Document</TableHead>
-              <TableHead>Purpose</TableHead>
-              <TableHead>Copies</TableHead>
-              <TableHead>Requested</TableHead>
-              <TableHead>Status</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {requests.length === 0 && (
-              <TableRow className="hover:bg-transparent">
-                <TableCell colSpan={6} className="text-muted">
-                  No document requests yet.
-                </TableCell>
-              </TableRow>
-            )}
-            {requests.map((r) => (
-              <TableRow key={r.id}>
-                <TableCell className="font-semibold">{r.ticket_number}</TableCell>
-                <TableCell>{typeName(r.document_type_id)}</TableCell>
-                <TableCell>{r.purpose}</TableCell>
-                <TableCell>{r.copies}</TableCell>
-                <TableCell>{r.requested_at.slice(0, 10)}</TableCell>
-                <TableCell>
-                  <StatusBadge status={r.status} />
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+      </Section>
     </div>
   )
 }

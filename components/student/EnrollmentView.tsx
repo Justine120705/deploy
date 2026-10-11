@@ -1,7 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import { Button, Card, CardHeader, Input, Select, StatusBadge } from '@/components/ui'
+import { Button, Input, Section, Select, StatusBadge, type Hue } from '@/components/ui'
+import { formatShortDate } from './format'
+import { ResponsiveTable, type Column } from './ResponsiveTable'
+import { StatGrid } from './StatGrid'
 
 export type SectionOption = {
   section_id: number
@@ -75,11 +78,70 @@ export default function EnrollmentView({
     setError('')
   }
 
+  // The current enrollment is the newest one for the default term.
+  const current = [...enrollments]
+    .filter((en) => en.term_id === defaultTermId)
+    .sort((a, b) => b.submitted_at.localeCompare(a.submitted_at))[0]
+  const currentSections = (current?.section_ids ?? []).flatMap((id) => {
+    const s = sectionById.get(id)
+    return s ? [s] : []
+  })
+  const currentUnits = currentSections.reduce((sum, s) => sum + s.units, 0)
+  const statusHue: Record<string, Hue> = { Approved: 'teal', Pending: 'amber', Rejected: 'rose' }
+  const statusHint: Record<string, string> = {
+    Approved: 'by the Registrar',
+    Pending: 'waiting for the Registrar',
+    Rejected: 'see the Registrar',
+  }
+
+  const columns: Column<SectionOption>[] = [
+    { key: 'code', header: 'Code', primary: true, cell: (s) => s.subject_code },
+    { key: 'subject', header: 'Subject', cell: (s) => s.subject_title },
+    { key: 'units', header: 'Units', className: 'w-20', cell: (s) => s.units },
+    { key: 'section', header: 'Section', cell: (s) => s.section_code },
+    { key: 'schedule', header: 'Schedule', cell: (s) => s.schedule ?? 'To be announced' },
+  ]
+
   return (
-    <div className="flex flex-col gap-6">
-      <Card className="p-5">
-        <CardHeader title="New enrollment" />
-        <form onSubmit={handleSubmit} noValidate className="mt-4 flex flex-col gap-5">
+    <div className="flex flex-col gap-8">
+      <StatGrid
+        stats={[
+          {
+            label: 'Status',
+            value: current?.status ?? 'None',
+            hint: current ? (statusHint[current.status] ?? 'this term') : 'not enrolled yet',
+            hue: current ? statusHue[current.status] : undefined,
+          },
+          { label: 'Subjects', value: currentSections.length, hint: 'this term' },
+          { label: 'Units', value: currentUnits, hint: 'total units' },
+          {
+            label: 'Submitted',
+            value: current ? formatShortDate(current.submitted_at).replace(/, \d{4}$/, '') : '-',
+            hint: current ? formatShortDate(current.submitted_at).slice(-4) : 'nothing submitted',
+          },
+        ]}
+      />
+
+      <Section title="Enrolled subjects" description={termLabel(defaultTermId)}>
+        <ResponsiveTable
+          columns={columns}
+          rows={currentSections}
+          rowKey={(s) => s.section_id}
+          caption={`Enrolled subjects, ${termLabel(defaultTermId)}`}
+          empty="You are not enrolled for this term yet. Use the form below."
+        />
+      </Section>
+
+      <Section
+        title="New enrollment"
+        description="New enrollments start as Pending until the Registrar reviews them."
+      >
+        <form
+          id="new-enrollment"
+          onSubmit={handleSubmit}
+          noValidate
+          className="flex flex-col gap-5 rounded-lg border border-edge bg-card p-4 lg:p-5"
+        >
           <div className="grid gap-4 sm:grid-cols-2">
             <Select
               id="enroll-term"
@@ -112,83 +174,68 @@ export default function EnrollmentView({
           </div>
 
           <fieldset className="flex flex-col gap-2">
-            <legend className="mb-1 text-sm font-semibold">Subject sections</legend>
+            <legend className="mb-1 text-[13px] leading-5 font-medium">
+              Subject sections{selected.length > 0 ? `, ${selected.length} selected` : ''}
+            </legend>
             {termSections.length === 0 ? (
               <p className="text-sm text-muted">No sections are open for this term.</p>
             ) : (
-              termSections.map((s) => (
-                <label
-                  key={s.section_id}
-                  className="flex cursor-pointer items-start gap-3 rounded-xl border border-border bg-card p-3 text-sm hover:bg-accent"
-                >
-                  <Input
-                    type="checkbox"
-                    className="mt-0.5 size-4 shrink-0 accent-primary"
-                    checked={selected.includes(s.section_id)}
-                    onChange={() => toggle(s.section_id)}
-                  />
-                  <span className="flex flex-col gap-0.5">
-                    <span>
-                      <span className="font-semibold">{s.section_code}</span>
-                      <span className="text-muted"> · </span>
-                      <span className="font-semibold">{s.subject_code}</span> {s.subject_title}
+              <div className="divide-y divide-border-subtle overflow-hidden rounded-md border border-field-border">
+                {termSections.map((s) => (
+                  <label
+                    key={s.section_id}
+                    className="flex min-h-11 cursor-pointer items-start gap-3 bg-card px-3 py-2.5 text-sm hover:bg-hover-tint has-focus-visible:outline-2 has-focus-visible:-outline-offset-2 has-focus-visible:outline-ring"
+                  >
+                    <Input
+                      type="checkbox"
+                      className="mt-0.5 size-5 shrink-0 accent-primary"
+                      checked={selected.includes(s.section_id)}
+                      onChange={() => toggle(s.section_id)}
+                    />
+                    <span className="flex min-w-0 flex-col gap-0.5">
+                      <span>
+                        <span className="font-semibold">{s.subject_code}</span> {s.subject_title}
+                      </span>
+                      <span className="text-muted">
+                        Section {s.section_code} · {s.units} units · {s.schedule ?? 'Schedule to be announced'} ·
+                        Capacity {s.capacity}
+                      </span>
                     </span>
-                    <span className="text-muted">
-                      {s.units} units · {s.schedule ?? 'Schedule to be announced'} · Capacity{' '}
-                      {s.capacity}
-                    </span>
-                  </span>
-                </label>
-              ))
+                  </label>
+                ))}
+              </div>
             )}
             {error && (
-              <p role="alert" className="text-sm text-danger">
+              <p role="alert" className="text-[13px] leading-5 text-danger">
                 {error}
               </p>
             )}
           </fieldset>
 
-          <div className="flex items-center gap-3">
+          <div>
             <Button type="submit">Submit enrollment</Button>
-            <span className="text-sm text-muted">New enrollments start as Pending.</span>
           </div>
         </form>
-      </Card>
+      </Section>
 
-      <div className="flex flex-col gap-3">
-        <h2 className="text-base font-bold">Your enrollments</h2>
-        {enrollments.length === 0 && <p className="text-sm text-muted">No enrollments yet.</p>}
-        {enrollments.map((en) => (
-          <Card key={en.id} className="p-5">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div>
-                <p className="font-semibold">{termLabel(en.term_id)}</p>
-                <p className="text-sm text-muted">
-                  Year {en.year_level} · Submitted {en.submitted_at.slice(0, 10)}
-                </p>
-              </div>
-              <StatusBadge status={en.status} />
-            </div>
-            <ul className="mt-3 divide-y divide-border text-sm">
-              {en.section_ids.map((id) => {
-                const s = sectionById.get(id)
-                if (!s) return null
-                return (
-                  <li key={id} className="flex flex-wrap justify-between gap-x-4 py-2">
-                    <span>
-                      <span className="font-semibold">{s.subject_code}</span> {s.subject_title}
-                      <span className="text-muted"> ({s.section_code})</span>
-                    </span>
-                    <span className="text-muted">
-                      {s.units} units · {s.schedule ?? 'TBA'}
-                    </span>
-                  </li>
-                )
-              })}
-            </ul>
-          </Card>
-        ))}
-      </div>
+      {enrollments.length > 0 && (
+        <Section title="Enrollment history">
+          <ul className="divide-y divide-border-subtle overflow-hidden rounded-lg border border-edge bg-card text-sm">
+            {enrollments.map((en) => (
+              <li key={en.id} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-4 py-3">
+                <span className="flex flex-col">
+                  <span className="font-semibold">{termLabel(en.term_id)}</span>
+                  <span className="text-muted">
+                    Year {en.year_level} · Submitted {formatShortDate(en.submitted_at)} · {en.section_ids.length}{' '}
+                    subjects
+                  </span>
+                </span>
+                <StatusBadge status={en.status} />
+              </li>
+            ))}
+          </ul>
+        </Section>
+      )}
     </div>
   )
 }

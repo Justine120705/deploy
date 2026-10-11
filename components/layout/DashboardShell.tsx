@@ -4,42 +4,64 @@ import { NAV_ITEMS } from '@/lib/nav'
 import { Icon } from './Icon'
 import ShellFrame from './ShellFrame'
 
-// Shared frame for every module page: role-based sidebar, top bar, page title and sign-out.
+// Shared frame for every module page: flat role-based sidebar, optional page header and sign-out.
 // Build each module's real UI inside {children}.
 export default function DashboardShell({
   profile,
   title,
   subtitle,
   actions,
+  userMeta,
+  promo,
+  settingsHref,
+  variant,
   children,
 }: {
   profile: CurrentProfile
-  title: string
+  /** Page heading. Leave it out for screens that open with their own first line (the student dashboard). */
+  title?: string
   subtitle?: string
   actions?: React.ReactNode
+  /** Line under the user's name in the sidebar user row; defaults to the role. */
+  userMeta?: string
+  /** Accepted for compatibility; the flat shell does not render a sidebar promo. */
+  promo?: React.ReactNode
+  settingsHref?: string
+  /** Defaults to `student` for the Student role and `staff` for every other role (staff adds the role label). */
+  variant?: 'student' | 'staff'
   children: React.ReactNode
 }) {
+  const shell = variant ?? (profile.role === 'Student' ? 'student' : 'staff')
   return (
     <ShellFrame
       items={NAV_ITEMS[profile.role]}
       roleLabel={profile.role}
       userName={`${profile.firstName} ${profile.lastName}`}
+      userMeta={userMeta}
+      promo={promo}
+      settingsHref={settingsHref}
+      variant={shell}
+      title={title}
       signOut={
         <form action={logout}>
-          <button className="flex h-11 w-full items-center gap-3 rounded-lg px-3 text-sm font-medium text-muted transition-colors hover:bg-accent/60 hover:text-accent-foreground">
-            <Icon name="logout" />
+          <button className="flex h-10 w-full items-center gap-3 rounded-md px-2.5 text-sm font-medium text-muted transition-colors max-lg:h-11 hover:bg-hover-tint hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
+            <span className="flex size-5 shrink-0 items-center justify-center">
+              <Icon name="logout" />
+            </span>
             Sign out
           </button>
         </form>
       }
     >
-      <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-extrabold">{title}</h1>
-          {subtitle && <p className="mt-1 text-sm text-muted">{subtitle}</p>}
-        </div>
-        {actions}
-      </div>
+      {title && (
+        <header className="mb-6 flex flex-wrap items-end justify-between gap-x-4 gap-y-3 lg:mb-8">
+          <div className="min-w-0">
+            <h1 className="text-2xl font-semibold tracking-[-0.01em]">{title}</h1>
+            {subtitle && <p className="mt-1 max-w-[70ch] text-sm text-muted">{subtitle}</p>}
+          </div>
+          {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
+        </header>
+      )}
       {children}
     </ShellFrame>
   )

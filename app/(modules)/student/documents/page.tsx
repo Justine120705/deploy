@@ -1,5 +1,6 @@
 import DashboardShell from '@/components/layout/DashboardShell'
 import DocumentRequestsView from '@/components/student/DocumentRequestsView'
+import { JumpLink } from '@/components/student/PageActions'
 import { requireRole } from '@/lib/auth/session'
 import { MOCK_STUDENT_ID, documentRequests, documentTypes } from '@/lib/mock-data'
 
@@ -15,14 +16,16 @@ export default async function StudentDocumentsPage() {
       purpose: r.purpose,
       copies: r.copies,
       requested_at: r.requested_at,
+      processed_at: r.processed_at,
       status: r.status,
     }))
 
   return (
     <DashboardShell
       profile={profile}
-      title="Document Requests"
-      subtitle="Request and track official documents."
+      title="Document requests"
+      subtitle="Request records from the Registrar and track their status"
+      actions={<JumpLink href="#new-request">New request</JumpLink>}
     >
       <DocumentRequestsView documentTypes={documentTypes} initialRequests={records} />
     </DashboardShell>

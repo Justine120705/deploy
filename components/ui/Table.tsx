@@ -1,15 +1,17 @@
 import { cn } from "@/lib/utils";
 
+// A hairline-ruled sheet. The header has no fill (a solid card background so it can be made sticky),
+// 12px medium muted labels in sentence case; rows are separated by a subtle rule and tint on hover.
 export function Table({ className, ...props }: React.HTMLAttributes<HTMLTableElement>) {
   return (
-    <div className="w-full overflow-x-auto rounded-xl border border-border bg-card">
-      <table className={cn("w-full text-left text-sm text-foreground", className)} {...props} />
+    <div className="w-full overflow-x-auto rounded-lg border border-edge bg-card">
+      <table className={cn("w-full text-left text-sm tabular-nums text-foreground", className)} {...props} />
     </div>
   );
 }
 
 export function TableHeader({ className, ...props }: React.HTMLAttributes<HTMLTableSectionElement>) {
-  return <thead className={cn("border-b border-border-subtle bg-lilac-soft", className)} {...props} />;
+  return <thead className={cn("border-b border-border bg-card", className)} {...props} />;
 }
 
 export function TableBody(props: React.HTMLAttributes<HTMLTableSectionElement>) {
@@ -19,7 +21,10 @@ export function TableBody(props: React.HTMLAttributes<HTMLTableSectionElement>) 
 export function TableRow({ className, ...props }: React.HTMLAttributes<HTMLTableRowElement>) {
   return (
     <tr
-      className={cn("border-b border-border-subtle last:border-b-0 hover:bg-accent/60", className)}
+      className={cn(
+        "border-b border-border-subtle transition-colors last:border-b-0 [tbody_&]:hover:bg-hover-tint",
+        className
+      )}
       {...props}
     />
   );
@@ -28,12 +33,23 @@ export function TableRow({ className, ...props }: React.HTMLAttributes<HTMLTable
 export function TableHead({ className, ...props }: React.ThHTMLAttributes<HTMLTableCellElement>) {
   return (
     <th
-      className={cn("px-3.5 py-2 text-xs font-semibold uppercase tracking-wide text-neutral", className)}
+      className={cn("h-10 px-4 py-2 text-xs font-medium whitespace-nowrap text-muted", className)}
       {...props}
     />
   );
 }
 
 export function TableCell({ className, ...props }: React.TdHTMLAttributes<HTMLTableCellElement>) {
-  return <td className={cn("h-14 px-3.5 py-3 align-middle font-medium", className)} {...props} />;
+  return <td className={cn("h-12 px-4 py-2.5 align-middle", className)} {...props} />;
+}
+
+// Row for a table with nothing to show. `colSpan` is the number of columns.
+export function EmptyRow({ colSpan, children }: { colSpan: number; children: React.ReactNode }) {
+  return (
+    <tr>
+      <td colSpan={colSpan} className="px-4 py-10 text-center text-sm text-muted">
+        {children}
+      </td>
+    </tr>
+  );
 }

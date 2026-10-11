@@ -1,16 +1,19 @@
-import ModulePage from '@/components/layout/ModulePage'
+import DashboardShell from '@/components/layout/DashboardShell'
+import DashboardView from '@/components/cashier/DashboardView'
+import { LinkButton } from '@/components/cashier/LinkButton'
+import { requireRole } from '@/lib/auth/session'
+import { CASHIER_TERM } from '@/lib/mock/cashier-data'
 
-export default function CashierDashboardPage() {
+export default async function CashierDashboardPage() {
+  const profile = await requireRole('Cashier')
   return (
-    <ModulePage
-      role="Cashier"
-      title="Cashier Dashboard"
-      subtitle="Collections and finance clearance overview."
-      planned={[
-      "Unpaid charges summary",
-      "Recent payments",
-      "Students with finance holds",
-      ]}
-    />
+    <DashboardShell profile={profile} title="Dashboard" subtitle={`Cashier's Office, ${CASHIER_TERM}`}
+      actions={
+        <LinkButton href="/cashier/payments#record" icon="check">
+          Log a payment
+        </LinkButton>
+      }>
+      <DashboardView />
+    </DashboardShell>
   )
 }

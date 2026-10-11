@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 
 export type TabItem = { id: string; label: string; content: React.ReactNode };
 
+// Underline tabs: a hairline under the row, a 2px accent line under the selected tab.
 export function Tabs({ tabs, className }: { tabs: TabItem[]; className?: string }) {
   const [active, setActive] = useState(tabs[0]?.id);
   const base = useId();
@@ -12,7 +13,7 @@ export function Tabs({ tabs, className }: { tabs: TabItem[]; className?: string 
 
   return (
     <div className={className}>
-      <div role="tablist" className="flex gap-1 overflow-x-auto border-b border-border-subtle">
+      <div role="tablist" className="flex gap-4 overflow-x-auto border-b border-border">
         {tabs.map((t) => {
           const selected = t.id === current?.id;
           return (
@@ -25,11 +26,11 @@ export function Tabs({ tabs, className }: { tabs: TabItem[]; className?: string 
               aria-controls={`${base}-panel-${t.id}`}
               onClick={() => setActive(t.id)}
               className={cn(
-                "-mb-px whitespace-nowrap border-b-2 px-4 py-2.5 text-sm font-semibold transition-colors",
-                "focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-lilac",
+                "-mb-px h-10 whitespace-nowrap border-b-2 px-1 text-sm transition-colors max-lg:h-11",
+                "focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring",
                 selected
-                  ? "border-primary text-foreground"
-                  : "border-transparent text-muted hover:text-foreground"
+                  ? "border-accent-foreground font-semibold text-foreground"
+                  : "border-transparent font-medium text-muted hover:text-foreground"
               )}
             >
               {t.label}

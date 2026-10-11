@@ -1,15 +1,17 @@
-import ModulePage from '@/components/layout/ModulePage'
+import DashboardShell from '@/components/layout/DashboardShell'
+import ClearanceView from '@/components/cashier/ClearanceView'
+import { requireRole } from '@/lib/auth/session'
+import { CASHIER_TERM } from '@/lib/mock/cashier-data'
 
-export default function CashierClearancePage() {
+export default async function CashierClearancePage() {
+  const profile = await requireRole('Cashier')
   return (
-    <ModulePage
-      role="Cashier"
+    <DashboardShell
+      profile={profile}
       title="Finance Clearance"
-      subtitle="Finance clearance per student."
-      planned={[
-      "Students and finance clearance status",
-      "Auto-clears when all charges are Cleared or Waived",
-      ]}
-    />
+      subtitle={`Cashier's Office, ${CASHIER_TERM}. One clearance item per student, cleared automatically.`}
+    >
+      <ClearanceView />
+    </DashboardShell>
   )
 }

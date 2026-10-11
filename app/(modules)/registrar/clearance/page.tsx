@@ -1,15 +1,19 @@
-import ModulePage from '@/components/layout/ModulePage'
+import { requireRole } from '@/lib/auth/session'
+import DashboardShell from '@/components/layout/DashboardShell'
+import { ClearanceActions, ClearanceBody, ClearanceProvider } from '@/components/registrar/ClearanceReview'
 
-export default function RegistrarClearancePage() {
+export default async function RegistrarClearancePage() {
+  const profile = await requireRole('Registrar')
   return (
-    <ModulePage
-      role="Registrar"
-      title="Clearance"
-      subtitle="Final approval of student clearances."
-      planned={[
-      "Clearances with all items cleared",
-      "Final approval action",
-      ]}
-    />
+    <ClearanceProvider>
+      <DashboardShell
+        profile={profile}
+        title="Clearance"
+        subtitle="1st Sem 2026-2027 · final approval once every office has cleared"
+        actions={<ClearanceActions />}
+      >
+        <ClearanceBody />
+      </DashboardShell>
+    </ClearanceProvider>
   )
 }

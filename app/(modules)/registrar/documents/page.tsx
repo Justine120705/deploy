@@ -1,15 +1,19 @@
-import ModulePage from '@/components/layout/ModulePage'
+import { requireRole } from '@/lib/auth/session'
+import DashboardShell from '@/components/layout/DashboardShell'
+import { DocumentsActions, DocumentsBody, DocumentsProvider } from '@/components/registrar/DocumentsQueue'
 
-export default function RegistrarDocumentsPage() {
+export default async function RegistrarDocumentsPage() {
+  const profile = await requireRole('Registrar')
   return (
-    <ModulePage
-      role="Registrar"
-      title="Document Requests"
-      subtitle="Process document requests."
-      planned={[
-      "Request queue with status",
-      "Mark requests processing, ready or released",
-      ]}
-    />
+    <DocumentsProvider>
+      <DashboardShell
+        profile={profile}
+        title="Document Requests"
+        subtitle="Registrar Office · process requests from students"
+        actions={<DocumentsActions />}
+      >
+        <DocumentsBody />
+      </DashboardShell>
+    </DocumentsProvider>
   )
 }
