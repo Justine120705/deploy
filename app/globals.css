@@ -4,53 +4,60 @@
    device setting), not by the media query. See app/layout.tsx and components/ui/ThemeToggle.tsx. */
 @custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
 
-/* Design tokens: "calm records office" direction (.impeccable/surfaces/app-modules-student-page-tsx.md).
-   Near-white ground, white sheets, hairlines, ONE lavender accent from the CU mark, semantic tints that
-   always travel with words. Use the token classes (bg-card, text-muted, bg-success-soft ...) instead of
-   hard-coded colors so light and dark stay in sync. Contrast figures are measured (WCAG 2 ratio). */
+/* Design tokens: "warm butter glass" (the PM's redesign brief, 2026-10-12).
+   Warm off-white canvas with a soft marigold glow, frosted white glass surfaces, deep charcoal for the
+   active pill and the primary action, ONE accent (#FFD85E marigold) for badges, rings and progress.
+   Large soft radii (see --radius-* below), pill buttons, hairlines that are only a tint of black or white.
+   Use the token classes (bg-card, text-muted, bg-success-soft ...) instead of hard-coded colors so light and
+   dark stay in sync.
+   Accessibility adjustments to the brief, kept on purpose (the project's own AA standard): muted text is
+   #66666f, not #71717a (4.4:1 on the canvas); field borders are a visible 3:1 stroke, not a 1.2:1 tint;
+   marigold is never used as small text on light, links and selected text use a deep gold-brown instead. */
 :root {
   color-scheme: light;
 
-  /* Hue family. soft = tinted background, strong = text and icons (>= 5.8:1 on soft, card and page),
-     solid = chart marks, dots, bars (>= 4:1 on card, >= 3.5:1 on soft). Calmer, lower chroma than before.
-     violet = academics + the brand accent, sky = info/enrollment, teal = success/clearance,
-     amber = attention/fees, rose = problems/holds. */
-  --hue-violet-soft: #f1ebf8;
-  --hue-violet-strong: #62379a;
-  --hue-violet-solid: #8a62b8;
-  --hue-sky-soft: #e7f1f8;
+  /* Hue family. soft = tinted background, strong = text and icons (>= 4.5:1 on soft, card and canvas),
+     solid = chart marks, dots, bars. "violet" is now the marigold family (the old brand accent slot).
+     sky = info/enrollment, teal = success/clearance, amber = attention/fees, rose = problems/holds. */
+  --hue-violet-soft: #fff0bf;
+  --hue-violet-strong: #6b4e00;
+  --hue-violet-solid: #e8b400;
+  --hue-sky-soft: #e4eff6;
   --hue-sky-strong: #1d5d84;
   --hue-sky-solid: #3d7fab;
-  --hue-teal-soft: #e5f2ec;
+  --hue-teal-soft: #e2f0e9;
   --hue-teal-strong: #1b684c;
   --hue-teal-solid: #3a886a;
-  --hue-amber-soft: #f8eedd;
+  --hue-amber-soft: #fbecd2;
   --hue-amber-strong: #7f5110;
   --hue-amber-solid: #a8741f;
-  --hue-rose-soft: #f8e9eb;
+  --hue-rose-soft: #f8e6e8;
   --hue-rose-strong: #983244;
   --hue-rose-solid: #c05a68;
 
-  --ring: #7e4fb0;               /* CU brand purple; focus outline, 5.3:1 on the page */
-  --background: #f6f5f8;         /* uncoated ground */
-  --foreground: #1a1923;         /* ink, never pure black: 16:1 on the page */
-  --muted: #5f5c6c;              /* secondary text: 6.0:1 on page, 6.5:1 on card, 5.6:1 on the accent tint */
-  --card: #ffffff;               /* sheet */
-  --card-raised: #ffffff;
-  --border: #dddae3;             /* hairline */
-  --border-subtle: #ebe9ef;      /* row rules inside a sheet */
-  --edge: #e3e0e8;               /* outline of a sheet */
-  --field-border: #8b8799;       /* input/select/textarea border: 3.5:1 on card, 3.2:1 on page */
-  --hover-tint: #f3f1f6;         /* row and ghost-button hover */
+  --ring: #18181b;               /* focus outline: charcoal, 16:1 on the canvas (the marigold glow is added on fields) */
+  --background: #f6f6f4;         /* warm canvas; the body adds the marigold glow on top */
+  --foreground: #18181b;         /* ink: 16:1 on the canvas */
+  --muted: #66666f;              /* secondary text: 5.3:1 on the canvas, 5.9:1 on a white glass card */
+  --card: rgb(255 255 255 / 0.65);          /* frosted glass; Card adds backdrop-blur-xl */
+  --card-raised: rgb(255 255 255 / 0.82);
+  --border: rgb(0 0 0 / 0.08);              /* hairline */
+  --border-subtle: rgb(0 0 0 / 0.05);       /* row rules inside a surface */
+  --edge: rgb(0 0 0 / 0.06);                /* outline of a glass surface */
+  --field-border: #8c8c94;                  /* input/select/textarea stroke: 3.2:1 on white */
+  --hover-tint: rgb(0 0 0 / 0.045);         /* row and ghost-button hover */
 
-  --primary: #6b40a0;            /* the one primary action: white text 7.3:1 */
+  --primary: #303030;            /* the primary action and the active pill: white text 12:1 */
   --primary-foreground: #ffffff;
-  --primary-hover: #5a3489;
-  --accent: var(--hue-violet-soft);              /* active nav, selected states */
-  --accent-foreground: var(--hue-violet-strong); /* links, active nav text: 7.1:1 on the tint */
-  --lilac: #8a62b8;              /* legacy name: the accent as a mark (gauge fill) */
-  --lilac-soft: #e7dff1;         /* legacy name: one step deeper than the accent tint (hover) */
-  --sky: #e7f1f8;
+  --primary-hover: #000000;
+  --accent: var(--hue-violet-soft);              /* marigold tint: selected states, accent badges */
+  --accent-foreground: var(--hue-violet-strong); /* links and selected text: 6.8:1 on the tint, 6.3:1 on white */
+  --lilac: #e8b400;              /* legacy name: the accent as a mark (gauge and progress fill) */
+  --lilac-soft: #ffe58a;         /* legacy name: one step deeper than the accent tint (hover) */
+  --sky: #e4eff6;
+  --gold: #ffd85e;               /* the accent itself: badges, pills, rings, glows (always with dark text) */
+  --warm-glass: rgb(255 243 222 / 0.55);    /* warm highlight surface */
+  --warm-edge: rgb(255 216 94 / 0.38);
 
   /* Status: teal = good, amber = attention, rose = problem, sky = information. */
   --success: var(--hue-teal-strong);
@@ -61,21 +68,29 @@
   --danger-soft: var(--hue-rose-soft);
   --info: var(--hue-sky-strong);
   --info-soft: var(--hue-sky-soft);
-  --neutral: #5f5c6c;
-  --neutral-soft: #eeedf1;
+  --neutral: #66666f;
+  --neutral-soft: rgb(0 0 0 / 0.05);
 
-  /* Login backdrop (owned by the login page; removed with it). */
+  /* The sidebar and mobile top bar: a glass panel on the canvas. Active page = the charcoal pill. */
+  --rail: rgb(255 255 255 / 0.62);
+  --rail-foreground: #18181b;
+  --rail-muted: #66666f;
+  --rail-hover: rgb(0 0 0 / 0.05);
+  --rail-active: #303030;
+  --rail-active-foreground: #ffffff;
+  --rail-border: rgb(0 0 0 / 0.07);
+  --rail-ring: #18181b;
 
   /* Charts and calendar */
-  --ink: #1a1923;
+  --ink: #303030;                /* featured charcoal surface, selected day */
   --ink-foreground: #ffffff;
-  --track: #ebe9ef;              /* unfilled gauge track */
+  --track: rgb(0 0 0 / 0.07);    /* unfilled gauge track */
   --chip: transparent;
-  --chart-muted: #8e8a9b;        /* non-highlighted bars: 3.4:1 on card */
+  --chart-muted: #9a9aa2;        /* non-highlighted bars */
   --chart-green: var(--hue-teal-solid);
   --chart-green-soft: var(--hue-teal-soft);
   --chart-area: transparent;     /* no area fills */
-  --tooltip: #1a1923;
+  --tooltip: #18181b;
   --tooltip-foreground: #ffffff;
   --dot-rose: var(--hue-rose-solid);
   --dot-green: var(--hue-teal-solid);
@@ -84,32 +99,31 @@
   --tint-green: var(--hue-teal-soft);
   --tint-amber: var(--hue-amber-soft);
 
-  /* Depth. Hairlines do the work; shadows are neutral ink, tiny and always offset. Use as shadow-elev-*.
-     xs/sm = a sheet resting on the page, md = a slightly lifted sheet, lg = drawer and popovers only. */
-  --elevation-xs: 0 1px 1px rgb(26 25 35 / 0.03);
-  --elevation-sm: 0 1px 2px rgb(26 25 35 / 0.05);
-  --elevation-md: 0 1px 2px rgb(26 25 35 / 0.05), 0 2px 6px -2px rgb(26 25 35 / 0.08);
-  --elevation-lg: 0 2px 4px rgb(26 25 35 / 0.06), 0 12px 32px -12px rgb(26 25 35 / 0.24);
+  /* Depth: soft ambient blurs, never a hard drop. xs/sm = a glass surface resting on the canvas, md = lifted,
+     lg = drawer and popovers only. */
+  --elevation-xs: 0 10px 30px -12px rgb(0 0 0 / 0.04);
+  --elevation-sm: 0 10px 30px -10px rgb(0 0 0 / 0.05);
+  --elevation-md: 0 14px 36px -12px rgb(0 0 0 / 0.09);
+  --elevation-lg: 0 24px 60px -20px rgb(0 0 0 / 0.28);
   --card-surface: none;          /* the old gradient overlay is gone; `surface` is a no-op */
   --pill-highlight: none;
-  /* Photo veils (PhotoBanner, PromoCard): deep tones of the hue family. */
-  --veil-violet: #2a1544;
-  --veil-sky: #0b2b40;
-  --veil-teal: #0a2f26;
-  --veil-amber: #3a2208;
-  --veil-rose: #3d1522;
+  /* Photo veils (PhotoBanner, login panels): warm charcoal, lightly tinted per hue. The photos stay. */
+  --veil-violet: #2a2314;
+  --veil-sky: #17222b;
+  --veil-teal: #10251e;
+  --veil-amber: #33250b;
+  --veil-rose: #33161d;
   --on-veil: #ffffff;
-  --on-veil-muted: #e8ddf7;
+  --on-veil-muted: #f1e7cc;
 }
 
-/* Dark: deep violet-ink ground (not black), sheets one step lighter, visible hairlines. Depth comes from
-   the lighter surface plus the hairline; no glow, no lilac rings. */
+/* Dark: deep carbon canvas, glass one step lighter, marigold carries the primary action and the active pill. */
 :root[data-theme='dark'] {
   color-scheme: dark;
 
-  --hue-violet-soft: #2b2238;
-  --hue-violet-strong: #d0b8f0;
-  --hue-violet-solid: #9e80cc;
+  --hue-violet-soft: rgb(255 216 94 / 0.16);
+  --hue-violet-strong: #ffd85e;
+  --hue-violet-solid: #e0b63c;
   --hue-sky-soft: #162a37;
   --hue-sky-strong: #9ecdeb;
   --hue-sky-solid: #5b9cc6;
@@ -123,26 +137,29 @@
   --hue-rose-strong: #f1afb9;
   --hue-rose-solid: #cf707f;
 
-  --ring: #a888d6;               /* 6.3:1 on the page */
-  --background: #131219;
-  --foreground: #ecebf2;         /* 15.7:1 on page, 14.6:1 on card */
-  --muted: #a5a1b4;              /* 7.4:1 on page, 6.9:1 on card, 6.0:1 on the accent tint */
-  --card: #1b1a23;
-  --card-raised: #211f2a;
-  --border: #33313f;
-  --border-subtle: #272530;
-  --edge: #2c2a37;
-  --field-border: #6f6b82;       /* 3.4:1 on card, 3.6:1 on page */
-  --hover-tint: #23212c;
+  --ring: #ffd85e;               /* 13:1 on the canvas */
+  --background: #121214;
+  --foreground: #f4f4f5;         /* 16:1 on the canvas */
+  --muted: #a1a1aa;              /* 7:1 on the canvas, 6.4:1 on a glass card */
+  --card: rgb(28 28 31 / 0.7);
+  --card-raised: rgb(38 38 43 / 0.78);
+  --border: rgb(255 255 255 / 0.08);
+  --border-subtle: rgb(255 255 255 / 0.06);
+  --edge: rgb(255 255 255 / 0.08);
+  --field-border: #7b7b85;       /* 4:1 on the glass */
+  --hover-tint: rgb(255 255 255 / 0.06);
 
-  --primary: #c3a6eb;            /* lavender button, ink text 8.8:1 */
-  --primary-foreground: #131219;
-  --primary-hover: #d2bbf1;
+  --primary: #ffd85e;            /* marigold pill, dark text 13:1 */
+  --primary-foreground: #121214;
+  --primary-hover: #ffe285;
   --accent: var(--hue-violet-soft);
   --accent-foreground: var(--hue-violet-strong);
-  --lilac: #9e80cc;
-  --lilac-soft: #342a44;
+  --lilac: #e0b63c;
+  --lilac-soft: rgb(255 216 94 / 0.24);
   --sky: #162a37;
+  --gold: #ffd85e;
+  --warm-glass: rgb(38 35 28 / 0.65);
+  --warm-edge: rgb(255 216 94 / 0.22);
 
   --success: var(--hue-teal-strong);
   --success-soft: var(--hue-teal-soft);
@@ -152,20 +169,28 @@
   --danger-soft: var(--hue-rose-soft);
   --info: var(--hue-sky-strong);
   --info-soft: var(--hue-sky-soft);
-  --neutral: #a5a1b4;
-  --neutral-soft: #272530;
+  --neutral: #a1a1aa;
+  --neutral-soft: rgb(255 255 255 / 0.07);
 
+  --rail: rgb(24 24 27 / 0.7);
+  --rail-foreground: #f4f4f5;
+  --rail-muted: #a1a1aa;
+  --rail-hover: rgb(255 255 255 / 0.07);
+  --rail-active: #ffd85e;
+  --rail-active-foreground: #121214;
+  --rail-border: rgb(255 255 255 / 0.08);
+  --rail-ring: #ffd85e;
 
-  --ink: #2a2834;
-  --ink-foreground: #ecebf2;
-  --track: #2c2a37;
+  --ink: #26262b;
+  --ink-foreground: #f4f4f5;
+  --track: rgb(255 255 255 / 0.09);
   --chip: transparent;
-  --chart-muted: #6e6a80;        /* 3.3:1 on card */
+  --chart-muted: #6a6a74;
   --chart-green: var(--hue-teal-solid);
   --chart-green-soft: var(--hue-teal-soft);
   --chart-area: transparent;
-  --tooltip: #ecebf2;
-  --tooltip-foreground: #131219;
+  --tooltip: #f4f4f5;
+  --tooltip-foreground: #121214;
   --dot-rose: var(--hue-rose-solid);
   --dot-green: var(--hue-teal-solid);
   --dot-amber: var(--hue-amber-solid);
@@ -177,25 +202,32 @@
   --elevation-xs: 0 0 #0000;
   --elevation-sm: 0 0 #0000;
   --elevation-md: 0 0 #0000;
-  --elevation-lg: 0 12px 32px -12px rgb(0 0 0 / 0.6);
+  --elevation-lg: 0 24px 60px -20px rgb(0 0 0 / 0.7);
   --card-surface: none;
   --pill-highlight: none;
-  --veil-violet: #1f1033;
-  --veil-sky: #071f2f;
-  --veil-teal: #06221b;
-  --veil-amber: #2a1805;
-  --veil-rose: #2c0f18;
+  --veil-violet: #1b170d;
+  --veil-sky: #0e161d;
+  --veil-teal: #08181a;
+  --veil-amber: #241a07;
+  --veil-rose: #24101a;
 }
 
 /* Type scale 12/14/16/20/24/28 maps onto Tailwind's own size names so tailwind-merge (cn in lib/utils)
    still recognises them: text-xs 12/16, text-sm 14/20, text-base 16/24, text-xl 20/28,
    text-2xl 24/32 (page title), text-3xl 28/36 (stat numbers). Weights stop at 700: extrabold and
-   black are capped so old classes cannot render heavier. */
+   black are capped so old classes cannot render heavier.
+   Radii: the whole app reads these, so cards (rounded-lg) become 24px, fields and chips (rounded-md)
+   16px, small marks (rounded-sm) 8px. Pills use rounded-full. */
 @theme {
   --text-3xl: 1.75rem;
   --text-3xl--line-height: 2.25rem;
   --font-weight-extrabold: 700;
   --font-weight-black: 700;
+  --radius-sm: 0.5rem;
+  --radius-md: 1rem;
+  --radius-lg: 1.5rem;
+  --radius-xl: 1.75rem;
+  --radius-2xl: 2rem;
 }
 
 @theme inline {
@@ -224,6 +256,9 @@
   --color-lilac: var(--lilac);
   --color-lilac-soft: var(--lilac-soft);
   --color-sky: var(--sky);
+  --color-gold: var(--gold);
+  --color-warm-glass: var(--warm-glass);
+  --color-warm-edge: var(--warm-edge);
   --color-success: var(--success);
   --color-success-soft: var(--success-soft);
   --color-warning: var(--warning);
@@ -267,6 +302,14 @@
   --color-hue-rose-strong: var(--hue-rose-strong);
   --color-hue-rose-solid: var(--hue-rose-solid);
   --color-ring: var(--ring);
+  --color-rail: var(--rail);
+  --color-rail-foreground: var(--rail-foreground);
+  --color-rail-muted: var(--rail-muted);
+  --color-rail-hover: var(--rail-hover);
+  --color-rail-active: var(--rail-active);
+  --color-rail-active-foreground: var(--rail-active-foreground);
+  --color-rail-border: var(--rail-border);
+  --color-rail-ring: var(--rail-ring);
 }
 
 /* Legacy: the old card gradient overlay. --card-surface is `none`, so this does nothing; it is kept so
@@ -275,8 +318,18 @@
   background-image: var(--card-surface);
 }
 
+/* Glass: the frosted surface used by cards, the sidebar, tables, popovers and fields. Needs a
+   translucent background (the --card tokens) behind it. */
+@utility glass {
+  -webkit-backdrop-filter: blur(24px) saturate(1.1);
+  backdrop-filter: blur(24px) saturate(1.1);
+}
+
 body {
-  background: var(--background);
+  background-color: var(--background);
+  /* The warm marigold glow in the top right, fixed behind the content. */
+  background-image: radial-gradient(circle at 80% 10%, rgb(255 216 94 / 0.22) 0%, rgb(246 246 244 / 0) 65%);
+  background-attachment: fixed;
   color: var(--foreground);
   font-family: var(--font-sans), sans-serif;
   font-size: 0.875rem;
@@ -284,21 +337,86 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+:root[data-theme='dark'] body {
+  background-image: radial-gradient(circle at 85% 15%, rgb(255 216 94 / 0.08) 0%, rgb(18 18 20 / 0) 60%);
+}
+
+/* Sign-in page: switching Student <-> Staff swaps the sides. The photo panel slides across and the card pops
+   in on its new side. Two names for the same pop so a second switch restarts it. Off for reduced motion. */
+@keyframes slide-from-right {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: none;
+  }
+}
+@keyframes slide-from-left {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: none;
+  }
+}
+@keyframes card-pop-a {
+  0% {
+    opacity: 0;
+    transform: translateY(14px) scale(0.88);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(0) scale(1.025);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes card-pop-b {
+  0% {
+    opacity: 0;
+    transform: translateY(14px) scale(0.88);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(0) scale(1.025);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .anim-slide-from-right {
+    animation: slide-from-right 0.75s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .anim-slide-from-left {
+    animation: slide-from-left 0.75s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .anim-pop-a {
+    animation: card-pop-a 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.12s both;
+  }
+  .anim-pop-b {
+    animation: card-pop-b 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.12s both;
+  }
+}
 
 /* Browser surfaces, themed from the palette. */
 ::selection {
-  background: color-mix(in srgb, var(--ring) 28%, transparent);
+  background: rgb(255 216 94 / 0.45);
   color: var(--foreground);
 }
 html {
   accent-color: var(--primary);
   caret-color: var(--accent-foreground);
-  scrollbar-color: var(--border) transparent;
+  scrollbar-color: var(--field-border) transparent;
 }
 h1,
 h2,
 h3 {
   text-wrap: balance;
+  letter-spacing: -0.015em;
 }
 a {
   text-underline-offset: 3px;
@@ -307,18 +425,8 @@ table {
   font-variant-numeric: tabular-nums;
 }
 
-/* Staff sign-in (login page only): the same system with the sky hue as the accent instead of lavender,
-   so the staff entrance reads as the offices' side of the portal. The utilities read these variables
-   live (@theme inline), so setting them on the wrapper is enough. Light and dark are both covered. */
+/* Staff sign-in and the staff shell keep their own class so the two sides can still diverge; in this theme
+   they share one palette, so it only marks the wrapper. */
 .theme-staff {
-  --primary: var(--hue-sky-strong);
-  --primary-foreground: #ffffff;
-  --primary-hover: #174c6c;
-  --ring: var(--hue-sky-solid);
-  --accent: var(--hue-sky-soft);
-  --accent-foreground: var(--hue-sky-strong);
-}
-:root[data-theme='dark'] .theme-staff {
-  --primary-foreground: #0b1620;
-  --primary-hover: #b9dcf2;
+  --staff: 1;
 }

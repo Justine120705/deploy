@@ -4,14 +4,14 @@ import { cn } from "@/lib/utils";
 // 12px medium muted labels in sentence case; rows are separated by a subtle rule and tint on hover.
 export function Table({ className, ...props }: React.HTMLAttributes<HTMLTableElement>) {
   return (
-    <div className="w-full overflow-x-auto rounded-lg border border-edge bg-card">
+    <div className="glass w-full overflow-x-auto rounded-lg border border-edge bg-card shadow-elev-sm">
       <table className={cn("w-full text-left text-sm tabular-nums text-foreground", className)} {...props} />
     </div>
   );
 }
 
 export function TableHeader({ className, ...props }: React.HTMLAttributes<HTMLTableSectionElement>) {
-  return <thead className={cn("border-b border-border bg-card", className)} {...props} />;
+  return <thead className={cn("glass border-b border-border bg-card", className)} {...props} />;
 }
 
 export function TableBody(props: React.HTMLAttributes<HTMLTableSectionElement>) {

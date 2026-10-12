@@ -44,7 +44,7 @@ export default function DashboardShell({
       title={title}
       signOut={
         <form action={logout}>
-          <button className="flex h-10 w-full items-center gap-3 rounded-md px-2.5 text-sm font-medium text-muted transition-colors max-lg:h-11 hover:bg-hover-tint hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
+          <button className="flex h-10 w-full items-center gap-3 rounded-full px-3 text-sm font-medium text-rail-muted transition-colors max-lg:h-11 hover:bg-rail-hover hover:text-rail-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rail-ring">
             <span className="flex size-5 shrink-0 items-center justify-center">
               <Icon name="logout" />
             </span>

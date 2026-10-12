@@ -1,13 +1,14 @@
 import { cn } from "@/lib/utils";
 
-// Small status tag: tint + strong text (>= 5.8:1 in both themes). The word is always there; colour only
-// reinforces it. 6px corners, never a pill.
+// Small status tag: tint + strong text (>= 4.5:1 in both themes). The word is always there; colour only
+// reinforces it. A pill. `accent` is the solid marigold tag with dark text.
 const tones = {
   success: "bg-success-soft text-success",
   warning: "bg-warning-soft text-warning",
   danger: "bg-danger-soft text-danger",
   info: "bg-info-soft text-info",
   neutral: "bg-neutral-soft text-neutral",
+  accent: "bg-gold text-[#18181b]",
 } as const;
 
 export type BadgeTone = keyof typeof tones;
@@ -21,7 +22,7 @@ export function Badge({
   return (
     <span
       className={cn(
-        "inline-flex h-6 items-center gap-1 rounded-md px-2 text-xs font-medium whitespace-nowrap",
+        "inline-flex h-6 items-center gap-1 rounded-full px-2.5 text-xs font-medium whitespace-nowrap",
         tones[tone],
         className
       )}

@@ -7,8 +7,8 @@ import type { Hue } from "./hue";
 // a 1px contact shadow, "raised" = a touch more. In dark mode depth is the lighter surface + hairline.
 const ELEVATION = {
   flat: "shadow-none",
-  base: "bg-card shadow-elev-xs",
-  raised: "bg-card-raised shadow-elev-md",
+  base: "shadow-elev-sm",
+  raised: "shadow-elev-md",
 } as const;
 
 // `interactive`: only for a card that is itself one link or button. The hairline darkens on hover and
@@ -17,20 +17,31 @@ const INTERACTIVE =
   "transition-colors hover:border-field-border " +
   "has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-ring";
 
+// tone: "glass" = the standard frosted surface, "warm" = soft marigold-tinted glass for one highlighted card,
+// "charcoal" = the dark featured card (white text). Layout and content are never affected by the tone.
+const TONE = {
+  glass: "bg-card",
+  warm: "border-warm-edge bg-warm-glass",
+  charcoal: "border-white/10 bg-ink text-ink-foreground",
+} as const;
+
 export function Card({
   className,
   children,
   elevation = "base",
   interactive = false,
+  tone = "glass",
   ...props
 }: React.HTMLAttributes<HTMLDivElement> & {
   elevation?: keyof typeof ELEVATION;
   interactive?: boolean;
+  tone?: keyof typeof TONE;
 }) {
   return (
     <div
       className={cn(
-        "rounded-lg border border-edge bg-card text-foreground",
+        "glass rounded-lg border border-edge text-foreground",
+        TONE[tone],
         ELEVATION[elevation],
         interactive && INTERACTIVE,
         className
