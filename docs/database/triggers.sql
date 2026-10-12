@@ -5,7 +5,7 @@
 -- hardening2.sql (section B), trigger_dept_approval.sql (section 5, run live 2026-10-11),
 -- trigger_finance_autoclear.sql (section 6, run live 2026-10-11) and
 -- trigger_final_clearance.sql (section 7, run live 2026-10-11), grades_rules.sql
--- (section 8) and documents_rules.sql (section 9), both run live 2026-10-12.
+-- (section 8) and documents_rules.sql (section 9) and enrollment_rules.sql (section 10), all run live 2026-10-12.
 -- The real source of these triggers is those files; this file only lists them in one
 -- place so the repo shows the full picture.
 -- Supabase's own triggers (schemas realtime, storage, auth) are not listed.
@@ -19,7 +19,7 @@
 -- and then rolled back, so running this file by mistake changes nothing.
 
 BEGIN;
-DO $$ BEGIN RAISE EXCEPTION 'docs/database/triggers.sql is a record, not a script; use hardening.sql / hardening2.sql / trigger_dept_approval.sql / trigger_finance_autoclear.sql / trigger_final_clearance.sql / grades_rules.sql / documents_rules.sql'; END $$;
+DO $$ BEGIN RAISE EXCEPTION 'docs/database/triggers.sql is a record, not a script; use hardening.sql / hardening2.sql / trigger_dept_approval.sql / trigger_finance_autoclear.sql / trigger_final_clearance.sql / grades_rules.sql / documents_rules.sql / enrollment_rules.sql'; END $$;
 
 -- ------------------------------------------
 -- 1. Clearance items (pre-existing, not created by this repo's SQL)
@@ -196,5 +196,23 @@ CREATE TRIGGER stamp_encoded_at BEFORE INSERT OR UPDATE ON public.grades
 --   INSERT: RLS WITH CHECK -> write -> audit_log (AFTER)
 CREATE TRIGGER require_document_status_flow BEFORE UPDATE ON public.document_requests
   FOR EACH ROW EXECUTE FUNCTION private.require_document_status_flow();
+
+-- ------------------------------------------
+-- 10. Enrollment rules (enrollment_rules.sql, issue #94, REQ-STU-05 / REQ-REG-04). Functions
+--     private.require_enrollment_rules() and private.require_enrollment_item_rules()
+--     (SECURITY DEFINER). One enrollment per student per term; Pending -> Approved / Rejected,
+--     both final; reviewed_by / reviewed_at from the database; approval needs sections of the
+--     enrollment's term and a free seat (Approved enrollments only count); items change only
+--     while Pending. Messages start with enrollment exists:, invalid status:, enrollment
+--     locked:, reviewer required:, wrong term:, duplicate section:, no items:, section full:.
+-- ------------------------------------------
+-- Firing order on enrollments: guard_immutable_columns (BEFORE), require_enrollment_rules
+--   (BEFORE), RLS WITH CHECK and constraints, write, audit_log (AFTER).
+-- Firing order on enrollment_items: require_enrollment_item_rules (BEFORE), RLS, write,
+--   audit_log (AFTER).
+CREATE TRIGGER require_enrollment_rules BEFORE INSERT OR UPDATE ON public.enrollments
+  FOR EACH ROW EXECUTE FUNCTION private.require_enrollment_rules();
+CREATE TRIGGER require_enrollment_item_rules BEFORE INSERT OR UPDATE OR DELETE ON public.enrollment_items
+  FOR EACH ROW EXECUTE FUNCTION private.require_enrollment_item_rules();
 
 ROLLBACK;
