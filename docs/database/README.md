@@ -28,6 +28,9 @@ team** (see Project Charter, section 5: "ERD and 3NF Tables").
 | `trigger_final_clearance.sql` | Issue 24 (#63), REQ-REG-03: BEFORE UPDATE trigger `require_all_items_cleared` on `clearances` (function `private.require_all_items_cleared()`, SECURITY DEFINER) rejects approving a clearance (`approved_at` or `approved_by` NULL -> value) while any of its items is pending (the Financial item included) or when it has no items; SQLSTATE P0001, message `pending items: ...`; applies to every role; who may approve is unchanged (Registrar only, by policy); design decisions in the header; safety checks before and after, rollback and diagnostics as comments. **NOT RUN YET** (untested, no local PostgreSQL) |
 | `trigger_final_clearance_test.sql` | Tests TC-62 to TC-70 for `trigger_final_clearance.sql` (each block creates its own data and ends in `ROLLBACK`) |
 | `trigger_final_clearance_rehearsal.sql` | `trigger_final_clearance.sql` plus TC-62 to TC-70 in ONE rolled-back transaction with one result row (TC-62R); its test part (from the `TESTS START HERE` line) also runs on its own once the change is live |
+| `login_lockout.sql` | Issue #90 (Sprint 4 issue 34), SEC-03: login lockout with exponential backoff. `public.check_login_lockout(p_email)` (returns only `locked`, `seconds_remaining`) and `public.record_login_attempt(p_email, p_success, p_ip)`, both SECURITY DEFINER with EXECUTE for anon and authenticated only; helpers `private.login_lockout_settings()` (the policy constants: 5 failures, 60 s doubling, cap 900 s, 24 h window, 254 characters), `private.login_lockout_email()`, `private.login_lockout_state()`; index on `login_attempts (lower(email), attempted_at DESC)`; anon loses every privilege on `login_attempts`, authenticated loses writes. A success is accepted only from the signed-in owner of the email; failures while locked are ignored. Design decisions and residual risks (DoS lockout, direct calls to Supabase Auth, check/sign-in race) in the header; safety checks before and after, rollback, diagnostics and maintenance (retention) as comments. **Run live 2026-10-12** (rehearsed first; TC-72 to TC-82 pass live) |
+| `login_lockout_test.sql` | Tests TC-72 to TC-82 for `login_lockout.sql`, ONE rolled-back transaction with one result row (own throwaway data under `@lockout.test`, anon simulated with `SET LOCAL ROLE anon`) |
+| `login_lockout_rehearsal.sql` | `login_lockout.sql` plus TC-72 to TC-82 in ONE rolled-back transaction with one result row (TC-72R); its test part (from the `TESTS START HERE` line) is the same as `login_lockout_test.sql` |
 | `grades_rules.sql` | Issue 36 (#92), REQ-REG-01: grades path. Grants on `grades` (SELECT; INSERT `enrollment_item_id, grade_code, encoded_by`; UPDATE `grade_code, encoded_by`; no DELETE) and `v_grades` (SELECT) to `authenticated` only, nothing for anon; BEFORE triggers `require_approved_enrollment` (a grade only for an item of an Approved enrollment; SQLSTATE P0001, message `not approved: ...`) and `stamp_encoded_at` (`encoded_at` = now() on every write, not granted to clients); policies unchanged (Registrar only, `encoded_by` = own id); `grade_code` checked by the existing foreign key to `grade_scale`; safety checks before and after, rollback and diagnostics as comments. **Run live 2026-10-12** (rehearsed first, passed) |
 | `grades_rules_test.sql` | Tests TC-83 to TC-93 for `grades_rules.sql` in ONE rolled-back script with one result row (creates its own throwaway term, enrollments and grades) |
 | `grades_rules_rehearsal.sql` | `grades_rules.sql` plus TC-83 to TC-93 in ONE rolled-back transaction with one result row; its test part (from the `TESTS START HERE` line) also runs on its own once the change is live |
@@ -89,6 +92,13 @@ Run in the Supabase **SQL Editor** (or `psql`), in exactly this order:
    of the rehearsal file on its own), then TC-37 and TC-39 (`grants_clearance_test.sql`), Parts J and K and
    `regression_after_grants.sql` again (TC-18, TC-19, TC-37 and TC-39 were adjusted for the new rule; Part L explains
    how). Undo with its ROLLBACK block (drop the trigger, drop the function).
+14. **`login_lockout.sql`** (issue #90, SEC-03; after `hardening2.sql` section C; independent of steps 9 to 13).
+   **Run live 2026-10-12** (rehearsed first; TC-72 to TC-82 pass live). First run `login_lockout_rehearsal.sql` (the change and
+   TC-72 to TC-82 in one rolled-back transaction, TC-72R; every cell must end in `-> OK`, `all_ok` true) and save
+   diagnostics (a), (b) and (e) of `login_lockout.sql`. Then run the file as a whole, then
+   `login_lockout_test.sql` (TC-72 to TC-82) and `regression_after_grants.sql` again. Deploy the app change that
+   calls the two functions only AFTER the file is live. Undo with its ROLLBACK block (remove the app calls first;
+   drops the five functions and the index; the revoked table privileges stay revoked).
 15. **`grades_rules.sql`** (issue #92, REQ-REG-01; after `trigger_final_clearance.sql`). **Run live 2026-10-12** (rehearsed first; all tests pass live). First run
    `grades_rules_rehearsal.sql` (the change and TC-83 to TC-93 in one rolled-back transaction; every cell must
    end in `-> OK`, `all_ok` true) and save diagnostics (a), (b) and (d) of `grades_rules.sql` ((d) must return no
@@ -103,7 +113,6 @@ Run in the Supabase **SQL Editor** (or `psql`), in exactly this order:
    `document_requests` in the dashboard's Data API settings; if anyone does, run the file again. Undo with its
    ROLLBACK block (drop the trigger and the function, `document_requests` back to authenticated SELECT only,
    sequence grants as in the saved diagnostic (a)).
-   (Step 14 is `login_lockout.sql`, on its own branch.)
 
 `triggers.sql` is a record of the triggers, **not** a step: do not run it (it stops itself
 and rolls back if run by mistake).

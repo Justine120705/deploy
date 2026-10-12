@@ -933,7 +933,14 @@ export type Database = {
       }
     }
     Functions: {
-      [_ in never]: never
+      check_login_lockout: {
+        Args: { p_email: string }
+        Returns: { locked: boolean; seconds_remaining: number }[]
+      }
+      record_login_attempt: {
+        Args: { p_email: string; p_success: boolean; p_ip?: string | null }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
