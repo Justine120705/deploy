@@ -840,7 +840,7 @@ select set_config('app.r81', format('anon calls [%s], anon-executable in public 
                     to_regprocedure('private.login_lockout_state(text)'))
       and has_function_privilege('authenticated', p.oid, 'EXECUTE')),
   case when current_setting('app.t81_anon') = 'state denied, email denied, settings denied'
-        and current_setting('app.t81_list') = 'check_login_lockout(text), record_login_attempt(text, boolean, inet)'
+        and current_setting('app.t81_list') = 'check_login_lockout(text), list_programs(), login_email_for_student_id(text), record_login_attempt(text, boolean, inet), submit_application(text, text, text, text, bigint)'
         and (select count(*) from pg_proc p
               where p.oid in (to_regprocedure('private.login_lockout_settings()'), to_regprocedure('private.login_lockout_email(text)'),
                               to_regprocedure('private.login_lockout_state(text)'))

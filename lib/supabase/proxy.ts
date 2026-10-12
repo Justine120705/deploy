@@ -1,6 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
-import { isRoleName, ROLE_HOME, roleForPath } from '@/lib/auth/roles'
+import { isPublicPath, isRoleName, ROLE_HOME, roleForPath } from '@/lib/auth/roles'
 import type { Database } from '@/types/database.types'
 
 // Runs on every page request (see proxy.ts):
@@ -44,7 +44,7 @@ export async function updateSession(request: NextRequest) {
   }
 
   if (!user) {
-    return pathname === '/login' ? response : redirectTo('/login')
+    return pathname === '/login' || isPublicPath(pathname) ? response : redirectTo('/login')
   }
 
   // Signed in: find the role (RLS lets a user read their own profile)
