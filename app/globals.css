@@ -306,3 +306,19 @@ a {
 table {
   font-variant-numeric: tabular-nums;
 }
+
+/* Staff sign-in (login page only): the same system with the sky hue as the accent instead of lavender,
+   so the staff entrance reads as the offices' side of the portal. The utilities read these variables
+   live (@theme inline), so setting them on the wrapper is enough. Light and dark are both covered. */
+.theme-staff {
+  --primary: var(--hue-sky-strong);
+  --primary-foreground: #ffffff;
+  --primary-hover: #174c6c;
+  --ring: var(--hue-sky-solid);
+  --accent: var(--hue-sky-soft);
+  --accent-foreground: var(--hue-sky-strong);
+}
+:root[data-theme='dark'] .theme-staff {
+  --primary-foreground: #0b1620;
+  --primary-hover: #b9dcf2;
+}

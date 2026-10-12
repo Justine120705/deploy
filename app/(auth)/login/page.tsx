@@ -22,7 +22,7 @@ export default function LoginPage({ searchParams }: { searchParams: Promise<{ no
   const [isPasswordVisible, setIsPasswordVisible] = useState(false)
 
   return (
-    <main className="grid min-h-dvh bg-background lg:grid-cols-2">
+    <main className={cn('grid min-h-dvh bg-background lg:grid-cols-2', isStaff && 'theme-staff')}>
       <div className="flex min-h-dvh flex-col px-5 py-4 sm:px-10 lg:px-14">
         <header className="flex justify-start">
           <ThemeToggle />
@@ -36,10 +36,32 @@ export default function LoginPage({ searchParams }: { searchParams: Promise<{ no
                 <span className="text-accent-foreground">Cabuyao</span>{' '}
                 <span className="text-foreground">University</span>
               </p>
-              <p className="mt-1 text-sm font-medium tracking-wide text-muted">Student Portal</p>
-              <h1 className="mt-7 text-xl font-semibold text-foreground">Welcome back</h1>
-              <p className="mt-1 text-sm text-muted">Sign in to your portal account.</p>
+              <p className="mt-1 text-sm font-medium tracking-wide text-muted">{isStaff ? 'Staff Portal' : 'Student Portal'}</p>
+              <h1 className="mt-7 text-xl font-semibold text-foreground">{isStaff ? 'Staff sign in' : 'Welcome back'}</h1>
+              <p className="mt-1 text-sm text-muted">
+                {isStaff ? 'Registrar, Cashier, Department and Admin offices.' : 'Sign in with your student ID.'}
+              </p>
             </div>
+
+            <nav aria-label="Sign-in type" className="grid grid-cols-2 gap-1 rounded-lg border border-border bg-card p-1">
+              {[
+                { href: '/login', label: 'Student', active: !isStaff },
+                { href: '/login?staff=1', label: 'Staff', active: isStaff },
+              ].map((tab) => (
+                <Link
+                  key={tab.label}
+                  href={tab.href}
+                  replace
+                  aria-current={tab.active ? 'page' : undefined}
+                  className={cn(
+                    'flex h-9 items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring max-lg:h-11',
+                    tab.active ? 'bg-accent text-accent-foreground' : 'text-muted hover:bg-hover-tint hover:text-foreground'
+                  )}
+                >
+                  {tab.label}
+                </Link>
+              ))}
+            </nav>
 
             {notice === 'link-expired' && (
               <p role="status" className="mt-6 rounded-md bg-accent px-3 py-2 text-sm text-accent-foreground">
@@ -50,7 +72,7 @@ export default function LoginPage({ searchParams }: { searchParams: Promise<{ no
             <form action={formAction} className="mt-6 flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
               <label htmlFor="email" className={FIELD_LABEL}>
-                {isStaff ? 'Staff email' : 'Student ID'}
+                {isStaff ? 'Work email' : 'Student ID'}
               </label>
               <div className="relative">
                 <MailIcon className="pointer-events-none absolute left-3 top-1/2 size-[18px] -translate-y-1/2 text-muted" />
@@ -109,30 +131,21 @@ export default function LoginPage({ searchParams }: { searchParams: Promise<{ no
           </form>
 
             <p className="mt-6 text-center text-sm text-muted">Forgot your password? Contact the portal Admin to reset it.</p>
-            <p className="mt-2 text-center text-sm text-muted">
-              {isStaff ? (
-                <Link href="/login" className="font-medium text-accent-foreground underline-offset-4 hover:underline">
-                  Student? Sign in with your student ID
+            {!isStaff && (
+              <p className="mt-2 text-center text-sm text-muted">
+                New student?{' '}
+                <Link href="/apply" className="font-medium text-accent-foreground underline-offset-4 hover:underline">
+                  Apply here
                 </Link>
-              ) : (
-                <Link href="/login?staff=1" className="font-medium text-accent-foreground underline-offset-4 hover:underline">
-                  Staff? Sign in with email
-                </Link>
-              )}
-            </p>
-            <p className="mt-2 text-center text-sm text-muted">
-              New student?{' '}
-              <Link href="/apply" className="font-medium text-accent-foreground underline-offset-4 hover:underline">
-                Apply here
-              </Link>
-            </p>
+              </p>
+            )}
           </div>
         </div>
 
         <footer className="text-xs text-muted">© 2026 Cabuyao University</footer>
       </div>
 
-      <LoginShowcase />
+      <LoginShowcase variant={isStaff ? 'staff' : 'student'} />
     </main>
   )
 }
