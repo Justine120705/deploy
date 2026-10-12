@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 const variants = {
   primary: "bg-primary text-primary-foreground hover:bg-primary-hover",
   accent: "bg-accent text-accent-foreground hover:bg-lilac-soft",
-  outline: "border border-border bg-card text-foreground hover:border-field-border hover:bg-hover-tint",
+  outline: "glass border border-field-border/60 bg-card text-foreground hover:border-field-border hover:bg-card-raised",
   ghost: "text-muted hover:bg-hover-tint hover:text-foreground",
   danger: "border border-danger/30 bg-danger-soft text-danger hover:border-danger/60",
 } as const;
@@ -23,7 +23,7 @@ export function Button({
     <button
       type={type}
       className={cn(
-        "inline-flex h-9 items-center justify-center gap-2 rounded-md px-3.5 text-sm font-semibold whitespace-nowrap transition-colors max-lg:h-11 max-lg:px-4",
+        "inline-flex h-9 items-center justify-center gap-2 rounded-full px-4 text-sm font-semibold whitespace-nowrap transition-colors max-lg:h-11 max-lg:px-5",
         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
         "disabled:pointer-events-none disabled:opacity-50",
         variants[variant],

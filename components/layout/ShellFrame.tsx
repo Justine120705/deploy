@@ -9,12 +9,12 @@ import type { NavItem } from '@/lib/nav'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { Icon } from './Icon'
 
-const FOCUS = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring'
 // Nav rows: 40px on desktop, 44px touch targets below lg; 6px corners; 20px icon column.
-const NAV_ITEM = `flex h-10 w-full items-center gap-3 rounded-md px-2.5 text-sm transition-colors max-lg:h-11 ${FOCUS}`
-const NAV_ACTIVE = 'bg-accent font-semibold text-accent-foreground'
-const NAV_IDLE = 'font-medium text-muted hover:bg-hover-tint hover:text-foreground'
-const ICON_BUTTON = `inline-flex size-11 items-center justify-center rounded-md text-muted transition-colors hover:bg-hover-tint hover:text-foreground ${FOCUS}`
+const RAIL_FOCUS = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rail-ring'
+const NAV_ITEM = `flex h-10 w-full items-center gap-3 rounded-full px-3 text-sm transition-colors max-lg:h-11 ${RAIL_FOCUS}`
+const NAV_ACTIVE = 'bg-rail-active font-semibold text-rail-active-foreground'
+const NAV_IDLE = 'font-medium text-rail-muted hover:bg-rail-hover hover:text-rail-foreground'
+const ICON_BUTTON = `inline-flex size-11 items-center justify-center rounded-full text-rail-muted transition-colors hover:bg-rail-hover hover:text-rail-foreground ${RAIL_FOCUS}`
 
 // Client half of the shell: flat sidebar (fixed, full height, one hairline on its right edge), the
 // mobile drawer and the slim mobile top bar. The server half (DashboardShell) passes plain data plus
@@ -75,7 +75,7 @@ export default function ShellFrame({
     href === homeHref ? pathname === href : pathname === href || pathname.startsWith(href + '/')
 
   return (
-    <div className="min-h-screen bg-background text-foreground lg:pl-60">
+    <div className={cn('min-h-screen bg-background text-foreground lg:pl-60', staff && 'theme-staff')}>
       <a
         href="#main"
         inert={open}
@@ -92,7 +92,7 @@ export default function ShellFrame({
           aria-label="Close menu"
           tabIndex={-1}
           onClick={() => setOpen(false)}
-          className="fixed inset-0 z-30 bg-black/40 lg:hidden"
+          className="fixed inset-0 z-30 bg-black/40 backdrop-blur-md lg:hidden"
         />
       )}
 
@@ -100,7 +100,7 @@ export default function ShellFrame({
         ref={drawerRef}
         aria-label="Sidebar"
         className={cn(
-          'fixed inset-y-0 left-0 z-40 flex w-60 flex-col overflow-y-auto border-r border-border bg-background px-3 pb-3',
+          'glass fixed inset-y-0 left-0 z-40 flex w-60 flex-col overflow-y-auto border-r border-rail-border bg-rail px-3 pb-3 text-rail-foreground',
           // Desktop: always in place, flat. Phone: a drawer with the one real shadow in the system.
           'shadow-elev-lg lg:translate-x-0 lg:shadow-none',
           // Closed on a phone: off screen and out of the Tab order (visibility switches after the slide).
@@ -113,8 +113,8 @@ export default function ShellFrame({
         <div className="flex h-16 shrink-0 items-center gap-2.5 px-2.5">
           <LogoMark />
           <div className="min-w-0 leading-tight">
-            <p className="truncate text-sm font-semibold">Cabuyao University</p>
-            {staff && <p className="truncate text-xs text-muted">{roleLabel}</p>}
+            <p className="truncate text-sm font-semibold text-rail-foreground">Cabuyao University</p>
+            <p className="truncate text-xs text-rail-muted">{staff ? roleLabel : 'Student Portal'}</p>
           </div>
         </div>
 
@@ -147,7 +147,7 @@ export default function ShellFrame({
               Settings
             </Link>
           ) : (
-            <button type="button" aria-disabled="true" className={cn(NAV_ITEM, 'cursor-not-allowed font-medium text-muted')}>
+            <button type="button" aria-disabled="true" className={cn(NAV_ITEM, 'cursor-not-allowed font-medium text-rail-muted opacity-70')}>
               <span className="flex size-5 shrink-0 items-center justify-center">
                 <Icon name="settings" />
               </span>
@@ -157,33 +157,33 @@ export default function ShellFrame({
           )}
           {signOut}
 
-          <div className="mt-2 flex items-center gap-2.5 border-t border-border px-1 pt-3">
+          <div className="mt-2 flex items-center gap-2.5 border-t border-rail-border px-1 pt-3">
             <span
               aria-hidden="true"
-              className="flex size-8 shrink-0 items-center justify-center rounded-full bg-accent text-sm font-semibold text-accent-foreground"
+              className="flex size-8 shrink-0 items-center justify-center rounded-full bg-gold text-sm font-semibold text-ink"
             >
               {userName.charAt(0)}
             </span>
             <div className="min-w-0 flex-1 leading-tight">
-              <p className="truncate text-sm font-semibold">{userName}</p>
-              <p className="truncate text-xs text-muted">{userMeta ?? roleLabel}</p>
+              <p className="truncate text-sm font-semibold text-rail-foreground">{userName}</p>
+              <p className="truncate text-xs text-rail-muted">{userMeta ?? roleLabel}</p>
             </div>
-            <ThemeToggle />
+            <ThemeToggle className="text-rail-muted! hover:bg-rail-hover! hover:text-rail-foreground! focus-visible:outline-rail-ring!" />
           </div>
         </div>
       </aside>
 
       <div inert={open} className="flex min-h-screen min-w-0 flex-col">
         {/* Below lg only: slim sticky bar with the menu button, the page title and the theme toggle. */}
-        <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center gap-1 border-b border-border bg-background px-1.5 lg:hidden">
+        <header className="glass sticky top-0 z-20 flex h-14 shrink-0 items-center gap-1 border-b border-rail-border bg-rail px-1.5 text-rail-foreground lg:hidden">
           <button type="button" ref={menuRef} aria-label="Open menu" onClick={() => setOpen(true)} className={ICON_BUTTON}>
             <Icon name="menu" className="size-5" />
           </button>
           <div className="flex min-w-0 flex-1 items-center gap-2">
             {!title && <LogoMark small />}
-            <p className="truncate text-base font-semibold">{title ?? 'Cabuyao University'}</p>
+            <p className="truncate text-base font-semibold text-rail-foreground">{title ?? 'Cabuyao University'}</p>
           </div>
-          <ThemeToggle />
+          <ThemeToggle className="text-rail-muted! hover:bg-rail-hover! hover:text-rail-foreground! focus-visible:outline-rail-ring!" />
         </header>
         <main
           id="main"

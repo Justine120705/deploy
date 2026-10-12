@@ -43,7 +43,7 @@ export default function LoginPage({ searchParams }: { searchParams: Promise<{ no
               </p>
             </div>
 
-            <nav aria-label="Sign-in type" className="grid grid-cols-2 gap-1 rounded-lg border border-border bg-card p-1">
+            <nav aria-label="Sign-in type" className="glass grid grid-cols-2 gap-1 rounded-full border border-border bg-card p-1">
               {[
                 { href: '/login', label: 'Student', active: !isStaff },
                 { href: '/login?staff=1', label: 'Staff', active: isStaff },
@@ -54,8 +54,8 @@ export default function LoginPage({ searchParams }: { searchParams: Promise<{ no
                   replace
                   aria-current={tab.active ? 'page' : undefined}
                   className={cn(
-                    'flex h-9 items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring max-lg:h-11',
-                    tab.active ? 'bg-accent text-accent-foreground' : 'text-muted hover:bg-hover-tint hover:text-foreground'
+                    'flex h-9 items-center justify-center rounded-full text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring max-lg:h-11',
+                    tab.active ? 'bg-primary text-primary-foreground' : 'text-muted hover:bg-hover-tint hover:text-foreground'
                   )}
                 >
                   {tab.label}
