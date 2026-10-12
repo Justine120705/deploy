@@ -341,6 +341,67 @@ body {
   background-image: radial-gradient(circle at 85% 15%, rgb(255 216 94 / 0.08) 0%, rgb(18 18 20 / 0) 60%);
 }
 
+/* Sign-in page: switching Student <-> Staff swaps the sides. The photo panel slides across and the card pops
+   in on its new side. Two names for the same pop so a second switch restarts it. Off for reduced motion. */
+@keyframes slide-from-right {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: none;
+  }
+}
+@keyframes slide-from-left {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: none;
+  }
+}
+@keyframes card-pop-a {
+  0% {
+    opacity: 0;
+    transform: translateY(14px) scale(0.88);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(0) scale(1.025);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes card-pop-b {
+  0% {
+    opacity: 0;
+    transform: translateY(14px) scale(0.88);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(0) scale(1.025);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .anim-slide-from-right {
+    animation: slide-from-right 0.75s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .anim-slide-from-left {
+    animation: slide-from-left 0.75s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .anim-pop-a {
+    animation: card-pop-a 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.12s both;
+  }
+  .anim-pop-b {
+    animation: card-pop-b 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.12s both;
+  }
+}
+
 /* Browser surfaces, themed from the palette. */
 ::selection {
   background: rgb(255 216 94 / 0.45);

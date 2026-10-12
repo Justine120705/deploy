@@ -1,6 +1,6 @@
 'use client'
 
-import Image from 'next/image'
+import { CuMark } from '@/components/auth/CabuyaoLogo'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
@@ -197,31 +197,7 @@ export default function ShellFrame({
   )
 }
 
-// Cabuyao CU monogram: Figma's own vector (public/brand), same files as the login logo. Never redrawn.
+// The CU crest from public/brand, same files as the login logo. Never redrawn.
 function LogoMark({ small = false }: { small?: boolean }) {
-  const size = small ? 'w-7' : 'w-9'
-  return (
-    <>
-      <Image
-        src="/brand/cu-mark-light.svg"
-        alt=""
-        aria-hidden="true"
-        width={82}
-        height={77}
-        unoptimized
-        loading="eager"
-        className={cn('h-auto shrink-0 dark:hidden', size)}
-      />
-      <Image
-        src="/brand/cu-mark-dark.svg"
-        alt=""
-        aria-hidden="true"
-        width={82}
-        height={77}
-        unoptimized
-        loading="eager"
-        className={cn('hidden h-auto shrink-0 dark:block', size)}
-      />
-    </>
-  )
+  return <CuMark className={small ? 'w-9' : 'w-11'} />
 }

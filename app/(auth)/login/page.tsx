@@ -21,15 +21,23 @@ export default function LoginPage({ searchParams }: { searchParams: Promise<{ no
   const [state, formAction, isPending] = useActionState(login, INITIAL_STATE)
   const [isPasswordVisible, setIsPasswordVisible] = useState(false)
 
-  return (
-    <main className={cn('grid min-h-dvh bg-background lg:grid-cols-2', isStaff && 'theme-staff')}>
-      <div className="flex min-h-dvh flex-col px-5 py-4 sm:px-10 lg:px-14">
-        <header className="flex justify-start">
-          <ThemeToggle />
-        </header>
+  // Switching tabs swaps the sides of the page (lg and up): the photo panel slides across and the card pops
+  // in on its new side. Nothing moves on the first render, only after a switch.
+  const [wasStaff, setWasStaff] = useState(isStaff)
+  const [motion, setMotion] = useState<'none' | 'toStaff' | 'toStudent'>('none')
+  if (wasStaff !== isStaff) {
+    setWasStaff(isStaff)
+    setMotion(isStaff ? 'toStaff' : 'toStudent')
+  }
 
+  return (
+    <main className={cn('grid min-h-dvh overflow-x-clip bg-background lg:grid-cols-2', isStaff && 'theme-staff')}>
+      <div className={cn('relative z-10 flex min-h-dvh flex-col px-5 py-4 sm:px-10 lg:px-14', isStaff && 'lg:order-2')}>
         <div className="flex flex-1 items-center">
-          <div className="mx-auto w-full max-w-[360px] py-10">
+          <div className={cn('glass relative mx-auto my-6 w-full max-w-[420px] rounded-3xl border border-edge bg-card p-6 shadow-[0_8px_30px_rgb(0_0_0/0.12)] sm:p-8 dark:shadow-elev-lg', motion === 'toStaff' && 'anim-pop-a', motion === 'toStudent' && 'anim-pop-b')}>
+            <div className="absolute left-3 top-3">
+              <ThemeToggle />
+            </div>
             <div className="mb-8 flex flex-col items-center text-center">
               <CuMark className="w-24" />
               <p className="mt-4 text-3xl font-semibold leading-tight tracking-[-0.01em]">
@@ -72,16 +80,15 @@ export default function LoginPage({ searchParams }: { searchParams: Promise<{ no
             <form action={formAction} className="mt-6 flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
               <label htmlFor="email" className={FIELD_LABEL}>
-                {isStaff ? 'Work email' : 'Student ID'}
+                {isStaff ? 'Work email' : 'Student ID (8 digits)'}
               </label>
               <div className="relative">
-                <MailIcon className="pointer-events-none absolute left-3 top-1/2 size-[18px] -translate-y-1/2 text-muted" />
+                <MailIcon className="pointer-events-none absolute left-3 top-1/2 z-10 size-[18px] -translate-y-1/2 text-muted" />
               <input
                 id="email"
                 name="email"
                 type={isStaff ? 'email' : 'text'}
                 inputMode={isStaff ? 'email' : 'numeric'}
-                placeholder={isStaff ? undefined : '20260004'}
                 autoComplete="username"
                 spellCheck={false}
                 required
@@ -96,7 +103,7 @@ export default function LoginPage({ searchParams }: { searchParams: Promise<{ no
                 Password
               </label>
               <div className="relative">
-                <LockIcon className="pointer-events-none absolute left-3 top-1/2 size-[18px] -translate-y-1/2 text-muted" />
+                <LockIcon className="pointer-events-none absolute left-3 top-1/2 z-10 size-[18px] -translate-y-1/2 text-muted" />
                 <input
                   id="password"
                   name="password"
@@ -130,9 +137,8 @@ export default function LoginPage({ searchParams }: { searchParams: Promise<{ no
             </Button>
           </form>
 
-            <p className="mt-6 text-center text-sm text-muted">Forgot your password? Contact the portal Admin to reset it.</p>
             {!isStaff && (
-              <p className="mt-2 text-center text-sm text-muted">
+              <p className="mt-6 text-center text-sm text-muted">
                 New student?{' '}
                 <Link href="/apply" className="font-medium text-accent-foreground underline-offset-4 hover:underline">
                   Apply here
@@ -145,7 +151,11 @@ export default function LoginPage({ searchParams }: { searchParams: Promise<{ no
         <footer className="text-xs text-muted">© 2026 Cabuyao University</footer>
       </div>
 
-      <LoginShowcase variant={isStaff ? 'staff' : 'student'} />
+      <LoginShowcase
+        variant={isStaff ? 'staff' : 'student'}
+        side={isStaff ? 'left' : 'right'}
+        className={cn(isStaff && 'lg:order-1', motion === 'toStaff' && 'anim-slide-from-right', motion === 'toStudent' && 'anim-slide-from-left')}
+      />
     </main>
   )
 }

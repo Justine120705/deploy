@@ -18,7 +18,7 @@ export default async function EnrollPage() {
 
   return (
     <div className="min-h-dvh">
-      <ApplyHeader />
+      <ApplyHeader showEnroll={false} />
       <main className="mx-auto grid w-full max-w-6xl items-start gap-6 px-5 pb-10 pt-2 sm:px-8 lg:grid-cols-[0.9fr_1.1fr] lg:gap-x-10 lg:pt-6">
         <div className="relative aspect-[16/9] w-full overflow-hidden rounded-3xl border border-edge shadow-elev-md sm:aspect-[2/1] lg:col-start-1 lg:row-start-1 lg:aspect-[4/3]">
           <Image

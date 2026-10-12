@@ -88,7 +88,6 @@ export function ClearanceChain({
               aria-current={current ? 'step' : undefined}
               className={cn(
                 'relative flex items-center gap-3 rounded-lg px-2 py-1.5 text-sm',
-                current && 'bg-hue-amber-soft',
                 // Connector line from this marker to the next one.
                 !last &&
                   'after:absolute after:left-[21px] after:top-[calc(50%+14px)] after:h-[calc(100%-28px)] after:w-0.5 after:rounded-full after:bg-border'
