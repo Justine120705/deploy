@@ -1,6 +1,7 @@
 'use client'
 
-import { useActionState, useState } from 'react'
+import { use, useActionState, useState } from 'react'
+import Link from 'next/link'
 import { EyeIcon, EyeOffIcon, LockIcon, MailIcon } from '@/components/auth/AuthIcons'
 import { CuMark } from '@/components/auth/CabuyaoLogo'
 import { LoginShowcase } from '@/components/auth/LoginShowcase'
@@ -14,7 +15,8 @@ const INITIAL_STATE: LoginState = { error: null }
 
 // Split sign-in: the form on the left on the page ground, a photo panel on the right (from lg up).
 // On phones and tablets only the form shows. The panel text is plain product fact, no claims.
-export default function LoginPage() {
+export default function LoginPage({ searchParams }: { searchParams: Promise<{ notice?: string }> }) {
+  const { notice } = use(searchParams)
   const [state, formAction, isPending] = useActionState(login, INITIAL_STATE)
   const [isPasswordVisible, setIsPasswordVisible] = useState(false)
 
@@ -38,19 +40,24 @@ export default function LoginPage() {
               <p className="mt-1 text-sm text-muted">Sign in to your portal account.</p>
             </div>
 
+            {notice === 'link-expired' && (
+              <p role="status" className="mt-6 rounded-md bg-accent px-3 py-2 text-sm text-accent-foreground">
+                That link has expired or was already used. Contact the Registrar to get a new one.
+              </p>
+            )}
+
             <form action={formAction} className="mt-6 flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
               <label htmlFor="email" className={FIELD_LABEL}>
-                Email
+                Student ID or email
               </label>
               <div className="relative">
                 <MailIcon className="pointer-events-none absolute left-3 top-1/2 size-[18px] -translate-y-1/2 text-muted" />
               <input
                 id="email"
                 name="email"
-                type="email"
-                autoComplete="email"
-                inputMode="email"
+                type="text"
+                autoComplete="username"
                 spellCheck={false}
                 required
                 aria-invalid={state.error ? true : undefined}
@@ -99,6 +106,12 @@ export default function LoginPage() {
           </form>
 
             <p className="mt-6 text-center text-sm text-muted">Forgot your password? Contact the portal Admin to reset it.</p>
+            <p className="mt-2 text-center text-sm text-muted">
+              New student?{' '}
+              <Link href="/apply" className="font-medium text-accent-foreground underline-offset-4 hover:underline">
+                Apply here
+              </Link>
+            </p>
           </div>
         </div>
 

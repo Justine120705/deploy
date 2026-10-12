@@ -5,14 +5,24 @@ import { headers } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentProfile } from '@/lib/auth/session'
 import { ROLE_HOME } from '@/lib/auth/roles'
+import { looksLikeStudentId, studentIdToEmail } from '@/lib/auth/student-id'
 
 export type LoginState = { error: string | null }
 
 export async function login(_prev: LoginState, formData: FormData): Promise<LoginState> {
-  const email = String(formData.get('email') ?? '').trim()
+  const typed = String(formData.get('email') ?? '').trim()
   const password = String(formData.get('password') ?? '')
 
-  if (!email || !password) return { error: 'Enter your email and password.' }
+  if (!typed || !password) return { error: 'Enter your student ID or email, and your password.' }
+
+  // A student ID (for example 2026-0001) is turned into its internal sign-in email BEFORE the lockout
+  // check, so the lockout and the rate limit key on that email string. Anything else without an @
+  // is not a valid sign-in name: same generic error, no database call.
+  let email = typed
+  if (!typed.includes('@')) {
+    if (!looksLikeStudentId(typed)) return { error: 'Invalid email or password.' }
+    email = studentIdToEmail(typed)
+  }
 
   const supabase = await createClient()
 

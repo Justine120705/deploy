@@ -21,6 +21,7 @@ export const NAV_ITEMS: Record<RoleName, NavItem[]> = {
     { label: 'Dashboard', href: ROLE_HOME.Registrar, icon: 'dashboard' },
     { label: 'Encode Grades', href: '/registrar/grades', icon: 'encode' },
     { label: 'Enrollments', href: '/registrar/enrollments', icon: 'enrollment' },
+    { label: 'Applications', href: '/registrar/applications', icon: 'users' },
     { label: 'Clearance', href: '/registrar/clearance', icon: 'clearance' },
     { label: 'Document Requests', href: '/registrar/documents', icon: 'documents' },
   ],

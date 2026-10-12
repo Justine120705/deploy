@@ -215,4 +215,19 @@ CREATE TRIGGER require_enrollment_rules BEFORE INSERT OR UPDATE ON public.enroll
 CREATE TRIGGER require_enrollment_item_rules BEFORE INSERT OR UPDATE OR DELETE ON public.enrollment_items
   FOR EACH ROW EXECUTE FUNCTION private.require_enrollment_item_rules();
 
+-- ------------------------------------------
+-- 11. Enrollment site (applications_rules.sql): table applications. Function
+--     private.require_application_rules() (SECURITY INVOKER). New applications are Pending;
+--     Pending -> Accepted / Rejected (both final), reviewed_by / reviewed_at from the database,
+--     remarks required to reject; on an Accepted row student_id can be linked once to a
+--     matching Student and provisioned_at is set by the database. audit_log records every
+--     accepted change.
+-- ------------------------------------------
+-- Firing order on applications: require_application_rules (BEFORE), RLS WITH CHECK and
+--   constraints, write, audit_log (AFTER).
+CREATE TRIGGER require_application_rules BEFORE INSERT OR UPDATE ON public.applications
+  FOR EACH ROW EXECUTE FUNCTION private.require_application_rules();
+CREATE TRIGGER audit_log AFTER INSERT OR UPDATE OR DELETE ON public.applications
+  FOR EACH ROW EXECUTE FUNCTION private.audit_log('application_id');
+
 ROLLBACK;

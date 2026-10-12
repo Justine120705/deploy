@@ -15,6 +15,15 @@ export function isRoleName(value: unknown): value is RoleName {
   return typeof value === 'string' && (ROLES as readonly string[]).includes(value)
 }
 
+// Pages anyone can open without signing in (the proxy lets them through).
+// /apply: the enrollment site for new applicants. /auth/confirm: the set-password link
+// from the acceptance email (it creates the session). /login is handled by the proxy.
+export const PUBLIC_PATHS = ['/apply', '/auth/confirm'] as const
+
+export function isPublicPath(pathname: string): boolean {
+  return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/'))
+}
+
 // Which module a URL belongs to, e.g. "/cashier/payments" -> "Cashier"
 export function roleForPath(pathname: string): RoleName | null {
   for (const role of ROLES) {
