@@ -4,7 +4,8 @@
 -- A record of the app's triggers as they should exist after hardening.sql,
 -- hardening2.sql (section B), trigger_dept_approval.sql (section 5, run live 2026-10-11),
 -- trigger_finance_autoclear.sql (section 6, run live 2026-10-11) and
--- trigger_final_clearance.sql (section 7, run live 2026-10-11).
+-- trigger_final_clearance.sql (section 7, run live 2026-10-11), grades_rules.sql
+-- (section 8) and documents_rules.sql (section 9), both run live 2026-10-12.
 -- The real source of these triggers is those files; this file only lists them in one
 -- place so the repo shows the full picture.
 -- Supabase's own triggers (schemas realtime, storage, auth) are not listed.
@@ -18,7 +19,7 @@
 -- and then rolled back, so running this file by mistake changes nothing.
 
 BEGIN;
-DO $$ BEGIN RAISE EXCEPTION 'docs/database/triggers.sql is a record, not a script; use hardening.sql / hardening2.sql / trigger_dept_approval.sql / trigger_finance_autoclear.sql / trigger_final_clearance.sql'; END $$;
+DO $$ BEGIN RAISE EXCEPTION 'docs/database/triggers.sql is a record, not a script; use hardening.sql / hardening2.sql / trigger_dept_approval.sql / trigger_finance_autoclear.sql / trigger_final_clearance.sql / grades_rules.sql / documents_rules.sql'; END $$;
 
 -- ------------------------------------------
 -- 1. Clearance items (pre-existing, not created by this repo's SQL)
@@ -167,5 +168,33 @@ CREATE TRIGGER require_all_items_cleared BEFORE UPDATE ON public.clearances
   WHEN ((OLD.approved_at IS NULL AND NEW.approved_at IS NOT NULL)
         OR (OLD.approved_by IS NULL AND NEW.approved_by IS NOT NULL))
   EXECUTE FUNCTION private.require_all_items_cleared();
+
+-- ------------------------------------------
+-- 8. Grades rules (grades_rules.sql, issue #92, REQ-REG-01). Functions
+--    private.require_approved_enrollment() and private.stamp_grade_encoded_at()
+--    (both SECURITY INVOKER, search_path '').
+-- ------------------------------------------
+-- Firing order on grades:
+--   INSERT: require_approved_enrollment (BEFORE) -> stamp_encoded_at (BEFORE) -> RLS WITH CHECK -> write -> audit_log (AFTER)
+--   UPDATE: guard_immutable_columns (BEFORE) -> require_approved_enrollment (BEFORE, only UPDATE OF enrollment_item_id)
+--           -> stamp_encoded_at (BEFORE) -> RLS WITH CHECK -> write -> audit_log (AFTER)
+CREATE TRIGGER require_approved_enrollment BEFORE INSERT OR UPDATE OF enrollment_item_id ON public.grades
+  FOR EACH ROW EXECUTE FUNCTION private.require_approved_enrollment();
+CREATE TRIGGER stamp_encoded_at BEFORE INSERT OR UPDATE ON public.grades
+  FOR EACH ROW EXECUTE FUNCTION private.stamp_grade_encoded_at();
+
+-- ------------------------------------------
+-- 9. Document status flow (documents_rules.sql, issue #93, REQ-DOC-02): BEFORE UPDATE,
+--    function private.require_document_status_flow() (SECURITY INVOKER). Allows only
+--    Pending -> Processing -> Ready -> Released and Pending / Processing -> Rejected;
+--    Released and Rejected are final; remarks cannot change while Pending; sets
+--    processed_by / processed_at from the signed-in user.
+-- ------------------------------------------
+-- Firing order on document_requests:
+--   UPDATE: guard_immutable_columns (BEFORE) -> require_document_status_flow (BEFORE)
+--           -> RLS WITH CHECK -> write -> audit_log (AFTER)
+--   INSERT: RLS WITH CHECK -> write -> audit_log (AFTER)
+CREATE TRIGGER require_document_status_flow BEFORE UPDATE ON public.document_requests
+  FOR EACH ROW EXECUTE FUNCTION private.require_document_status_flow();
 
 ROLLBACK;
