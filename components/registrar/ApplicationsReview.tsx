@@ -209,7 +209,7 @@ function ApplicationReviewPanel({ application: a }: { application: ApplicationIt
 }
 
 export default function ApplicationsReview({ applications }: { applications: ApplicationItem[] }) {
-  const [filter, setFilter] = useState<Filter>('Pending')
+  const [filter, setFilter] = useState<Filter>('All')
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
   const count = (s: ApplicationStatus) => applications.filter((a) => a.status === s).length

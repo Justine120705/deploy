@@ -58,6 +58,11 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 const fail = (message: string): ApplicationActionState => ({ status: 'error', message })
 
+// Server-log only: which provisioning step failed and the database or Auth error code and message
+// (never a key, a password or the applicant's data).
+const logStep = (step: string, error: { code?: string; status?: number; message?: string } | null | undefined) =>
+  console.error(`[provisioning] ${step}:`, error?.code ?? error?.status ?? '-', error?.message ?? 'no detail')
+
 function readId(formData: FormData): string | null {
   const raw = String(formData.get('applicationId') ?? '').trim()
   return ID_RE.test(raw) ? raw : null
@@ -131,16 +136,16 @@ async function provision(admin: Db, app: AppRow): Promise<Provisioned> {
 
   // The real email must be free: profiles.email is unique. Checked first so nothing is created in vain.
   const inUse = await admin.from('profiles').select('profile_id').in('email', [...new Set([email, email.toLowerCase()])]).limit(1)
-  if (inUse.error) return { ok: false, message: SETUP_FAILED }
+  if (inUse.error) { logStep('check email in profiles', inUse.error); return { ok: false, message: SETUP_FAILED } }
   if ((inUse.data ?? []).length > 0) return { ok: false, message: EMAIL_IN_USE }
 
   const role = await admin.from('roles').select('role_id').eq('role_name', 'Student').maybeSingle()
-  if (role.error || !role.data) return { ok: false, message: SETUP_FAILED }
+  if (role.error || !role.data) { logStep('read Student role', role.error); return { ok: false, message: SETUP_FAILED } }
   const roleId = (role.data as { role_id: number }).role_id
 
   const num = await admin.rpc('next_student_number')
   const studentNumber = typeof num.data === 'string' ? num.data.trim() : ''
-  if (num.error || !STUDENT_NUMBER_RE.test(studentNumber)) return { ok: false, message: SETUP_FAILED }
+  if (num.error || !STUDENT_NUMBER_RE.test(studentNumber)) { logStep('next_student_number', num.error ?? { message: 'unexpected value' }); return { ok: false, message: SETUP_FAILED } }
 
   const created = await admin.auth.admin.createUser({
     email: studentIdToEmail(studentNumber),
@@ -148,7 +153,7 @@ async function provision(admin: Db, app: AppRow): Promise<Provisioned> {
     password: throwawayPassword(),
   })
   const userId = created.data?.user?.id
-  if (created.error || !userId) return { ok: false, message: SETUP_FAILED }
+  if (created.error || !userId) { logStep('create auth user', created.error ?? { message: 'no user returned' }); return { ok: false, message: SETUP_FAILED } }
 
   const undo = async (cleanMessage: string): Promise<Provisioned> => {
     const clean = await undoAccount(admin, userId)
@@ -168,6 +173,7 @@ async function provision(admin: Db, app: AppRow): Promise<Provisioned> {
     email,
     is_active: true,
   })
+  if (prof.error) logStep('insert profile', prof.error)
   if (prof.error) return undo(prof.error.code === '23505' ? EMAIL_IN_USE : SETUP_FAILED)
 
   const stu = await admin.from('students').insert({
@@ -175,6 +181,7 @@ async function provision(admin: Db, app: AppRow): Promise<Provisioned> {
     student_number: studentNumber,
     program_id: app.program_id,
   })
+  if (stu.error) logStep('insert student', stu.error)
   if (stu.error) return undo(SETUP_FAILED)
 
   // Link last, and only if nobody else linked it meanwhile (two clicks, two Registrars).
@@ -186,6 +193,7 @@ async function provision(admin: Db, app: AppRow): Promise<Provisioned> {
     .is('student_id', null)
     .select('application_id')
   if (link.error || !link.data || link.data.length === 0) {
+    logStep('link application', link.error ?? { message: 'no row updated' })
     return undo('The account was not linked. Someone may have set it up already. Reload the page.')
   }
 

@@ -15,8 +15,9 @@ const INITIAL_STATE: LoginState = { error: null }
 
 // Split sign-in: the form on the left on the page ground, a photo panel on the right (from lg up).
 // On phones and tablets only the form shows. The panel text is plain product fact, no claims.
-export default function LoginPage({ searchParams }: { searchParams: Promise<{ notice?: string }> }) {
-  const { notice } = use(searchParams)
+export default function LoginPage({ searchParams }: { searchParams: Promise<{ notice?: string; staff?: string }> }) {
+  const { notice, staff } = use(searchParams)
+  const isStaff = staff === '1'
   const [state, formAction, isPending] = useActionState(login, INITIAL_STATE)
   const [isPasswordVisible, setIsPasswordVisible] = useState(false)
 
@@ -49,14 +50,16 @@ export default function LoginPage({ searchParams }: { searchParams: Promise<{ no
             <form action={formAction} className="mt-6 flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
               <label htmlFor="email" className={FIELD_LABEL}>
-                Student ID or email
+                {isStaff ? 'Staff email' : 'Student ID'}
               </label>
               <div className="relative">
                 <MailIcon className="pointer-events-none absolute left-3 top-1/2 size-[18px] -translate-y-1/2 text-muted" />
               <input
                 id="email"
                 name="email"
-                type="text"
+                type={isStaff ? 'email' : 'text'}
+                inputMode={isStaff ? 'email' : 'numeric'}
+                placeholder={isStaff ? undefined : '20260004'}
                 autoComplete="username"
                 spellCheck={false}
                 required
@@ -106,6 +109,17 @@ export default function LoginPage({ searchParams }: { searchParams: Promise<{ no
           </form>
 
             <p className="mt-6 text-center text-sm text-muted">Forgot your password? Contact the portal Admin to reset it.</p>
+            <p className="mt-2 text-center text-sm text-muted">
+              {isStaff ? (
+                <Link href="/login" className="font-medium text-accent-foreground underline-offset-4 hover:underline">
+                  Student? Sign in with your student ID
+                </Link>
+              ) : (
+                <Link href="/login?staff=1" className="font-medium text-accent-foreground underline-offset-4 hover:underline">
+                  Staff? Sign in with email
+                </Link>
+              )}
+            </p>
             <p className="mt-2 text-center text-sm text-muted">
               New student?{' '}
               <Link href="/apply" className="font-medium text-accent-foreground underline-offset-4 hover:underline">

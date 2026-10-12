@@ -1872,7 +1872,7 @@ select set_config('app.r134', format('anon calls [%s], anon-executable in public
           or exists (select 1 from aclexplode(p.proacl) a where a.grantee = 0)
      from pg_proc p where p.oid = to_regprocedure('private.require_application_rules()')),
   case when current_setting('app.t134_anon') = 'settings denied, name denied, email denied, mobile denied'
-        and current_setting('app.t134_list') = 'check_login_lockout(text), list_programs(), record_login_attempt(text, boolean, inet), submit_application(text, text, text, text, bigint)'
+        and current_setting('app.t134_list') = 'check_login_lockout(text), list_programs(), login_email_for_student_id(text), record_login_attempt(text, boolean, inet), submit_application(text, text, text, text, bigint)'
         and not (select has_function_privilege('anon', p.oid, 'EXECUTE')
                         or exists (select 1 from aclexplode(p.proacl) a where a.grantee = 0)
                    from pg_proc p where p.oid = to_regprocedure('private.require_application_rules()'))

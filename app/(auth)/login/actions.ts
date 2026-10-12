@@ -15,16 +15,24 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
 
   if (!typed || !password) return { error: 'Enter your student ID or email, and your password.' }
 
-  // A student ID (for example 2026-0001) is turned into its internal sign-in email BEFORE the lockout
-  // check, so the lockout and the rate limit key on that email string. Anything else without an @
-  // is not a valid sign-in name: same generic error, no database call.
+  const supabase = await createClient()
+
+  // A student ID (2026-0001 or 20260001) is turned into the email that account signs in with BEFORE the
+  // lockout check, so the lockout and the rate limit key on that email string. The database function
+  // login_email_for_student_id returns the account's email, or the internal <id>@students.pnc.test for an
+  // ID nobody has (the sign-in then fails with the same generic message). If the lookup cannot run, the
+  // internal form is used. Anything else without an @ is not a sign-in name: same generic error, no call.
   let email = typed
   if (!typed.includes('@')) {
     if (!looksLikeStudentId(typed)) return { error: 'Invalid email or password.' }
     email = studentIdToEmail(typed)
+    const lookup = supabase.rpc.bind(supabase) as unknown as (
+      fn: string,
+      args: Record<string, unknown>
+    ) => PromiseLike<{ data: unknown; error: unknown }>
+    const { data: resolved } = await lookup('login_email_for_student_id', { p_student_id: typed })
+    if (typeof resolved === 'string' && resolved.includes('@')) email = resolved
   }
-
-  const supabase = await createClient()
 
   // SEC-03: the lockout is checked BEFORE the password is verified. The check and the
   // recording go through SECURITY DEFINER database functions (docs/database/
