@@ -5,11 +5,11 @@ type InputProps = React.InputHTMLAttributes<HTMLInputElement> & {
   error?: string;
 };
 
-// Shared field look (Input, Select, Textarea): 6px corners, a border at >= 3:1 against the field,
-// 40px high on desktop and 44px below lg.
+// Shared field look (Input, Select, Textarea): soft 16px corners, frosted glass, a border at >= 3:1 against
+// the field, a charcoal focus outline plus a marigold glow, 40px high on desktop and 44px below lg.
 export const FIELD =
-  "flex h-10 w-full rounded-md border border-field-border bg-card px-3 text-sm text-foreground placeholder:text-muted max-lg:h-11 " +
-  "focus:border-ring focus:outline-2 focus:-outline-offset-1 focus:outline-ring " +
+  "glass flex h-10 w-full rounded-md border border-field-border bg-card px-4 text-sm text-foreground placeholder:text-muted max-lg:h-11 " +
+  "focus:border-ring focus:outline-2 focus:-outline-offset-1 focus:outline-ring focus:ring-4 focus:ring-gold/40 " +
   "disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-danger";
 
 export const FIELD_LABEL = "text-[13px] leading-5 font-medium text-foreground";
