@@ -66,7 +66,7 @@ clearance items can only be cleared by SQL as the database owner (recorded as te
 
 | Level | Evidence we have | Result so far | Main gaps |
 | --- | --- | --- | --- |
-| 1. Unit | None. The project has no unit test framework yet | Not done | All of it. Planned in issue #107 (owner and date not set) |
+| 1. Unit | Vitest, 49 cases UT-01 to UT-49 on the pure functions (section 5), run 2026-10-13 | Pass (49 of 49) | Only functions without a database; React components and the Server Actions themselves are covered at levels 2 and 3 |
 | 2. Integration | SQL suites TC-01 to TC-71 (clearance slice, hardening) and TC-72 to TC-122 (lockout, grades, documents, enrollment), all run on the live database | Pass (some rehearsal failures found real defects, section 6) | App-to-database calls are only covered through the browser checks of level 3. TC-94 has no recorded file |
 | 3. System | Browser walk E2E-01 to E2E-13 (clearance, 2026-10-11) and browser checks S-01 to S-12 (2026-10-12, grades, documents, enrollment, lockout in the app) | Pass, with the gaps on the right | Student enrollment submit/add/remove forms, Reject button, friendly error messages, audit rows of the new writes, phone width, dark mode, every role on the deployed site |
 | 4. Acceptance | None run | Not done | A script per SRS requirement with a sign-off by team members (section 9). Nobody is assigned yet |
@@ -75,14 +75,73 @@ clearance items can only be cleared by SQL as the database owner (recorded as te
 
 ## 5. Level 1: Unit testing
 
-Goal: test single functions (validation, formatting, status rules) without the database or the browser.
+Goal: test single functions (validation, formatting, error messages, routing) without the database or the browser. They need
+no secret and no network.
 
-| ID | What | Status | Planned |
+**Runner:** Vitest 3.2.7 (`npm test`, config `vitest.config.ts`, files in `tests/unit/`). **Run on:** 2026-10-13, Windows,
+Node 24, by Claude Code in the Project Manager's session on the PM's computer. A teammate has not re-run it yet.
+**Result: 49 of 49 passed.** The expected values were written from the documented behaviour of each function before the first
+run. To check that the tests can fail, the `@` was removed from the formula guard of the CSV export: UT-13 failed as it should,
+and the guard was put back.
+
+To make the database-error messages testable they were moved out of the `'use server'` files (which can only export async
+functions) into one pure module, `lib/data/db-errors.ts`; the CSV cell guard moved from the audit log screen to `lib/csv.ts`.
+The wording and the behaviour were not changed.
+
+| ID | Function (file) | Expected result | Result 2026-10-13 |
 | --- | --- | --- | --- |
-| UNIT-* | No unit test exists. No test framework is installed in the project | Not done | Issue #107. Owner: not assigned. Date: not set |
+| UT-01 | `formatPeso(1500)` (`components/cashier/format.ts`) | `₱1,500`, no decimals for whole pesos | Pass |
+| UT-02 | `formatPeso(1500.5)` | `₱1,500.50` | Pass |
+| UT-03 | `formatPeso(0)` | `₱0` | Pass |
+| UT-04 | `formatPeso(1234567.89)` | `₱1,234,567.89` | Pass |
+| UT-05 | `formatTimestamp('2026-09-20T16:00:00Z')`, Asia/Manila | `Sep 21, 2026` (already the next day in Manila) | Pass |
+| UT-06 | `formatTimestamp('2026-09-20T15:59:59Z')` | `Sep 20, 2026` | Pass |
+| UT-07 | `formatTimestamp('not a date')` | `-` | Pass |
+| UT-08 | `formatDateOnly('2026-09-20')` | `Sep 20, 2026` | Pass |
+| UT-09 | `formatDateOnly('2026-09-20T23:30:00+00:00')` | `Sep 20, 2026` (the day never shifts) | Pass |
+| UT-10 | `formatDateOnly('garbage')` | `-` | Pass |
+| UT-11 | `plural(1, 'item')`, `plural(2, 'item')`, `plural(0, 'class', 'classes')` | `1 item`, `2 items`, `0 classes` | Pass |
+| UT-12 | `csvCell('=SUM(A1:A9)')` (`lib/csv.ts`) | `"'=SUM(A1:A9)"` (no formula runs) | Pass |
+| UT-13 | `csvCell` of `+1`, `-2`, `@cmd` | each gets a leading apostrophe | Pass |
+| UT-14 | `csvCell` of a leading tab or carriage return | leading apostrophe | Pass |
+| UT-15 | `csvCell('Insert')` | `"Insert"` | Pass |
+| UT-16 | `csvCell('say "hi"')` | `"say ""hi"""` | Pass |
+| UT-17 | `isRoleName` (`lib/auth/roles.ts`) | true for the five roles, false for `admin`, `Teacher`, `5`, `null` | Pass |
+| UT-18 | `ROLE_HOME` | Student `/student`, Registrar `/registrar`, Cashier `/cashier`, Department `/department`, Admin `/admin` | Pass |
+| UT-19 | `roleForPath` of `/student`, `/cashier/payments`, `/admin/audit-log` | Student, Cashier, Admin | Pass |
+| UT-20 | `roleForPath` of `/studentx`, `/login`, `/` | `null` | Pass |
+| UT-21 | `isPublicPath` of `/apply`, `/apply/enroll`, `/auth/confirm` | true | Pass |
+| UT-22 | `isPublicPath` of `/student`, `/applyx`, `/registrar/applications` | false | Pass |
+| UT-23 | `normalizeStudentId('20260004')` (`lib/auth/student-id.ts`) | `2026-0004` | Pass |
+| UT-24 | `normalizeStudentId('2026-0004')` and with spaces around it | `2026-0004` | Pass |
+| UT-25 | `looksLikeStudentId` | true for `2026-0004`, `20260004`, `2026-000004`; false for `abc`, `2026-00` and an SQL injection string | Pass |
+| UT-26 | `studentIdToEmail('20260004')` and `('2026-0004')` | `2026-0004@students.pnc.test` for both | Pass |
+| UT-27 | `gradeErrorMessage` P0001 `not approved:` (`lib/data/db-errors.ts`) | tells the Registrar to approve the enrollment first | Pass |
+| UT-28 | `gradeErrorMessage` 23503 and an unknown error | grade-scale message; generic message with no raw database text | Pass |
+| UT-29 | `documentStatusErrorMessage` P0001 `bad status change:` | explains "one step at a time" | Pass |
+| UT-30 | `documentStatusErrorMessage` 42501 and unknown | "not allowed" message; generic update message | Pass |
+| UT-31 | `enrollmentErrorMessage` P0001 `enrollment exists:`, `enrollment locked:`, `wrong term:`, `duplicate section:` | one distinct message each | Pass |
+| UT-32 | `enrollmentErrorMessage` 42501 | "not allowed" message | Pass |
+| UT-33 | `enrollmentErrorMessage` unknown error | returns the generic text passed in by the action | Pass |
+| UT-34 | `enrollmentDecisionErrorMessage` `section full:` with details | names the full sections | Pass |
+| UT-35 | `enrollmentDecisionErrorMessage` `section full:` without details | short "no seat left" message | Pass |
+| UT-36 | `enrollmentDecisionErrorMessage` `no items:`, `enrollment locked:`, 42501, unknown | four distinct messages | Pass |
+| UT-37 | `applicationDecisionErrorMessage` `remarks required:`, `bad decision:`, 42501, unknown | four distinct messages | Pass |
+| UT-38 | `departmentApproveErrorMessage` `active hold:` | names the student and says to lift the hold | Pass |
+| UT-39 | `departmentHoldErrorMessage` 42501, 23503, 23514, unknown | four distinct messages | Pass |
+| UT-40 | `cn('p-2', 'p-4')` (`lib/utils.ts`) | `p-4` | Pass |
+| UT-41 | `cn` with falsy values and the custom shadow sizes | `a c`; `shadow-xl` wins over `shadow-elev-sm` | Pass |
+| UT-42 | `paymentErrorMessage` 23505, 23503, 23514, 42501 (cashier, `lib/data/db-errors.ts`) | each rule names its form field (receipt, charge, amount) or the permission message | Pass |
+| UT-43 | `paymentErrorMessage` unknown error; `chargeTagErrorMessage` | generic text with no field; 42501 maps, anything else is generic | Pass |
+| UT-44 | `documentRequestErrorMessage` (new document request) | permission, unknown type with its field, bad purpose or copies, unknown error | Pass |
+| UT-45 | `applicationFormErrorMessage` (public application form) | invalid details, the flood valve ("try later"), unknown error | Pass |
+| UT-46 | `finalClearanceErrorMessage` (Registrar) | `pending items:` is explained; any other error gives `null` | Pass |
+| UT-47 | `enrollmentSubmitErrorMessage` | already enrolled, bad year level with its field (1 to 6), a trigger rule, unknown error | Pass |
+| UT-48 | `enrollmentAddSectionErrorMessage` | duplicate section, unknown section, a trigger rule, unknown error | Pass |
+| UT-49 | `departmentReviewErrorMessage`, `departmentLiftHoldErrorMessage` | permission error named, anything else generic with no database text | Pass |
 
-Nothing here has been run. The database triggers are unit-like checks of single rules, but they are recorded as integration
-tests in section 6 because they run against the live database.
+The database triggers are unit-like checks of single rules, but they are recorded as integration tests in section 6 because
+they run against the live database.
 
 ## 6. Level 2: Integration testing (database suites)
 
@@ -277,7 +336,7 @@ Residual risks of the login lockout (V-2), written in the header of `login_locko
 
 | Item | Level | Status | Plan |
 | --- | --- | --- | --- |
-| Unit tests (no framework) | 1 | Not done | Issue #107. Owner and date not set |
+| Unit tests | 1 | Done (49 of 49 pass) | Section 5. Not covered: React components and the Server Actions as a whole (levels 2 and 3) |
 | Acceptance script run and signed off by team members | 4 | Not done | Section 9. Before the freeze on 2026-10-15. Owner: to be named by the PM |
 | Performance: PER-01 and PER-02 | 5 | Not done | Issue #109. Owner and date not set |
 | Rate limiting (SEC-04) | 6 | Done (sign-in route) | Vercel firewall rule "Limit POST requests per IP" (POST, 60 s fixed window, 20 requests per IP, 429) tested 2026-10-12: 429 after about 24 POSTs in a minute from one IP; see `docs/rate-limiting.md` |
@@ -333,7 +392,8 @@ Residual risks of the login lockout (V-2), written in the header of `login_locko
    whole tab (each ends in a rollback). The regression is one paste: `docs/database/regression_after_grants.sql`.
 2. Browser walk: sign in to each account in the browser pane in the order of section 7.1; use the throwaway-term steps of
    E2E-01 if no student without a clearance exists.
-3. Before a pull request: `npx tsc --noEmit`, `npx eslint app components lib types`, `npm run build`.
+3. Unit tests: `npm test` (no secret and no database needed).
+4. Before a pull request: `npm test`, `npx tsc --noEmit`, `npx eslint app components lib types`, `npm run build`.
 
-Still to fill in before the freeze (2026-10-15): level 1 (unit), level 4 (acceptance sign-off), level 5 (performance), the
+Still to fill in before the freeze (2026-10-15): level 4 (acceptance sign-off), level 5 (performance), the
 rate limiting test of the write actions, the SQL injection test, and the gaps of section 12.
