@@ -26,7 +26,8 @@ This revision aligns the document with the database design files (`schema.sql`, 
 | 8 | Development methodology changed from Rapid Application Development (RAD) to Agile. RAD wording replaced in the header, team roles and SRS 2.2; new Charter section 7 describes the Agile process. | Header, Charter 4 and 7, SRS 2.2 |
 | 9 | Charter section 7 replaced by the full SDLC plan (7.1 to 7.7). Sprint 2 ended Oct 10 instead of Oct 5; carry-over is recorded in 7.3. Phase 1 TODO comment removed (Sprint 1 end date is Oct 2). | Charter 6 and 7 |
 | 10 | Added the Activity Diagram (term clearance) and the Class Diagram (generated from `schema.sql`) as Part 3, Sections 4 and 5. | Part 3 |
-| 11 | Sprint 3 was compressed to one day (Oct 11) and delivered the clearance slice on live data: grants for the clearance objects, the three database triggers (department approval needs no active hold, the Finance item clears automatically, final clearance needs every item cleared), the Student, Department, Cashier and Registrar clearance screens, the Admin audit log, and the end-to-end test with `docs/testing-plan.md`. Carried over (still mock data, labelled "Sample data"): REQ-REG-01, REQ-REG-02, REQ-REG-04, REQ-STU-02, REQ-STU-04, REQ-STU-05, REQ-DOC-01, REQ-DOC-02, REQ-ADM-01, REQ-ADM-04; not done: SEC-03 (login lockout), SEC-04 (rate limiting). Section 6 and 7.3 show the real Sprint 3 date. | Charter 6, SDLC 7.3, `docs/sprint-3-plan.md` |
+| 11 | Sprint 3 was compressed to one day (Oct 11) and delivered the clearance slice on live data: grants for the clearance objects, the three database triggers (department approval needs no active hold, the Finance item clears automatically, final clearance needs every item cleared), the Student, Department, Cashier and Registrar clearance screens, the Admin audit log, and the end-to-end test with `docs/testing-plan.md`. Carried over (still mock data, labelled "Sample data"): REQ-REG-01, REQ-REG-02, REQ-REG-04, REQ-STU-02, REQ-STU-04, REQ-STU-05, REQ-DOC-01, REQ-DOC-02, REQ-ADM-01, REQ-ADM-04; not done: SEC-03 (login lockout), SEC-04 (rate limiting). Section 6 and 7.3 show the real Sprint 3 date. (This row records the state of Oct 11; the carried-over items are updated in row 12.) | Charter 6, SDLC 7.3, `docs/sprint-3-plan.md` |
+| 12 | Sprint 4 (Oct 12 to 15; the final deadline is Oct 15, 2026). The plan slipped: Sprint 4 was planned to end Oct 10 and Sprint 5 on Oct 12, but Sprint 3 and the earlier sprints ran late, so Sprint 4 now covers integration, QA, security hardening, the professor's tasks, the paper and the release (freeze midday Oct 15), and there is no separate Sprint 5. Status on Oct 12, 2026. **Done and live in the database:** login lockout with exponential backoff, SEC-03 (PR #117, merged; tests TC-72 to TC-82); grades rules (PR #118, merged; issue #92); document request rules (PR #118, merged; issue #93); enrollment rules (issue #94, PR #119). **Built:** live screens for student grades, student documents, student enrollment, Registrar grades, Registrar documents and Registrar enrollments (issues #97 to #102, PR #119). They were tested in the browser, except the student enrollment forms, the Registrar Reject button and the error messages, which are not yet tested. PR #119 is merged into `dev`; it is not yet merged into `main`, so the live Vercel site does not show these screens until the Project Manager merges `dev` into `main`. **Security finding fixed:** the Supabase helper `rls_auto_enable()` was executable by the `anon` role. **In progress:** the Vercel firewall rate limit rule, SEC-04 (issue #91); no evidence yet that it is live. **Still open or carried over (still "Sample data" where a screen exists):** catalog rules and screen (REQ-ADM-04), Admin user accounts (REQ-ADM-01, decision pending), dashboards on sample data, unit tests, performance test, ethical analysis, final paper, and teammate reviews (none of the PRs has had a teammate review yet). Done now and removed from the carried-over list: REQ-REG-01, REQ-REG-02, REQ-REG-04, REQ-STU-02 (grades and enrollment status; dashboard parts are still sample data), REQ-STU-04, REQ-STU-05, REQ-DOC-01, REQ-DOC-02. | Charter 6, SDLC 7.1 and 7.3, SRS 4.1 (status), Known gaps |
 
 
 **Row 6 details (edits outside the sections I was asked to edit):**
@@ -115,8 +116,8 @@ This project delivers a comprehensive, web-based university portal designed to e
 | **Sprint 1** | System modeling (DFD, Use Case, Activity, Class), ERD/3NF design, UI/UX wireframes, database initialization. | Oct 2 |
 | **Sprint 2** | ERD v3 finalized and migrated (see Revision Log), Auth setup, Role-Based Access Control (RLS), Admin/Student UI layouts, SDLC plan draft. | Oct 5 (completed Oct 10) |
 | **Sprint 3** | Registrar (Grades/Docs/Enrollment), Cashier, and Department (Clearance) modules connected; Admin audit log implemented. Clearance logic (holds, department approval, final clearance) is started first because the modules depend on it. | Oct 8 (compressed to one day, done Oct 11: clearance slice only, see Revision Log) |
-| **Sprint 4 ** | Integration, QA testing, security hardening (SQL injection checks, login lockout, rate limiting, vulnerability patching), software testing plan and ethical analysis finalized. | Oct 10 |
-| **Sprint 5** | Live deployment to Vercel (dev merged into main by the PM), IEEE final paper compilation, plagiarism check, AI/anti-AI detector report, Team Monitoring Sheet (peer evaluation), final review. | Oct 12 |
+| **Sprint 4** | Integration, QA testing, security hardening (SQL injection checks, login lockout, rate limiting, vulnerability patching), software testing plan and ethical analysis finalized. | Oct 10 (planned); the plan slipped: Sprint 4 runs Oct 12 to 15 and also carries the work of Sprint 5 (see Revision Log row 12) |
+| **Sprint 5** | Live deployment to Vercel (dev merged into main by the PM), IEEE final paper compilation, plagiarism check, AI/anti-AI detector report, Team Monitoring Sheet (peer evaluation), final review. | Oct 12 (planned); merged into Sprint 4. Final deadline and freeze: Oct 15, midday |
 
 ### 7. Development Methodology (Agile)
 
@@ -124,7 +125,7 @@ The project follows an Agile (Scrum-style) approach: the work is delivered in fi
 
 #### 7.1 Why Agile
 
-The project has a fixed final deadline (Oct 12) and a 12-day window, and several parts depend on each other (authentication, then clearance, then the modules). Short sprints let the team show working software from the `dev` branch at the end of every phase, find integration problems early, and re-prioritize when a sprint runs late. A plan-driven (waterfall or RAD) approach would find those problems only at the end.
+The project has a fixed final deadline (originally Oct 12, now Oct 15, 2026) and a short window, and several parts depend on each other (authentication, then clearance, then the modules). Short sprints let the team show working software from the `dev` branch at the end of every phase, find integration problems early, and re-prioritize when a sprint runs late. A plan-driven (waterfall or RAD) approach would find those problems only at the end.
 
 #### 7.2 Phases
 
@@ -144,10 +145,10 @@ The project has a fixed final deadline (Oct 12) and a 12-day window, and several
 | Sprint 1 | System modeling, ERD/3NF design, UI/UX wireframes, database initialization | Oct 2 |
 | Sprint 2 | ERD v3 migrated, authentication and role routing, shared UI and dashboard shell, SQL files committed, SDLC plan | Oct 5 (completed Oct 10) |
 | Sprint 3 | Clearance logic first (holds, department approval, Cashier auto-clear, final approval; database triggers), then the Registrar, Cashier and Department modules and the Admin audit log | Oct 8 (compressed to one day, done Oct 11: the clearance slice on live data; the other modules carried over) |
-| Sprint 4 | Integration, QA, login lockout and rate limiting (SEC-03, SEC-04), testing plan and security tests | Oct 10 (the testing plan for the clearance slice was delivered Oct 11; the rest overlaps Sprint 5 or is carried over) |
-| Sprint 5 | Vercel deployment from `main`, IEEE paper, verification reports, Team Monitoring Sheet | Oct 12 |
+| Sprint 4 | Integration, QA, login lockout and rate limiting (SEC-03, SEC-04), testing plan and security tests; since the slip also the professor's tasks, the final paper and the release | Oct 10 (planned; the testing plan for the clearance slice was delivered Oct 11). Actual: Oct 12 to 15, in progress; freeze midday Oct 15 |
+| Sprint 5 | Vercel deployment from `main`, IEEE paper, verification reports, Team Monitoring Sheet | Oct 12 (planned). Merged into Sprint 4; final deadline Oct 15, 2026 |
 
-Sprint 2 ended later than planned, and Sprint 3 was compressed to one day (Oct 11). The unfinished work and the shifted dates are recorded in the Revision Log, and the work of Sprints 3, 4 and 5 overlaps in the remaining days. What Sprint 3 delivered and what was carried over is in `docs/sprint-3-plan.md`.
+Sprint 2 ended later than planned, and Sprint 3 was compressed to one day (Oct 11). Sprint 4 did not end on Oct 10 as planned: it started on Oct 12 and ends with the freeze on Oct 15, and Sprint 5 no longer exists as a separate sprint. The unfinished work and the shifted dates are recorded in the Revision Log (rows 9, 11 and 12). What Sprint 3 delivered and what was carried over is in `docs/sprint-3-plan.md`.
 
 #### 7.4 Roles
 
@@ -176,7 +177,7 @@ Sprint 2 ended later than planned, and Sprint 3 was compressed to one day (Oct 1
 
 #### 7.7 Testing approach and risks
 
-Testing is done per sprint on `dev` with the seeded test accounts (one per role, fictional data only, ETH-01 and ETH-02). The full testing plan, including the security tests, is a Sprint 4 deliverable in `docs/testing-plan.md`.
+Testing is done per sprint on `dev` with the seeded test accounts (one per role, fictional data only, ETH-01 and ETH-02). The full testing plan, including the security tests, is a Sprint 4 deliverable in `docs/testing-plan.md` (the clearance part was delivered Oct 11; the rest is in progress).
 
 | Risk | Mitigation |
 | --- | --- |
@@ -185,6 +186,21 @@ Testing is done per sprint on `dev` with the seeded test accounts (one per role,
 | Rules between tables are not enforced (clearance chain) | Implement them as database triggers early in Sprint 3 and test each one |
 | Keys leak into the repository | `.env.local` is git-ignored; `service_role` never reaches the browser |
 | Design and code drift apart | Build screens from the Figma design using the shared design tokens |
+
+#### 7.8 Known gaps (status of Oct 12, 2026)
+
+| Gap | Status |
+| --- | --- |
+| No teammate has reviewed any pull request (0 reviews on #58 to #119); the Project Manager merged them | Open: ask a teammate to review the merged changes (issue #115) |
+| `types/database.types.ts` is written by hand and matches `views.sql`; it was not produced by `supabase gen types` | Open: regenerate from the live project or keep this note |
+| `Database_Design_ERD_3NF.docx` (3NF proof and rules R1 to R12, cited in Part 3, Section 1) is not in the repository | Open: the Project Manager adds the file, or the citation is removed |
+| Baseline grants on schema `private`, the EXECUTE grants of the SECURITY DEFINER functions and the sequences are not written down in `docs/database/` | Open (see `docs/sprint-3-plan.md`) |
+| Login lockout residual risks (listed in `docs/database/login_lockout.sql`): an attacker who knows an email can keep that account locked (denial of service); direct calls to the Supabase Auth endpoint bypass the lockout; parallel requests can exceed the 5-attempt limit before the first lock; the lock state of any email is visible | Open: partly mitigated by the rate limit (SEC-04, in progress) and Supabase Auth's own limits |
+| The Cashier can edit `charges.amount` and `due_date` | Decision: kept on purpose; every change is recorded in `audit_logs` |
+| Rate limiting (SEC-04): live as a Vercel firewall rule, tested on the sign-in route only (`docs/rate-limiting.md`); it does not cover direct calls to the Supabase Auth endpoint | Done 2026-10-12 (issue #91), residual limits listed |
+| Catalog rules and screen, Admin user accounts, dashboards, unit tests, performance test, ethical analysis, final paper | Not live or not done; screens without live data are labelled "Sample data" |
+| The student enrollment forms, the Registrar Reject button and the error messages of the new live screens were not tested in the browser | Open: test and record in `docs/testing-plan.md` |
+| PR #119 is merged into `dev` only; the live Vercel site (`main`) does not yet include the Sprint 4 screens | Open: the Project Manager merges `dev` into `main` after the checks |
 
 ## Part 2: Software Requirements Specification (SRS)
 
@@ -308,9 +324,9 @@ The system is a cloud-native web application using Next.js for the frontend and 
 
 * **SEC-02 (Authorization):** The database shall enforce Row Level Security (RLS), enabled on every table, ensuring users can only query data authorized by their specific role. Policies shall read the caller's role and department through a `SECURITY DEFINER` helper function (or JWT custom claims) rather than querying `profiles` directly inside a policy on `profiles`, to avoid recursive policies and slow queries.
 
-* **SEC-03 (Brute-Force Protection):** The system shall implement account lockouts and exponential backoff for multiple failed login attempts. Attempts are recorded in the `login_attempts` table by server-side logic (route handler/middleware) on top of Supabase Auth, and the lockout check runs before credentials are verified.
+* **SEC-03 (Brute-Force Protection):** The system shall implement account lockouts and exponential backoff for multiple failed login attempts. Attempts are recorded in the `login_attempts` table by server-side logic (route handler/middleware) on top of Supabase Auth, and the lockout check runs before credentials are verified. *Status (Oct 12, 2026): live (PR #117, `docs/database/login_lockout.sql`).*
 
-* **SEC-04 (Rate Limiting):** API endpoints shall be rate-limited to prevent Denial of Service (DoS) attacks. Because Vercel runs serverless functions, in-memory counters in Next.js middleware are not reliable; rate limiting shall use the Vercel firewall or a shared store (e.g., Upstash Redis).
+* **SEC-04 (Rate Limiting):** API endpoints shall be rate-limited to prevent Denial of Service (DoS) attacks. Because Vercel runs serverless functions, in-memory counters in Next.js middleware are not reliable; rate limiting shall use the Vercel firewall or a shared store (e.g., Upstash Redis). *Status (Oct 12, 2026): live (Vercel firewall rule, 20 POST requests per minute per IP, HTTP 429; tested, see `docs/rate-limiting.md`).*
 
 * **SEC-05 (SQL Injection):** All database access shall use parameterized queries through the Supabase client. Raw SQL built by string concatenation with user input is prohibited, and all user input shall be validated server-side.
 
@@ -527,6 +543,6 @@ git push origin feature/cashier-table
 
 * To enforce this, the Project Manager enables GitHub branch protection on `main` (restrict who can merge; require a pull request) and on `dev` (require a pull request and one review, no direct pushes).
 
-* Planned merges to `main`: end of each phase (Oct 2, 5, 8, 10) and the final deployment on Oct 12.
+* Planned merges to `main`: end of each phase (planned Oct 2, 5, 8, 10; actual merges followed the real sprint ends) and the final deployment, planned for Oct 12 and now due at the freeze on Oct 15, 2026.
 
 * If you notice a bug in `dev`, tell the Project Manager before the merge. Do not push fixes directly to `main`.
