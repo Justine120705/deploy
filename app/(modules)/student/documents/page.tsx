@@ -1,35 +1,45 @@
 import DashboardShell from '@/components/layout/DashboardShell'
 import DocumentRequestsView from '@/components/student/DocumentRequestsView'
 import { JumpLink } from '@/components/student/PageActions'
-import { SampleDataNote } from '@/components/ui'
+import { EmptyState } from '@/components/ui'
 import { requireRole } from '@/lib/auth/session'
-import { MOCK_STUDENT_ID, documentRequests, documentTypes } from '@/lib/mock-data'
+import { getStudentDocumentsState } from '@/lib/data/documents'
 
-export default async function StudentDocumentsPage() {
+const NOTICES: Record<string, string> = {
+  requested: 'Request sent. It is listed below as Pending until the Registrar starts processing it.',
+}
+
+export default async function StudentDocumentsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}) {
   const profile = await requireRole('Student')
-
-  const records = documentRequests
-    .filter((r) => r.student_id === MOCK_STUDENT_ID)
-    .map((r) => ({
-      id: r.request_id,
-      ticket_number: r.ticket_number,
-      document_type_id: r.document_type_id,
-      purpose: r.purpose,
-      copies: r.copies,
-      requested_at: r.requested_at,
-      processed_at: r.processed_at,
-      status: r.status,
-    }))
+  const state = await getStudentDocumentsState()
+  const { notice } = await searchParams
+  const noticeText = typeof notice === 'string' ? NOTICES[notice] : undefined
 
   return (
     <DashboardShell
       profile={profile}
       title="Document requests"
       subtitle="Request records from the Registrar and track their status"
-      actions={<JumpLink href="#new-request">New request</JumpLink>}
+      actions={state.kind === 'ready' ? <JumpLink href="#new-request">New request</JumpLink> : undefined}
     >
-      <SampleDataNote className="mb-6">Document requests shown here are sample records and are not sent to the Registrar yet.</SampleDataNote>
-      <DocumentRequestsView documentTypes={documentTypes} initialRequests={records} />
+      {noticeText && state.kind === 'ready' && (
+        <p role="status" className="mb-4 rounded-md border border-edge bg-card px-4 py-3 text-sm text-ink">
+          {noticeText}
+        </p>
+      )}
+      {state.kind === 'error' ? (
+        <div role="alert">
+          <EmptyState title="We could not load your document requests">
+            Something went wrong on our side. Reload the page, and if it keeps happening, come back in a few minutes.
+          </EmptyState>
+        </div>
+      ) : (
+        <DocumentRequestsView documentTypes={state.types} requests={state.requests} />
+      )}
     </DashboardShell>
   )
 }
