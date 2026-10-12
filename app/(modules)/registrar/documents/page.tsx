@@ -1,23 +1,28 @@
 import { requireRole } from '@/lib/auth/session'
 import DashboardShell from '@/components/layout/DashboardShell'
-import { SampleDataNote } from '@/components/ui'
-import { DocumentsActions, DocumentsBody, DocumentsProvider } from '@/components/registrar/DocumentsQueue'
+import { EmptyState } from '@/components/ui'
+import DocumentsQueue from '@/components/registrar/DocumentsQueue'
+import { getRegistrarDocumentsState } from '@/lib/data/documents'
 
 export default async function RegistrarDocumentsPage() {
   const profile = await requireRole('Registrar')
+  const state = await getRegistrarDocumentsState()
+
   return (
-    <DocumentsProvider>
-      <DashboardShell
-        profile={profile}
-        title="Document Requests"
-        subtitle="Registrar Office · process requests from students"
-        actions={<DocumentsActions />}
-      >
-        <div className="flex flex-col gap-4">
-          <SampleDataNote />
-          <DocumentsBody />
+    <DashboardShell
+      profile={profile}
+      title="Document Requests"
+      subtitle="Registrar Office · process requests from students"
+    >
+      {state.kind === 'error' ? (
+        <div role="alert">
+          <EmptyState title="We could not load document requests">
+            Something went wrong on our side. Reload the page, and if it keeps happening, come back in a few minutes.
+          </EmptyState>
         </div>
-      </DashboardShell>
-    </DocumentsProvider>
+      ) : (
+        <DocumentsQueue requests={state.requests} />
+      )}
+    </DashboardShell>
   )
 }
