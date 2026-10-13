@@ -1,5 +1,5 @@
 import type { RoleName } from '@/lib/auth/roles'
-import { ROLE_HOME } from '@/lib/auth/roles'
+import { ROLE_HOME, ROLES } from '@/lib/auth/roles'
 
 export type IconName =
   | 'dashboard' | 'enrollment' | 'grades' | 'clearance' | 'documents'
@@ -9,7 +9,7 @@ export type IconName =
 export type NavItem = { label: string; href: string; icon: IconName }
 
 // Sidebar links per role, same as the Figma sidebars. Every href has a page under app/(modules)/.
-export const NAV_ITEMS: Record<RoleName, NavItem[]> = {
+const BASE_NAV: Record<RoleName, NavItem[]> = {
   Student: [
     { label: 'Dashboard', href: ROLE_HOME.Student, icon: 'dashboard' },
     { label: 'Enrollment', href: '/student/enrollment', icon: 'enrollment' },
@@ -44,3 +44,9 @@ export const NAV_ITEMS: Record<RoleName, NavItem[]> = {
     { label: 'Audit Log', href: '/admin/audit-log', icon: 'audit' },
   ],
 }
+
+// Every role also gets its Notifications page (/student/notifications, /registrar/notifications, ...) as the
+// last link; the shell puts the unread count on it.
+export const NAV_ITEMS = Object.fromEntries(
+  ROLES.map((role) => [role, [...BASE_NAV[role], { label: 'Notifications', href: `${ROLE_HOME[role]}/notifications`, icon: 'notifications' } satisfies NavItem]])
+) as Record<RoleName, NavItem[]>
