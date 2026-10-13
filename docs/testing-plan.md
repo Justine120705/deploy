@@ -66,7 +66,7 @@ clearance items can only be cleared by SQL as the database owner (recorded as te
 
 | Level | Evidence we have | Result so far | Main gaps |
 | --- | --- | --- | --- |
-| 1. Unit | Vitest, 66 cases UT-01 to UT-66 on the pure functions (section 5), run 2026-10-13 | Pass (66 of 66) | Only functions without a database; React components and the Server Actions themselves are covered at levels 2 and 3 |
+| 1. Unit | Vitest, 72 cases UT-01 to UT-72 on the pure functions (section 5), run 2026-10-13 | Pass (72 of 72) | Only functions without a database; React components and the Server Actions themselves are covered at levels 2 and 3 |
 | 2. Integration | SQL suites TC-01 to TC-71 (clearance slice, hardening) and TC-72 to TC-122 (lockout, grades, documents, enrollment), all run on the live database | Pass (some rehearsal failures found real defects, section 6) | App-to-database calls are only covered through the browser checks of level 3. TC-94 has no recorded file |
 | 3. System | Browser walk E2E-01 to E2E-13 (clearance, 2026-10-11) and browser checks S-01 to S-12 (2026-10-12, grades, documents, enrollment, lockout in the app) | Pass, with the gaps on the right | Student enrollment submit/add/remove forms, Reject button, friendly error messages, audit rows of the new writes, phone width, dark mode, every role on the deployed site |
 | 4. Acceptance | None run | Not done | A script per SRS requirement with a sign-off by team members (section 9). Nobody is assigned yet |
@@ -80,7 +80,7 @@ no secret and no network.
 
 **Runner:** Vitest 3.2.7 (`npm test`, config `vitest.config.ts`, files in `tests/unit/`). **Run on:** 2026-10-13, Windows,
 Node 24, by Claude Code in the Project Manager's session on the PM's computer. A teammate has not re-run it yet.
-**Result: 66 of 66 passed.** The expected values were written from the documented behaviour of each function before the first
+**Result: 72 of 72 passed.** The expected values were written from the documented behaviour of each function before the first
 run. To check that the tests can fail, the `@` was removed from the formula guard of the CSV export: UT-13 failed as it should,
 and the guard was put back.
 
@@ -156,6 +156,12 @@ The wording and the behaviour were not changed.
 | UT-64 | `queueErrorMessage` 22023, 42501 and an unknown error | not-an-active-student message, permission message, generic message with no database text | Pass |
 | UT-65 | `ordinal` (`lib/queue/ordinal.ts`) | 1st, 2nd, 3rd, 4th, 10th, 21st, 22nd, 23rd, 25th, 101st to 103rd | Pass |
 | UT-66 | `ordinal` of 11, 12, 13, 111, 112, 113 | always `th` | Pass |
+| UT-67 | `estimateWait` (`lib/queue/line.ts`) | 3 to 5 minutes per person ahead (4 ahead: 12 to 20 min); nothing when nobody is ahead | Pass |
+| UT-68 | `formatWait` | `12–20 min` with an en dash; `5 min` when both ends are equal | Pass |
+| UT-69 | `lineSlots` for a short line | everybody shown: the people ahead, one "you", the people behind | Pass |
+| UT-70 | `lineSlots(2, 20)` | the first 6 positions and a gap | Pass |
+| UT-71 | `lineSlots(15, 20)` | the first three, a gap, then you (15) | Pass |
+| UT-72 | `lineSlots` with disagreeing counts | always exactly one "you" | Pass |
 
 The database triggers are unit-like checks of single rules, but they are recorded as integration tests in section 6 because
 they run against the live database.
@@ -385,7 +391,7 @@ Residual risks of the login lockout (V-2), written in the header of `login_locko
 
 | Item | Level | Status | Plan |
 | --- | --- | --- | --- |
-| Unit tests | 1 | Done (66 of 66 pass) | Section 5. Not covered: React components and the Server Actions as a whole (levels 2 and 3) |
+| Unit tests | 1 | Done (72 of 72 pass) | Section 5. Not covered: React components and the Server Actions as a whole (levels 2 and 3) |
 | Acceptance script run and signed off by team members | 4 | Not done | Section 9. Before the freeze on 2026-10-15. Owner: to be named by the PM |
 | Performance: PER-01 and PER-02 | 5 | Not done | Issue #109. Owner and date not set |
 | Rate limiting (SEC-04) | 6 | Done (sign-in route) | Vercel firewall rule "Limit POST requests per IP" (POST, 60 s fixed window, 20 requests per IP, 429) tested 2026-10-12: 429 after about 24 POSTs in a minute from one IP; see `docs/rate-limiting.md` |

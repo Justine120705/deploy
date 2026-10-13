@@ -17,9 +17,12 @@ Q-01 to Q-09, V-6 and V-7).
    program). The Registrar compares the screen with the person and the ID and presses **Approve** (or "ID does not match").
 4. **Ticket.** Approving issues a ticket with a **random 7-digit code** such as `#8503599`. The line order is kept separately
    (`ticket_number`, never shown), so nobody can guess or count the line from the codes.
-5. **The student's tracker.** The page shows the ticket, "You are 25th in line" (or "You are next"), the number being served and
-   an estimated wait. It refreshes every 5 to 10 seconds. When the Registrar presses **Call next** the page turns green:
+5. **The student's tracker.** The page shows the ticket, "You are 25th in line" (or "You are next"), a drawn line from the window to the
+   back (the people ahead, you, the people behind), the people ahead, the last number called, and an estimated wait of 3 to 5
+   minutes for each person ahead (`lib/queue/line.ts`; a fixed range, not measured). It refreshes every 5 to 10 seconds. When the Registrar presses **Call next** the page turns green:
    "It is your turn. Go to Window 3 now."
+   On a phone the Registrar's queue page has two tabs, **Scan** and **Line** (with the number of people in the line), so the camera does
+   not push Call next off the screen. From a laptop screen up both sit side by side.
 6. **At the window.** The Registrar sees the name again, then marks the ticket **Done** or **No-show**. A student can leave the
    queue before being called.
 
