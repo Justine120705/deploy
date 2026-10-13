@@ -192,8 +192,9 @@ TC-01 to TC-70: `docs/issue-12-testing-guide.md`. Files: `docs/database/` (table
 | Enrollment rules (REQ-STU-05, REQ-REG-04) | TC-109 to TC-122 (14 cases) | `docs/database/enrollment_rules_test.sql` | 2026-10-12, PM ran, Claude read | Pass live, first time |
 | Virtual queue for the Registrar window (physical queuing for enrollment) | TC-139 to TC-166 (28 cases) | `docs/database/queue_rules_test.sql` | 2026-10-13, PM ran, Claude read. Rehearsed first (`queue_rules_rehearsal.sql`): 28 of 28 OK, rolled back. Then the live change, then this file again against the live tables | 28 of 28 Pass live, first time |
 | Regression after the queue change | TC-12 to TC-33 | `docs/database/regression_after_grants.sql` | 2026-10-13, re-run after the queue went live | Unchanged: 15 cells OK plus the one known data-dependent CHECK cell (TC-23, Ben's lifted hold); every TC-27 permission flag as expected |
-| Notifications (in-app inbox for every role) | TC-167 to TC-198 (32 cases) | `docs/database/notifications_rules_test.sql` | **Not run yet.** Written 2026-10-13; the rehearsal (`notifications_rules_rehearsal.sql`) comes first | Not done |
+| Notifications (in-app inbox for every role) | TC-167 to TC-198 (32 cases) | `docs/database/notifications_rules_test.sql` | 2026-10-13, PM ran, Claude read. Rehearsed first (`notifications_rules_rehearsal.sql`): 32 of 32 OK, rolled back. Then the live change, then this file again against the live tables | 32 of 32 Pass live, first time |
 | Regression after each Sprint 4 change | TC-12 to TC-33 | `docs/database/regression_after_grants.sql` | 2026-10-12, re-run after the lockout, after grades and documents, and after enrollment | Unchanged each time: 15 cells OK plus one known CHECK cell on TC-24 (the seed data was changed by the 2026-10-11 browser walk, D-1) |
+| Regression after the notifications change | TC-12 to TC-33 | `docs/database/regression_after_grants.sql` | 2026-10-13, re-run after the notifications went live | Unchanged: 15 cells OK plus the one known data-dependent CHECK cell (TC-23); every TC-27 permission flag as expected |
 
 Notes:
 - TC-94 does not appear in any test file. It is not recorded as a case. Not run, not claimed.
@@ -417,8 +418,8 @@ Residual risks of the login lockout (V-2), written in the header of `login_locko
 | Queue: student photo on the card, visit day in the acceptance email, Realtime | 3 | Not built | A photo placeholder is in the SQL and on the screen. Polling every 5 to 10 s is used instead of Realtime (a student cannot see other tickets under the privacy rules, so Realtime would only signal that something changed) |
 | Queue: Leave the queue, No-show, several students and the 25th-in-line text, audit rows on screen, the Documents queue for students | 3 | Not done | The database supports Documents; only the Enrollment queue is wired to students |
 | Queue: `QUEUE_QR_SECRET` on Vercel | 6 | Not done | The variable must be added to the Vercel project before dev is merged to main, or the QR is "not set up" on the live site |
-| Notifications: database change and tests | 2 | Not done | `notifications_rules.sql` is written and not run. Rehearse first; then run it live, run its tests and the regression. After it is live, older test files that compare a table's full trigger list (grades_rules_test.sql TC-83, documents_rules_test.sql TC-95, trigger_dept_approval_test.sql, trigger_finance_autoclear_test.sql, trigger_final_clearance_test.sql) need their expected lists updated; `queue_rules.sql` must not be run again as it stands (its own check expects two triggers on `queue_tickets`) |
-| Notifications: the screens in the browser, the badge, the bell on a phone | 3 | Not done | Needs the database part live first. Only the layout was seen with fake data at phone width |
+| Notifications: older test files after the change | 2 | Not done | `notifications_rules.sql` is live (2026-10-13) and its 32 tests pass. Older test files that compare a table's full trigger list (grades_rules_test.sql TC-83, documents_rules_test.sql TC-95, trigger_dept_approval_test.sql, trigger_finance_autoclear_test.sql, trigger_final_clearance_test.sql) need their expected lists updated; `queue_rules.sql` must not be run again as it stands (its own check expects two triggers on `queue_tickets`) |
+| Notifications: the screens in the browser with real events, the badge, the bell on a phone | 3 | Not done | The database part is live. Only the layout was seen, with fake data at phone width |
 | Notifications: retention and Admin events | 2 | Not decided | Proposed: delete read notifications after 90 days and everything after 12 months (maintenance queries in the SQL header); the Admin receives no event yet |
 | Queue: stale tickets and retention | 2 | Not done | Maintenance m1 (close tickets left open from an earlier day) and the 12-month retention proposal are in the header of `queue_rules.sql`; nothing runs automatically |
 
@@ -457,7 +458,7 @@ Residual risks of the login lockout (V-2), written in the header of `login_locko
 | ETH-01 privacy between students | N-01, N-02, TC-12 to TC-14 | Pass |
 | ETH-02 data minimization | none | Not tested: a review item for the ethical analysis (issue #111) |
 | Physical queuing for enrollment (professor's pain point) | UT-50 to UT-60 (QR), UT-61 to UT-66, TC-139 to TC-166, Q-01 to Q-09 | Partly: the core flow passes in the browser with a typed code; the camera, a USB scanner, a phone and the photo are not tested; proxy queuing is a documented residual risk (V-7) |
-| Notifications (all roles) | UT-73 to UT-78; TC-167 to TC-198 (not run yet) | Not done: the database part and the screens are not tested live |
+| Notifications (all roles) | UT-73 to UT-78; TC-167 to TC-198 | Partly: the database part passes live; the screens are not yet tested with real events in the browser |
 
 ## 14. How to re-run, and what is still to fill in
 

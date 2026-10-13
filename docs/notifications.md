@@ -1,7 +1,7 @@
 # Notifications (in-app inbox for every role)
 
 Built 2026-10-13. The Project Manager asked for one place where all notifications go, for all roles. Database:
-`docs/database/notifications_rules.sql` (not run live yet when this was written; see `docs/testing-plan.md`). App: the
+`docs/database/notifications_rules.sql` (run live on 2026-10-13; its 32 tests pass; see `docs/testing-plan.md`). App: the
 Notifications page of each role, the unread badge in the sidebar and the bell in the phone header.
 
 ## What the user sees
