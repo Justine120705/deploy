@@ -7,7 +7,10 @@ import { AutoRefresh } from '@/components/queue/AutoRefresh'
 import { Button, Card } from '@/components/ui'
 import type { MyQueueStatus, QueueService } from '@/lib/data/queue'
 import { cancelMyTicket, getMyQueueQr } from '@/lib/data/queue-actions'
+import { Icon } from '@/components/layout/Icon'
+import { estimateWait, formatWait, lineSlots, MINUTES_PER_PERSON } from '@/lib/queue/line'
 import { ordinal } from '@/lib/queue/ordinal'
+import { cn } from '@/lib/utils'
 
 const WINDOW_SECONDS = 15 // the same as QR_WINDOW_SECONDS in lib/queue/qr-token.ts (that file is server-only)
 
@@ -134,8 +137,7 @@ function TicketView({ service, status }: { service: QueueService; status: MyQueu
   const [message, setMessage] = useState('')
   const serving = status.ticketStatus === 'Serving'
   const place = status.peopleAhead + 1
-  const waitMinutes =
-    status.avgServiceSeconds && status.peopleAhead > 0 ? Math.max(1, Math.round((status.peopleAhead * status.avgServiceSeconds) / 60)) : null
+  const wait = estimateWait(status.peopleAhead)
 
   function leave() {
     setMessage('')
@@ -147,10 +149,17 @@ function TicketView({ service, status }: { service: QueueService; status: MyQueu
   }
 
   return (
-    <div role="status" aria-live="polite" className="flex flex-col gap-4">
-      <div>
-        <p className="text-[13px] font-medium text-muted">Your ticket</p>
-        <p className="text-5xl leading-none font-extrabold tracking-tight tabular-nums">{status.ticketLabel}</p>
+    <div role="status" aria-live="polite" className="flex flex-col gap-5">
+      <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
+        <div>
+          <p className="text-[13px] font-medium text-muted">Your ticket</p>
+          <p className="text-4xl leading-none font-extrabold tracking-tight tabular-nums sm:text-5xl">{status.ticketLabel}</p>
+        </div>
+        {!serving && (
+          <p className="rounded-full bg-gold px-4 py-1.5 text-sm font-bold text-[#18181b]">
+            {status.peopleAhead === 0 ? 'You are next' : `${ordinal(place)} in line`}
+          </p>
+        )}
       </div>
 
       {serving ? (
@@ -163,24 +172,29 @@ function TicketView({ service, status }: { service: QueueService; status: MyQueu
         </div>
       ) : (
         <>
-          <p className="text-2xl font-bold tracking-tight">
-            {status.peopleAhead === 0 ? 'You are next' : `You are ${ordinal(place)} in line`}
-          </p>
-          <dl className="grid max-w-md grid-cols-2 gap-4 text-sm">
-            <div>
-              <dt className="text-[13px] text-muted">Now serving</dt>
-              <dd className="text-xl font-semibold tabular-nums">{status.nowServing ?? '-'}</dd>
+          <LineView position={place} waitingTotal={status.waitingTotal} />
+
+          <dl className="grid grid-cols-2 gap-3 text-sm">
+            <div className="rounded-xl border border-edge bg-card px-4 py-3">
+              <dt className="text-[13px] text-muted">People ahead</dt>
+              <dd className="text-2xl font-bold tabular-nums">{status.peopleAhead}</dd>
             </div>
-            <div>
+            <div className="rounded-xl border border-edge bg-card px-4 py-3">
               <dt className="text-[13px] text-muted">Estimated wait</dt>
-              <dd className="text-xl font-semibold">{waitMinutes ? `About ${waitMinutes} min` : '-'}</dd>
+              <dd className="text-2xl font-bold">{wait ? formatWait(wait) : 'Any moment'}</dd>
+              {wait && <p className="text-[13px] text-muted">about {MINUTES_PER_PERSON.min} to {MINUTES_PER_PERSON.max} min each</p>}
             </div>
           </dl>
+          <p className="text-sm text-muted">
+            {status.nowServing ? `Last called: ${status.nowServing}. ` : 'Nobody has been called yet. '}
+            The page updates by itself.
+          </p>
+
           <div className="flex flex-wrap items-center gap-3">
             <Button variant="outline" onClick={leave} disabled={pending} aria-busy={pending}>
               {pending ? 'Leaving...' : 'Leave the queue'}
             </Button>
-            <p className="text-sm text-muted">Stay close to the Registrar: if you are not at the window when your number is called, it is skipped.</p>
+            <p className="min-w-0 flex-1 text-sm text-muted">Stay close to the Registrar: if you are not at the window when your number is called, it is skipped.</p>
           </div>
         </>
       )}
@@ -190,6 +204,48 @@ function TicketView({ service, status }: { service: QueueService; status: MyQueu
           {message}
         </p>
       )}
+    </div>
+  )
+}
+
+// The line, drawn from the window on the left to the back of the line on the right: the people ahead of
+// you, you, and the people behind. Decorative: the text above and below says the same in words.
+function LineView({ position, waitingTotal }: { position: number; waitingTotal: number }) {
+  const slots = lineSlots(position, waitingTotal)
+
+  return (
+    <div aria-hidden="true" className="flex flex-col gap-2">
+      <div className="flex items-center justify-between text-[11px] font-semibold tracking-wide text-muted uppercase">
+        <span>Window</span>
+        <span>Back of the line</span>
+      </div>
+      <ol className="flex flex-wrap items-center gap-2 rounded-2xl border border-edge bg-card px-3 py-3">
+        <li className="mr-1 grid size-9 shrink-0 place-items-center rounded-lg bg-ink text-ink-foreground">
+          <Icon name="users" className="size-4" />
+        </li>
+        {slots.map((slot, i) =>
+          slot.kind === 'gap' ? (
+            <li key={`gap-${i}`} className="px-1 text-lg leading-none font-bold text-muted">
+              &hellip;
+            </li>
+          ) : slot.kind === 'you' ? (
+            <li key={`you-${slot.position}`} className="flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-gold px-3.5 text-sm font-extrabold text-[#18181b] shadow-elev-sm ring-2 ring-[#18181b]/15">
+              You
+              <span className="rounded-full bg-[#18181b]/10 px-1.5 text-xs tabular-nums">{slot.position}</span>
+            </li>
+          ) : (
+            <li
+              key={`${slot.kind}-${slot.position}`}
+              className={cn(
+                'grid size-9 shrink-0 place-items-center rounded-full text-sm font-semibold tabular-nums',
+                slot.kind === 'ahead' ? 'bg-hover-tint text-foreground ring-1 ring-edge' : 'text-muted ring-1 ring-edge ring-dashed'
+              )}
+            >
+              {slot.position}
+            </li>
+          )
+        )}
+      </ol>
     </div>
   )
 }
