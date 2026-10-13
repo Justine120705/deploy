@@ -183,3 +183,32 @@ export function enrollmentAddSectionErrorMessage(code: string | undefined, messa
   if (code === '23503') return 'We could not find that section. Reload the page.'
   return enrollmentErrorMessage(code, message, generic)
 }
+
+const GENERIC_QUEUE = 'We could not update the queue. Please try again in a few minutes.'
+const TICKET_LABEL_RE = /^#\d{7}$/
+
+// The label in a message such as "already queued: E-014", or null when it does not look like one.
+function ticketLabelIn(message: string, prefix: string): string | null {
+  const label = message.slice(prefix.length).trim()
+  return TICKET_LABEL_RE.test(label) ? label : null
+}
+
+// The queue (tickets): issuing a ticket, calling the next one, finishing, cancelling.
+export function queueErrorMessage(code: string | undefined, message: string | undefined): string {
+  if (code === 'P0001' && message) {
+    if (message.startsWith('already queued:')) {
+      const label = ticketLabelIn(message, 'already queued:')
+      return label ? `This student already has ticket ${label} in the queue.` : 'This student already has a ticket in the queue.'
+    }
+    if (message.startsWith('finish first:')) {
+      const label = ticketLabelIn(message, 'finish first:')
+      return `${label ? `Ticket ${label} is` : 'A ticket is'} still being served. Press Done or No-show first, then call the next one.`
+    }
+    if (message.startsWith('queue closed:')) return 'This queue is closed right now.'
+    if (message.startsWith('queue busy:')) return 'The queue is busy for a moment. Please press Approve again.'
+    if (message.startsWith('bad ticket change:')) return 'This ticket was already changed by someone else. Reload the page.'
+  }
+  if (code === '22023') return 'That is not an active student account, so no ticket was issued.'
+  if (code === '42501') return NOT_ALLOWED
+  return GENERIC_QUEUE
+}

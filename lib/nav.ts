@@ -4,7 +4,7 @@ import { ROLE_HOME } from '@/lib/auth/roles'
 export type IconName =
   | 'dashboard' | 'enrollment' | 'grades' | 'clearance' | 'documents'
   | 'charges' | 'payments' | 'holds' | 'users' | 'setup' | 'audit'
-  | 'encode' | 'settings' | 'notifications'
+  | 'encode' | 'settings' | 'notifications' | 'queue'
 
 export type NavItem = { label: string; href: string; icon: IconName }
 
@@ -21,6 +21,7 @@ export const NAV_ITEMS: Record<RoleName, NavItem[]> = {
     { label: 'Dashboard', href: ROLE_HOME.Registrar, icon: 'dashboard' },
     { label: 'Encode Grades', href: '/registrar/grades', icon: 'encode' },
     { label: 'Enrollments', href: '/registrar/enrollments', icon: 'enrollment' },
+    { label: 'Queue', href: '/registrar/queue', icon: 'queue' },
     { label: 'Applications', href: '/registrar/applications', icon: 'users' },
     { label: 'Clearance', href: '/registrar/clearance', icon: 'clearance' },
     { label: 'Document Requests', href: '/registrar/documents', icon: 'documents' },
