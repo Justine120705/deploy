@@ -21,6 +21,8 @@ Q-01 to Q-09, V-6 and V-7).
    back (the people ahead, you, the people behind), the people ahead, the last number called, and an estimated wait of 3 to 5
    minutes for each person ahead (`lib/queue/line.ts`; a fixed range, not measured). It refreshes every 5 to 10 seconds. When the Registrar presses **Call next** the page turns green:
    "It is your turn. Go to Window 3 now."
+   On a phone the Registrar's queue page has two tabs, **Scan** and **Line** (with the number of people in the line), so the camera does
+   not push Call next off the screen. From a laptop screen up both sit side by side.
 6. **At the window.** The Registrar sees the name again, then marks the ticket **Done** or **No-show**. A student can leave the
    queue before being called.
 

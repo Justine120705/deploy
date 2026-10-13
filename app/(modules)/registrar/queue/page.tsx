@@ -1,5 +1,6 @@
 import DashboardShell from '@/components/layout/DashboardShell'
 import { AutoRefresh } from '@/components/queue/AutoRefresh'
+import QueueDesk from '@/components/registrar/QueueDesk'
 import QueueScanner from '@/components/registrar/QueueScanner'
 import TicketQueue from '@/components/registrar/TicketQueue'
 import { EmptyState } from '@/components/ui'
@@ -23,10 +24,12 @@ export default async function RegistrarQueuePage() {
           </EmptyState>
         </div>
       ) : (
-        <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
-          <QueueScanner service="Enrollment" />
-          <TicketQueue service="Enrollment" tickets={tickets} />
-        </div>
+        <QueueDesk
+          scanner={<QueueScanner service="Enrollment" />}
+          line={<TicketQueue service="Enrollment" tickets={tickets} />}
+          waitingCount={tickets.filter((t) => t.status === 'Waiting').length}
+          servingCount={tickets.filter((t) => t.status === 'Serving').length}
+        />
       )}
     </DashboardShell>
   )
