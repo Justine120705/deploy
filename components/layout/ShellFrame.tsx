@@ -196,7 +196,7 @@ export default function ShellFrame({
               <p className="truncate text-sm font-semibold text-rail-foreground">{userName}</p>
               <p className="truncate text-xs text-rail-muted">{userMeta ?? roleLabel}</p>
             </div>
-            <ThemeToggle className="text-rail-muted! hover:bg-rail-hover! hover:text-rail-foreground! focus-visible:outline-rail-ring!" />
+            <ThemeToggle className="text-rail-muted! focus-visible:outline-rail-ring!" />
           </div>
         </div>
       </aside>
@@ -225,7 +225,7 @@ export default function ShellFrame({
               )}
             </Link>
           )}
-          <ThemeToggle className="text-rail-muted! hover:bg-rail-hover! hover:text-rail-foreground! focus-visible:outline-rail-ring!" />
+          <ThemeToggle className="text-rail-muted! focus-visible:outline-rail-ring!" />
         </header>
         <main
           id="main"
